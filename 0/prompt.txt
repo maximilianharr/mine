@@ -1,0 +1,5 @@
+/grill-me I want an PWA main app that I can install on my phone and use on my computer to write .md files to a repository on github. I want to set the github repo and token once in the main PWA and use it in the ones in the subfolders like calender. Is this possible? Do the REQUIREMENTS.md make sense?
+
+---
+
+Can we rename 'repeat' to 'recurrence' and use RRULE from the iCalendar standard, RFC 5545?
