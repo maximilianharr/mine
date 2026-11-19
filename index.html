@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.github.com">
+<title>Mine</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#1f2933">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section id="setup" hidden>
+  <h1>Mine</h1>
+  <p class="lede">Your markdown lives in a private GitHub repo. Enter it once here; every app
+    inside Mine uses it.</p>
+  <form id="setup-form">
+    <label>Owner <input name="owner" required autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="maximilianharr"></label>
+    <label>Data repo <input name="repo" required autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="mine-data"></label>
+    <label>Branch <input name="branch" required value="main" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+    <label>Token <input name="token" type="password" required autocomplete="off" spellcheck="false" placeholder="github_pat_…"></label>
+    <label>Token expires <input name="expiresAt" type="date"></label>
+    <button type="submit">Connect</button>
+  </form>
+  <p class="msg" id="setup-msg"></p>
+</section>
+
+<section id="home" hidden>
+  <header>
+    <h1>Mine</h1>
+    <button id="to-settings" class="icon-btn" title="Settings" aria-label="Settings">⚙</button>
+  </header>
+  <p class="banner" id="expiry" hidden></p>
+  <div class="tiles" id="tiles"></div>
+  <p class="status" id="status"></p>
+</section>
+
+<section id="settings" hidden>
+  <header>
+    <h1>Settings</h1>
+    <button id="to-home" class="icon-btn" title="Back" aria-label="Back">✕</button>
+  </header>
+  <dl id="settings-info"></dl>
+  <button id="verify">Verify round-trip</button>
+  <ol class="steps" id="steps"></ol>
+  <button id="forget" class="danger">Forget settings on this device</button>
+</section>
+
+<p class="banner update" id="update" hidden>Update ready — <button id="reload">reload</button></p>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

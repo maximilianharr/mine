@@ -50,12 +50,18 @@ repository(owner:$o, name:$r) { object(expression:"main:calendar") {
   SHAs that pulls diff against and writes send as their base.
 - Check `isTruncated`: GraphQL truncates very large blobs and returns `text: null` for binary.
   Fall back to a REST blob fetch for that path.
+- An **empty repo** returns `object: null` rather than an error, and `defaultBranchRef: null`.
+  Treat it as an empty mirror, not a failure.
 
 **Do not use the tarball.** `GET /tarball/{ref}` 302-redirects to `codeload.github.com`, which
 answers `access-control-allow-origin: https://render.githubusercontent.com` — one specific
 foreign origin. `fetch()` applies CORS to the final response after the redirect, so it is
 blocked, and the preflight an authenticated request needs returns 403. `api.github.com/graphql`
 by contrast sends `allow-origin: *` and a 204 preflight allowing `Authorization`.
+
+**First write to an empty repo** is a separate path: `GET /git/ref/heads/{branch}` answers
+409 "Git Repository is empty", there is no `base_tree` and no parent, and the ref must be
+created with `POST /git/refs` instead of patched.
 
 ## Pull
 
@@ -117,6 +123,12 @@ headers, so a fine-grained PAT is the only no-backend path.
 | `rrule` | `FREQ=MONTHLY;BYDAY=-1FR` and DST-crossing weeklies are where hand-rolled expansion is wrong without telling you. |
 
 YAML *writing* is ours (~20 lines): we control the output shape, so no dumper is needed.
+
+**Load with `CORE_SCHEMA`, never js-yaml's default.** The default is YAML 1.1 and parses
+`start: 2026-04-18` into a JS Date at UTC midnight — silently shifting every all-day entry by a
+day east of UTC. `CORE_SCHEMA` keeps it a string and still handles bools, numbers, flow maps and
+quoted scalars. This is the same off-by-one the bare-date format exists to prevent, arriving
+through the parser instead.
 
 ## Platform findings
 
