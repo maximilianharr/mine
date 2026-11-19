@@ -86,7 +86,7 @@ threat that matters is not a stolen phone but injected script on our own origin,
 closed off by policy rather than encryption:
 
 - Every page sends a strict CSP:
-  `default-src 'self'; script-src 'self'; connect-src 'self' https://api.github.com https://codeload.github.com`
+  `default-src 'self'; script-src 'self'; connect-src 'self' https://api.github.com`
 - **No CDNs, ever.** Every dependency is committed to `/shared/vendor/` and pinned by
   hand, with its source URL and version recorded in `VENDOR.md`. No unpkg, no cdnjs,
   no Google Fonts.
@@ -98,14 +98,29 @@ Each app folder is mirrored locally in full. A decade of calendar entries is rou
 3000 files of ~500 B, so mirroring costs less than range-tracking logic and makes every
 date available offline and search local and instant.
 
-**Bootstrap** (first open of an app, 2 requests):
+**Bootstrap** (first open of an app, **1 request**):
 
-1. `GET /repos/{o}/{r}/tarball/{branch}` — the whole tree in one request. Decompressed
-   with the native `DecompressionStream('gzip')`; the tar walk is ~40 lines.
-2. `GET /repos/{o}/{r}/git/trees/{branch}?recursive=1` — all paths with their blob SHAs.
+A single GraphQL query returns the app's folder tree *with file contents and blob SHAs*,
+nested to the depth of the layout (`calendar` -> year -> month -> blob):
 
-Only the opened app's folder is kept. Blob SHAs are stored per path; they are what later
-pulls diff against and what writes send as their expected base.
+```graphql
+repository(owner:$o, name:$r) {
+  object(expression: "main:calendar") {
+    ... on Tree { entries { name type
+      object { ... on Tree { entries { name type
+        object { ... on Tree { entries { name type
+          object { ... on Blob { oid text isTruncated } } } } } } } } } }
+}
+```
+
+Verified against the live API: `rateLimit.cost` is **1** regardless of how many files come
+back, because `entries` is not a paginated connection; a 16 MB / 145 file response returned
+without error in 6 s. `Blob.oid` is byte-identical to the REST tree SHA, so this one request
+also supplies the SHAs that pulls diff against and writes send as their base.
+
+`isTruncated` must be checked: GraphQL truncates very large blobs and returns `text: null`
+for binary. Markdown entries are far below the limit, but a truncated blob falls back to a
+REST blob fetch for that one path.
 
 **Pull** (on app open and on window focus):
 
@@ -152,8 +167,7 @@ the foreground, whenever the app is open.
 - A version constant names the cache. On install the shell is precached: every page,
   every `shared/` module, `vendor/`, the icons and the manifest.
 - Same-origin requests are served from cache and revalidated in the background.
-- Requests to `api.github.com` and `codeload.github.com` **bypass the service worker
-  entirely**. Caching an API response would hand back a stale ETag and silently break
+- Requests to `api.github.com` **bypass the service worker entirely**. Caching an API response would hand back a stale ETag and silently break
   sync.
 - A new service worker waits rather than activating. The UI shows an "Update ready —
   reload" banner, and `skipWaiting()` runs only on the user's tap, so an upgrade never
@@ -190,19 +204,36 @@ Vendored into `/shared/vendor/`, pinned by hand:
 
 YAML *writing* is ours (~20 lines): we control the output shape, so no dumper is needed.
 
-## Spikes — unverified assumptions
+## Verified facts
 
-Each of these is cheap to test and each has a documented fallback. They should be proven
-on the actual target device before the code depending on them grows.
+Tested against the live API on 2026-11-19; see `/spike/` for the on-device page.
 
-1. **codeload CORS.** `GET /tarball/{ref}` 302-redirects to `codeload.github.com`. If
-   that host does not send `Access-Control-Allow-Origin` for an authenticated private-repo
-   download, the browser fetch fails after the redirect.
-   *Fallback:* bootstrap by walking the tree and fetching each blob individually — fine
-   at today's file counts, degrading over the years.
-2. **iOS shared storage.** That an installed PWA at `/mine/` really does share one
-   IndexedDB with `/mine/calendar/` on the target iOS version.
-   *Fallback:* none that is pleasant — this assumption is load-bearing for the whole
-   "set the token once" design, so test it first.
-3. **Module service workers.** `{type: 'module'}` requires Safari 16.4+.
-   *Fallback:* a classic service worker with the app list duplicated in `sw.js`.
+- **The tarball bootstrap is impossible from a browser.** `GET /tarball/{ref}` 302-redirects
+  to `codeload.github.com`, which answers `access-control-allow-origin:
+  https://render.githubusercontent.com` — one specific foreign origin, not ours and not `*`.
+  `fetch()` applies the CORS check to the final response after following the redirect, so the
+  read is blocked; the `OPTIONS` preflight an authenticated request would need returns 403.
+- **GraphQL replaces it and is better.** `api.github.com/graphql` sends
+  `access-control-allow-origin: *` and a 204 preflight explicitly allowing `Authorization`,
+  so it is browser-usable. One query, cost 1, contents and SHAs together.
+
+## Open spikes — on-device assumptions
+
+`/spike/` is a token-free page that tests all of these on a real phone. Each needs a
+documented fallback before code depends on it.
+
+1. **Shared storage across paths in an installed PWA.** That a value written by `/mine/`
+   is readable by `/mine/calendar/` once the app is launched from the home screen. This is
+   load-bearing for the entire "set the token once" design, so it is tested first.
+   *Fallback:* none that is pleasant. If it fails, each app folder needs its own token
+   entry, or the apps must become one page with client-side routing.
+2. **Module service workers.** `{type: 'module'}` requires Safari 16.4+, and is what lets
+   `sw.js` import the same `shared/apps.js` the tile screen uses.
+   *Fallback:* a classic service worker with the app list duplicated in `sw.js`. The spike
+   page attempts the classic registration automatically if the module one fails.
+3. **Storage persistence.** iOS evicts script-writable storage after roughly seven days
+   without engagement unless the site is installed. If `navigator.storage.persist()` is not
+   granted, the token and the whole local mirror can vanish between uses.
+   *Fallback:* treat the cache as disposable and re-bootstrap on launch — cheap now that
+   bootstrap is one request — but the **token** disappearing means re-entering it, which
+   would make a short-expiry token-per-device policy mandatory rather than optional.

@@ -1,0 +1,20 @@
+* { box-sizing: border-box; }
+body { font: 16px/1.5 system-ui, sans-serif; margin: 0; padding: 16px;
+       max-width: 46rem; margin-inline: auto; color: #1f2933; background: #fff; }
+h1 { font-size: 1.3rem; margin: 0 0 .25rem; }
+p.where { margin: 0 0 1rem; color: #52606d; font-size: .9rem; }
+ol { padding-left: 1.3rem; } ol li { margin-bottom: .4rem; }
+table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .85rem; }
+td { padding: .45rem .4rem; border-bottom: 1px solid #e4e7eb; vertical-align: top; }
+td:first-child { width: 1.4rem; font-weight: 700; text-align: center; }
+td:nth-child(2) { width: 40%; }
+td:last-child { color: #52606d; font-family: ui-monospace, monospace; font-size: .78rem;
+                word-break: break-word; }
+tr.ok td:first-child { color: #0a7b3e; } tr.bad td:first-child { color: #c0392b; }
+tr.bad { background: #fdf2f0; }
+a.btn, button { display: block; width: 100%; padding: 1rem; margin: .5rem 0;
+  font: inherit; font-weight: 600; text-align: center; text-decoration: none;
+  border: 0; border-radius: .6rem; background: #1f2933; color: #fff; cursor: pointer; }
+a.btn.alt { background: #e4e7eb; color: #1f2933; }
+pre { background: #f5f7fa; padding: .7rem; border-radius: .5rem; font-size: .7rem;
+      white-space: pre-wrap; word-break: break-word; }

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mine Spike</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<h1>Mine spike &mdash; root page</h1>
+<p class="where">This stands in for <code>/mine/</code>, where the token gets entered.</p>
+
+<ol>
+  <li>Tap <b>Write marker here</b> below.</li>
+  <li>Add this page to your home screen (iOS: Share &rarr; Add to Home Screen; Android: menu &rarr; Install).</li>
+  <li>Launch it from the home screen &mdash; "launched as" must say STANDALONE.</li>
+  <li>Tap <b>Go to /sub/</b>. If the marker is visible there, sharing one token across subfolders works.</li>
+</ol>
+
+<button id="write">Write marker here</button>
+<a class="btn alt" href="sub/">Go to /sub/ &rarr;</a>
+
+<table><tbody id="out"></tbody></table>
+<pre id="summary"></pre>
+
+<script type="module">
+  import { render, writeMarker } from './spike.js';
+  document.querySelector('#write').addEventListener('click', writeMarker);
+  render('root');
+</script>
+</body>
+</html>

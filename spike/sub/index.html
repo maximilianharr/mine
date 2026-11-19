@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mine Spike &mdash; sub</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+<h1>Mine spike &mdash; /sub/ page</h1>
+<p class="where">This stands in for <code>/mine/calendar/</code>, which must read the token
+the root page stored. Same origin, different path &mdash; and it imported its code from
+<code>../spike.js</code>, which is how the real apps will share <code>shared/</code>.</p>
+
+<p class="where"><b>The row that matters:</b> "IndexedDB marker visible here". If it says
+EMPTY while launched as STANDALONE, the shared-token design does not hold on this device.</p>
+
+<a class="btn alt" href="../">&larr; Back to root</a>
+<button id="write">Write marker from /sub/ instead</button>
+
+<table><tbody id="out"></tbody></table>
+<pre id="summary"></pre>
+
+<script type="module">
+  import { render, writeMarker } from '../spike.js';
+  document.querySelector('#write').addEventListener('click', writeMarker);
+  render('sub');
+</script>
+</body>
+</html>
