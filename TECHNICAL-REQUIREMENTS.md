@@ -59,9 +59,10 @@ foreign origin. `fetch()` applies CORS to the final response after the redirect,
 blocked, and the preflight an authenticated request needs returns 403. `api.github.com/graphql`
 by contrast sends `allow-origin: *` and a 204 preflight allowing `Authorization`.
 
-**First write to an empty repo** is a separate path: `GET /git/ref/heads/{branch}` answers
-409 "Git Repository is empty", there is no `base_tree` and no parent, and the ref must be
-created with `POST /git/refs` instead of patched.
+**A repo with no commits rejects the Git Data API outright.** Not just the ref read — `POST
+/git/blobs` itself answers 409 "Git Repository is empty", so there is nothing to build a tree
+from. Only `PUT /contents/{path}` can create the first commit. The first queued file goes that
+way, and everything after drains normally once a history exists.
 
 ## Pull
 

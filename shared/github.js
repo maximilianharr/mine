@@ -152,16 +152,16 @@ export async function drain(message, retry = true) {
   let parent = null, baseTree = null;
   const refRes = await rest(`/repos/${c.owner}/${c.repo}/git/ref/heads/${c.branch}`, { config: c });
   const fresh = refRes.status === 409 || refRes.status === 404;   // empty repo: no ref yet
-  if (!fresh) {
-    parent = (await ok(refRes, 'ref read')).object.sha;
-    baseTree = (await ok(await rest(
-      `/repos/${c.owner}/${c.repo}/git/commits/${parent}`, { config: c }), 'commit read')).tree.sha;
-  }
+  if (fresh) return initialise(c, items, message, retry);
+
+  parent = (await ok(refRes, 'ref read')).object.sha;
+  baseTree = (await ok(await rest(
+    `/repos/${c.owner}/${c.repo}/git/commits/${parent}`, { config: c }), 'commit read')).tree.sha;
 
   // A queued change whose base SHA no longer matches the remote blob is a real conflict:
   // remote keeps the path, ours is committed beside it. Nothing is discarded.
   const conflicts = [];
-  if (!fresh) {
+  {
     const tree = await ok(await rest(
       `/repos/${c.owner}/${c.repo}/git/trees/${c.branch}?recursive=1`, { config: c }), 'tree read');
     const remote = new Map(tree.tree.filter(t => t.type === 'blob').map(t => [t.path, t.sha]));
@@ -191,19 +191,15 @@ export async function drain(message, retry = true) {
 
   const tree = await ok(await rest(`/repos/${c.owner}/${c.repo}/git/trees`, {
     config: c, method: 'POST',
-    body: baseTree ? { base_tree: baseTree, tree: entries.map(strip) } : { tree: entries.map(strip) }
+    body: { base_tree: baseTree, tree: entries.map(strip) }
   }), 'tree create');
 
   const commit = await ok(await rest(`/repos/${c.owner}/${c.repo}/git/commits`, {
     config: c, method: 'POST',
-    body: { message: message || `${items.length} change(s) from Mine`, tree: tree.sha, parents: parent ? [parent] : [] }
+    body: { message: message || `${items.length} change(s) from Mine`, tree: tree.sha, parents: [parent] }
   }), 'commit create');
 
-  if (fresh) {
-    await ok(await rest(`/repos/${c.owner}/${c.repo}/git/refs`, {
-      config: c, method: 'POST', body: { ref: `refs/heads/${c.branch}`, sha: commit.sha }
-    }), 'ref create');
-  } else {
+  {
     const r = await rest(`/repos/${c.owner}/${c.repo}/git/refs/heads/${c.branch}`, {
       config: c, method: 'PATCH', body: { sha: commit.sha, force: false }
     });
@@ -225,3 +221,31 @@ export async function drain(message, retry = true) {
 }
 
 const strip = ({ _text, ...e }) => e;
+
+// A repo with no commits rejects the Git Data API outright: POST /git/blobs answers
+// 409 "Git Repository is empty". Only the Contents API can create the first commit, so the
+// first queued file goes that way and the rest drain normally once a history exists.
+async function initialise(c, items, message, retry) {
+  const first = items.find(i => i.op === 'put');
+  if (!first) { await clearQueue(); return { committed: 0, conflicts: [] }; }
+
+  const res = await ok(await rest(`/repos/${c.owner}/${c.repo}/contents/${encodeURI(first.path)}`, {
+    config: c, method: 'PUT',
+    body: {
+      message: message || 'Initial commit from Mine',
+      content: encode(first.text),
+      branch: c.branch
+    }
+  }), 'initial commit');
+
+  await putFile({ path: first.path, text: first.text, oid: res.content.sha });
+
+  const rest_ = items.filter(i => i !== first);
+  await clearQueue();
+  await setKV('commitEtag', null);
+  if (!rest_.length) return { committed: 1, commit: res.commit.sha, conflicts: [] };
+
+  for (const it of rest_) await enqueue(it);
+  const more = await drain(message, retry);
+  return { ...more, committed: more.committed + 1, commit: more.commit || res.commit.sha };
+}
