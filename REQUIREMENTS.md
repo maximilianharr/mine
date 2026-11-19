@@ -8,8 +8,8 @@ plan your day, keep track of tasks, remind you of memories a.k.a. a second brain
 
 To keep complexity to a minimum each use-case lives in a separate folder. e.g. the calendar PWA
 lives completely in a 'calendar' folder as does the zettelkasten and all the other apps. Each
-folder contains a 'sample' folder with samples how the markdowns shall look and a REQUIREMENTS.md
-to describe how the PWA works.
+folder contains a 'sample' folder with samples how the markdowns shall look, a REQUIREMENTS.md
+describing how the PWA works and a TECHNICAL-REQUIREMENTS.md describing how it is built.
 
 See [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) for how this is built.
 
