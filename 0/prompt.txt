@@ -1,0 +1,6 @@
+I created the mine-data repo and a fine-grained PAT. Now continue with your suggestion ```Then the build order I'd suggest is shared/ first — store.js, github.js, md.js — proven end-to-end by a settings screen that writes one real file to mine-data, before any calendar UI exists. That's the smallest thing that proves the architecture works with a real token against a real repo. The four calendar views are the bulk of the work and are worth starting only once that round-trips.```
+
+---
+
+I created the mine-data repo and a fine-grained PAT. Now continue with your suggestion:
+```Then the build order I'd suggest is shared/ first — store.js, github.js, md.js — proven end-to-end by a settings screen that writes one real file to mine-data, before any calendar UI exists. That's the smallest thing that proves the architecture works with a real token against a real repo. The four calendar views are the bulk of the work and are worth starting only once that round-trips.```

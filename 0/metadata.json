@@ -1,0 +1,87 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "01M7TQSBGWAZWH8TGH5S4X6ZGA",
+  "session_id": "91939be4-79fe-4954-a167-7f39f704a531",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-19T20:25:53.921947243Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "TECHNICAL-REQUIREMENTS.md",
+    "app.js",
+    "calendar/index.html",
+    "icon.svg",
+    "index.html",
+    "manifest.json",
+    "shared/apps.js",
+    "shared/github.js",
+    "shared/md.js",
+    "shared/store.js",
+    "shared/vendor/VENDOR.md",
+    "shared/vendor/js-yaml.mjs",
+    "style.css",
+    "sw.js"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5",
+  "turn_id": "bcda6a99d825",
+  "checkpoint_transcript_start": 773,
+  "transcript_lines_at_start": 773,
+  "compact_transcript_start": 78,
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 41681,
+    "cache_read_tokens": 2398462,
+    "output_tokens": 37981,
+    "api_call_count": 13
+  },
+  "session_token_usage": {
+    "input_tokens": 154,
+    "cache_creation_tokens": 460485,
+    "cache_read_tokens": 8824719,
+    "output_tokens": 135858,
+    "api_call_count": 77
+  },
+  "redaction": {
+    "replacements": 0,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 0,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-grill-me-2026-11-18T20:21:29.44267061Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "grill-me"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "b0ec0896136f",
+      "timestamp": "2026-11-18T20:21:29.44267061Z",
+      "native": {
+        "command": "/grill-me"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/grill-me",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 8
+  }
+}
