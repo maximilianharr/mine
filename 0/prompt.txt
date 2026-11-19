@@ -1,0 +1,61 @@
+<pasted_content id="e03d">
+Build the calendar app in /home/max/ws/mine.
+
+Mine is a set of PWAs storing personal data as markdown in a private GitHub repo. The
+main app, the sync layer (shared/) and on-device platform verification are done and
+proven end to end against the real repo. The calendar is a stub. Build it.
+
+Read first — these are the spec, follow them rather than inventing:
+  REQUIREMENTS.md, TECHNICAL-REQUIREMENTS.md           (root: architecture, findings)
+  calendar/REQUIREMENTS.md, calendar/TECHNICAL-REQUIREMENTS.md
+  shared/store.js, shared/github.js, shared/md.js      (the API you build on)
+  calendar/sample/                                     (the exact file format)
+
+Scope for this session:
+ 1. calendar/data.js — turn the local mirror into entries: parse, expand RRULE over a
+    date range, apply overrides (series + recurrence-id), exdate/rdate, resolve groups
+    via groups.md; and create/update/delete entries, including path generation (4 random
+    chars, recurring/ vs the date tree).
+ 2. calendar/index.html + app.js — month view and the entry popup (create, edit, delete,
+    tick a task done), group filter, top pane with the dropdown date picker.
+ 3. Responsive from the start — on a phone, coloured dots and a bottom sheet, not a
+    shrunken desktop grid. Do not retrofit this afterwards.
+ 4. Vendor rrule into shared/vendor/ and record it in shared/vendor/VENDOR.md.
+
+Leave for later: day/week/year views, calendar/widget.js.
+
+Hard constraints:
+ - No build step. Plain ES modules, relative imports, every page opens from disk.
+ - CSP is script-src 'self': no inline <script>, no inline handlers, no CDNs ever.
+ - Parse frontmatter only via shared/md.js. It loads YAML with CORE_SCHEMA because
+   js-yaml's default turns `start: 2026-04-18` into a JS Date at UTC midnight, which
+   shifts every all-day entry a day east of UTC.
+ - rrule.js works in UTC. For an all-day rule read the UTC year/month/day; calling
+   getDate() on a local Date returns the previous day east of UTC.
+ - A filename is never the source of truth for a date — frontmatter `start` is. After a
+   move or an override the two legitimately disagree.
+ - All writes go through github.js write()/remove() then drain(). Never call the GitHub
+   API directly; the queue, conflict handling and atomic commits live there.
+ - Don't modify spike/ or the sync logic unless you find something actually broken.
+
+Deploying and testing:
+ - git push deploys to GitHub Pages in ~60s: https://maximilianharr.github.io/mine/calendar/
+ - Bump VERSION in sw.js whenever cached files change, or devices keep serving the old
+   copy, and add the calendar's new files to the SHELL precache list.
+ - Data repo is maximilianharr/mine-data. It is a development repo, not anyone's real
+   calendar, so seed it freely with whatever data makes the views worth looking at —
+   several groups, all-day and timed entries, a weekly recurring task with one occurrence
+   skipped and one ticked.
+ - /home/max/ws/mine/.env.secrets holds GITHUB_OWNER/REPO/BRANCH/TOKEN for testing. It is
+   gitignored — never commit it, never echo the token. Use it from node to seed entries
+   and to verify that what your write path produces is exactly what your read path parses
+   back, including a title with umlauts.
+ - You have no browser. The month grid, the popup and the bottom sheet can only be tested
+   by Max on an iPhone and a Pixel, so finish by telling him exactly what to tap.
+
+Done when, on a phone: you can create an event and a task, see them in the month view in
+their group colours, tick the task done, edit and delete them, filter by group, and a
+weekly recurring task appears every week with a single occurrence skippable and tickable
+independently of the series — all committed to mine-data as markdown matching the shape
+of calendar/sample/.
+</pasted_content id="e03d">
