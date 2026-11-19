@@ -1,13 +1,14 @@
 import { APPS } from './shared/apps.js';
 
-const VERSION = '2026-11-19.2';
+const VERSION = '2026-11-19.3';
 const CACHE = `mine-${VERSION}`;
 
 const SHELL = [
   './', './index.html', './app.js', './style.css', './manifest.json', './icon.svg',
   './shared/apps.js', './shared/store.js', './shared/github.js', './shared/md.js',
-  './shared/vendor/js-yaml.mjs',
-  ...APPS.flatMap(a => [`./${a.slug}/`, `./${a.slug}/icon.svg`])
+  './shared/vendor/js-yaml.mjs', './shared/vendor/rrule.mjs', './shared/vendor/tslib.mjs',
+  ...APPS.flatMap(a => [`./${a.slug}/`, `./${a.slug}/icon.svg`,
+    ...(a.files || []).map(f => `./${a.slug}/${f}`)])
 ];
 
 self.addEventListener('install', e => e.waitUntil(

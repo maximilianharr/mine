@@ -6,15 +6,132 @@
 <meta http-equiv="Content-Security-Policy"
       content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.github.com">
 <title>Calendar</title>
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#1f2933">
 <link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<section>
+
+<section id="needs-setup" hidden>
   <header><h1>Calendar</h1><a class="icon-btn" href="../">✕</a></header>
-  <p class="lede">Not built yet. See
-    <a href="REQUIREMENTS.md">REQUIREMENTS.md</a>.</p>
-  <p class="status">It will read the repo and token already set up in Mine — same origin,
-    same IndexedDB, nothing to enter again.</p>
+  <p class="lede">Mine is not set up on this device yet.</p>
+  <p><a href="../">Open Mine</a> and enter the repo and token once; the calendar then uses them.</p>
 </section>
+
+<main id="cal" hidden>
+  <div class="topbar">
+    <button id="prev" class="nav" aria-label="Previous month">‹</button>
+    <button id="next" class="nav" aria-label="Next month">›</button>
+    <button id="period" class="period" aria-haspopup="true" aria-expanded="false">
+      <span id="period-label">—</span><span class="caret">▾</span>
+    </button>
+    <span class="spacer"></span>
+    <button id="today" class="nav wide">Today</button>
+    <button id="groups-btn" class="nav wide" aria-haspopup="true" aria-expanded="false">Groups<span class="caret">▾</span></button>
+    <button id="menu-btn" class="nav" aria-label="Menu" aria-haspopup="true">≡</button>
+  </div>
+
+  <div class="weekhead" id="weekhead"></div>
+  <div class="grid" id="grid"></div>
+  <p class="sync" id="sync"></p>
+</main>
+
+<!-- dropdown date picker: a month at a time, or a 9-year grid -->
+<div class="pop" id="picker" hidden>
+  <div class="pop-head">
+    <button id="pick-title" class="pop-title"><span id="pick-label">—</span></button>
+    <span class="spacer"></span>
+    <button id="pick-prev" class="nav" aria-label="Previous">‹</button>
+    <button id="pick-next" class="nav" aria-label="Next">›</button>
+  </div>
+  <div class="pick-body" id="pick-body"></div>
+</div>
+
+<!-- group filter -->
+<div class="pop" id="groups-pop" hidden>
+  <div class="pop-head"><strong>Groups</strong><span class="spacer"></span>
+    <button id="groups-all" class="link">all</button>
+    <button id="groups-none" class="link">none</button>
+  </div>
+  <div id="groups-list" class="groups-list"></div>
+</div>
+
+<!-- phone: the ≡ menu -->
+<div class="sheet" id="menu-sheet" hidden>
+  <div class="sheet-grip"></div>
+  <h2>Calendar</h2>
+  <div id="menu-groups" class="groups-list"></div>
+  <button id="menu-today">Jump to today</button>
+  <a class="btn-link" href="../">Back to Mine</a>
+  <button id="menu-close" class="ghost">Close</button>
+</div>
+
+<!-- phone: the day sheet -->
+<div class="sheet" id="day-sheet" hidden>
+  <div class="sheet-grip"></div>
+  <h2 id="day-title">—</h2>
+  <div id="day-list" class="day-list"></div>
+  <button id="day-add">+ add entry</button>
+  <button id="day-close" class="ghost">Close</button>
+</div>
+
+<!-- the entry popup -->
+<div class="modal" id="popup" hidden>
+  <form class="card" id="entry-form" autocomplete="off">
+    <input class="title-in" id="f-title" name="title" placeholder="Title" required>
+
+    <div class="scope" id="f-scope" hidden>
+      <span class="scope-note">Part of a repeating entry.</span>
+      <div class="btngroup" role="radiogroup" aria-label="Edit scope">
+        <button type="button" class="seg" data-scope="occurrence">This occurrence</button>
+        <button type="button" class="seg" data-scope="series">Whole series</button>
+      </div>
+    </div>
+
+    <div class="btngroup" role="radiogroup" aria-label="Type">
+      <button type="button" class="seg" data-type="event">event</button>
+      <button type="button" class="seg" data-type="task">task</button>
+    </div>
+
+    <label class="check" id="f-done-wrap"><input type="checkbox" id="f-done"> done</label>
+    <label class="check"><input type="checkbox" id="f-allday"> all-day</label>
+
+    <div class="row2">
+      <label>Start <input type="date" id="f-start-date" required></label>
+      <label class="t">Time <input type="time" id="f-start-time"></label>
+    </div>
+    <div class="row2">
+      <label>End <input type="date" id="f-end-date"></label>
+      <label class="t">Time <input type="time" id="f-end-time"></label>
+    </div>
+
+    <label>Group <select id="f-group"></select></label>
+    <label>Location <input id="f-location"></label>
+    <label id="f-rec-wrap">Repeat <input id="f-recurrence" placeholder="FREQ=WEEKLY;BYDAY=SA"
+      autocapitalize="characters" autocorrect="off" spellcheck="false">
+      <small>RRULE, blank for a one-off. Any valid rule is read; this field writes it verbatim.</small></label>
+    <label>Alerts <input id="f-alerts" inputmode="numeric" placeholder="0, 15">
+      <small>Minutes before start. Stored and exported only — nothing fires in the background.</small></label>
+    <label>Participants <input id="f-participants" inputmode="email" autocapitalize="off"
+      autocorrect="off" spellcheck="false" placeholder="a@b.com, c@d.com"></label>
+
+    <label>Notes <textarea id="f-body" class="body-in" rows="4" spellcheck="false"></textarea>
+      <small>Raw markdown — exactly what lands in the file.</small></label>
+
+    <p class="msg" id="f-msg"></p>
+    <div class="actions">
+      <button type="button" id="f-delete" class="danger" hidden>delete</button>
+      <button type="button" id="f-skip" class="ghost" hidden>skip this one</button>
+      <button type="button" id="f-discard" class="ghost">discard</button>
+      <button type="submit" id="f-save">save</button>
+    </div>
+    <p class="path" id="f-path"></p>
+  </form>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<script type="module" src="app.js"></script>
 </body>
 </html>
