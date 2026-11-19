@@ -2,7 +2,7 @@
 
 Calendar is an app of [Mine](../REQUIREMENTS.md) to manage your calendar. It stores one
 entry per markdown file in the data repo and holds no state of its own beyond the shared
-cache described in the root requirements.
+cache described in [TECHNICAL-REQUIREMENTS.md](../TECHNICAL-REQUIREMENTS.md).
 
 ## Data model
 
@@ -40,14 +40,14 @@ not null, and a parser hands it back as the text `"None"`.
 | `group` | both | a name, resolved through `groups.md` |
 | `done` | `task` only | `true` / `false` |
 | `location` | both | free text |
-| `alerts` | both | list of minutes before start; `0` means at start. Stored and exported only — see *Alerts* in the root requirements |
+| `alerts` | both | list of minutes before start; `0` means at start. Stored and exported only — see *Reminders* in [../REQUIREMENTS.md](../REQUIREMENTS.md) |
 | `participants` | both | list of email addresses |
 | `recurrence` | both | an RFC 5545 RRULE string, e.g. `FREQ=WEEKLY;BYDAY=SA` |
 | `exdate` | recurring | occurrences to skip |
 | `rdate` | recurring | extra occurrences outside the rule |
 | `series` | override | the id of the recurring file it belongs to |
 | `recurrence-id` | override | `RECURRENCE-ID`: the original occurrence date this file replaces |
-| `conflictOf` | conflict file | written by sync, see root requirements |
+| `conflictOf` | conflict file | written by sync, see [../TECHNICAL-REQUIREMENTS.md](../TECHNICAL-REQUIREMENTS.md) |
 
 There is no `duration` key — it is `end - start`.
 
