@@ -1,0 +1,1 @@
+yes split the calendar REQUIREMENTS.md as well. Add additional context if needed (e.g. your learnings from this chat). If my words could be formulated better or contradict with each other or your findings then feel free to altern them.
