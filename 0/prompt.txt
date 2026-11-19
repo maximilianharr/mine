@@ -1,0 +1,9 @@
+in simple words and quick, what is this "spike" thing you implemented?
+
+---
+
+in spike/res I added the screenshots for android and ios
+
+---
+
+I added android3 and ios4 with the sub/
