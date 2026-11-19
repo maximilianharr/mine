@@ -217,23 +217,28 @@ Tested against the live API on 2026-11-19; see `/spike/` for the on-device page.
   `access-control-allow-origin: *` and a 204 preflight explicitly allowing `Authorization`,
   so it is browser-usable. One query, cost 1, contents and SHAs together.
 
-## Open spikes — on-device assumptions
+Tested on device 2026-11-19, in both installed home-screen apps (Pixel/Chrome,
+iPhone/Safari); screenshots in `spike/res/`.
 
-`/spike/` is a token-free page that tests all of these on a real phone. Each needs a
-documented fallback before code depends on it.
+- **Shared storage across paths holds — the premise of the whole design.** A marker written
+  by `/mine/spike/` inside the installed home-screen app was read back byte-identical by
+  `/mine/spike/sub/` on both devices (iPhone `19:42:59.763Z`, Pixel `19:51:27.294Z`), with
+  both pages reporting `STANDALONE (installed)`. The token is entered once at `/mine/` and
+  every app folder can read it. The sub page also imported its code from `../spike.js`,
+  so cross-path module imports work too.
+- **Module service workers work on both.** `register('./sw.js', {type:'module'})` succeeded
+  on Safari as well as Chrome, scope `/mine/spike/`. `sw.js` can therefore import the same
+  `shared/apps.js` the tile screen uses, and the classic-worker fallback is not needed.
+- **Storage persistence is granted on both.** `navigator.storage.persisted()` returned true
+  with no prompt once installed to the home screen, on iOS too. The token and the local
+  mirror are not subject to the roughly seven-day eviction that applies to uninstalled
+  sites, so a short-expiry token-per-device policy stays optional rather than mandatory.
+- **Quota is never the constraint.** 56 GB available on the Pixel, 35 GB on the iPhone,
+  against a full mirror measured in single-digit MB.
+- **Both CORS findings reproduce on device.** GraphQL returned a readable HTTP 403
+  (rejected query, CORS passed) and the tarball fetch threw — "Load failed" on Safari,
+  "NetworkError" on Chrome — inside both installed apps.
 
-1. **Shared storage across paths in an installed PWA.** That a value written by `/mine/`
-   is readable by `/mine/calendar/` once the app is launched from the home screen. This is
-   load-bearing for the entire "set the token once" design, so it is tested first.
-   *Fallback:* none that is pleasant. If it fails, each app folder needs its own token
-   entry, or the apps must become one page with client-side routing.
-2. **Module service workers.** `{type: 'module'}` requires Safari 16.4+, and is what lets
-   `sw.js` import the same `shared/apps.js` the tile screen uses.
-   *Fallback:* a classic service worker with the app list duplicated in `sw.js`. The spike
-   page attempts the classic registration automatically if the module one fails.
-3. **Storage persistence.** iOS evicts script-writable storage after roughly seven days
-   without engagement unless the site is installed. If `navigator.storage.persist()` is not
-   granted, the token and the whole local mirror can vanish between uses.
-   *Fallback:* treat the cache as disposable and re-bootstrap on launch — cheap now that
-   bootstrap is one request — but the **token** disappearing means re-entering it, which
-   would make a short-expiry token-per-device policy mandatory rather than optional.
+No open spikes remain. `spike/` is kept as a regression check — it needs no token and
+re-running it is the cheapest way to find out whether a future iOS release breaks any of
+these assumptions. `spike/res/` holds the screenshots from the 2026-11-19 run.
