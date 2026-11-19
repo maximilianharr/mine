@@ -1,0 +1,1 @@
+I can add a token to .env.secrets so the agent is able to test?
