@@ -1,0 +1,19 @@
+<pasted_content id="6700">
+Great work. I find the REQUIREMENTS.md to be bloated. Divide the REQUIREMENS.md into a REQUIREMENTS.md and TECHNICAL-REQUIREMENTS.md. They each contain:
+
+REQUIREMENTS.md
+- mainly what the user provided
+- how the app looks like and behaves
+- Easy to adapt for the user if he wants changes to the app
+- include user feedback from this chat as well
+- other things you find useful here
+
+TECHNICAL-REQUIREMENTS.md
+- technical layout
+- your findings from this chat and the spike
+- iOS/Android specific behaviour
+- other non-obvious things that might be important for the next agent to implement this task
+- other things you find useful here
+
+Keep both files very lean, clean and simple! Do not overcomplicate or bloat, do not add context that can be easily derived from the requirements or is trivial.
+</pasted_content id="6700">
