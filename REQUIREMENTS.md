@@ -43,6 +43,12 @@ settings and in each app's: **theme** (system, light or dark) and **date format*
 follows the device's locale, or `dd.mm.yyyy`, or `mm/dd/yy`). Both default to following the
 device, so Mine looks like the rest of the phone until you say otherwise.
 
+One convention is the same in every app: **a save icon is green and a trashcan is red**, wherever
+either appears — a trashcan is red even where it only clears one field of a form that has not
+been saved, because the rule is the icon, not the consequence. A save keeps the weight of a
+primary action and is a filled green button; a trashcan is a red glyph on no background. The `x`
+that closes or abandons something is neither, and stays plain.
+
 ## Using it
 
 - Changes appear instantly and are queued for GitHub in the background.

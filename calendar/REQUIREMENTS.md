@@ -14,6 +14,10 @@ A task also carries a **stage** — `todo`, `doing` or `done` — and, optionall
 or 3) and an estimate in days. An event has none of the three. Stage is the only record of a
 task's progress; there is no separate done flag.
 
+A new task starts at `todo` with an estimate of **1 day**. Both are only defaults: either can be
+changed before saving, and the estimate can be cleared away again, so `estimate` stays a key an
+entry may simply not have — nothing writes one into a task that never carried one.
+
 Entries can repeat, and a repeating entry can have single occurrences skipped, moved, retitled
 or moved to another stage without affecting the rest.
 
@@ -57,10 +61,12 @@ column.
   colours if there are several — a year grid has no room for anything else. Clicking a day shows
   that day's entries.
 - **Month** — one row per week. Entries appear inside each day cell as small lines carrying the
-  title on the group's background colour, sorted by time, all-day items first. A cell shows at
-  most four on desktop and two on a phone, then `+N`. Tasks have a rectangular icon on the right
-  to move them straight to done. Clicking empty space in a cell creates an entry; clicking an
-  entry opens it.
+  title on the group's background colour, sorted by time, all-day items first. On desktop a timed
+  entry's line is prefixed with its time; on a phone it is the title alone, because seven columns
+  across a phone have no room for both and the title is the part worth reading — the time is one
+  tap away in the day preview. A cell shows at most four on desktop and two on a phone, then
+  `+N`. Tasks have a rectangular icon on the right to move them straight to done. Clicking empty
+  space in a cell creates an entry; clicking an entry opens it.
 - **Week** — columns are the days, rows are the 24 hours.
 - **Day** — the week view for a single day, with more detail per entry.
 - **Kanban** — below.
@@ -76,7 +82,10 @@ small `+` to add an entry on that day and a small `x` to close it — not full-w
 
 A row of icon buttons at the top, from left to right:
 
-- `T` for task, `E` for event. Choosing one deselects the other; the default is event.
+- `T` for task, a calendar page for event. Choosing one deselects the other; the default is
+  event.
+- On a task only: `S` for **stage**, `P` for **priority**, `E` for **estimate**. On an event the
+  three are not there at all, because an event has none of them.
 - A circular-arrows button for **repetition**.
 - A ball for **category**.
 - A pin for **location**.
@@ -89,6 +98,21 @@ A row of icon buttons at the top, from left to right:
 An icon whose field is set is shown enabled: a brighter background in dark mode, a darker one in
 light mode. So the row doubles as a summary of what the entry carries.
 
+**Stage, priority and estimate are not like the others.** They are three small values rather than
+fields with a form each, so they are edited in the row itself and they show their value rather
+than merely whether they have one:
+
+- `S` cycles `todo` → `doing` → `done` on each tap, tinted with that stage's kanban colour —
+  red, yellow, green. There is no stage popup.
+- `P` cycles none → 1 → 2 → 3 → none, showing the digit on that priority's chip colour.
+- `E` is the one that opens a popup, because a number has to be typed. It shows the day count as
+  `2d`, exactly as a kanban card does — which is also what keeps it apart from the priority
+  digit beside it.
+
+So the enabled rule above is about the six field icons; these three are always legible instead.
+They sit in the row so that a task that is not on a board still carries the two fields a kanban
+card edits.
+
 Each of the six field buttons opens its own popup, and every popup has the same three buttons:
 a trashcan that clears that one field, an `x` that abandons the sub-edit, and a disk that commits
 the value into the entry form and lights the icon. **A sub-popup never writes to the repo**,
@@ -100,9 +124,6 @@ a brand-new entry work, since it has no file for a sub-popup to write to.
 Below the icon row:
 
 - the title field;
-- for a task, a `todo` / `doing` / `done` button group, and beside it a priority of 1, 2 or 3
-  and an estimate in days — the same two fields a kanban card edits, so a task that is not on a
-  board can still carry them;
 - the start and end fields;
 - then one row per field that is set, in the order of the icons above — so a location that has
   been given appears at the bottom. Each row has a pen to reopen its popup and a trashcan to
@@ -198,10 +219,18 @@ The views above describe the desktop. The same screens adapt:
 
 - The top pane keeps every control and wraps onto a second line rather than dropping any:
   `[‹] [›] [April 2026 ▾] [+] [filter] [D W M Y K] [←] [⚙]`.
-- A month cell shows at most two entry lines, then `+N`; a year cell stays a coloured day.
+- A month cell shows at most two entry lines, then `+N`, and a line carries the title alone with
+  no time prefix; a year cell stays a coloured day.
 - Tapping a day opens that day's entries as a sheet, each one tappable, with the small `+` and
   `x` in its top right — so nothing is ever smaller than a finger.
 - The kanban shows one column at a time.
+
+**Every view fits a 320 CSS px viewport**, with the week gutter on and whatever the entries happen
+to be. The only sideways movement anywhere in the app is the kanban's column swipe; nothing else
+scrolls or extends horizontally, in any view, at any width. A view that demands more width than
+the screen has is a defect even when it looks right on a desktop, and a cell insisting on room
+for a time, a title and an icon at once is the usual cause — seven of them across a phone is
+where it shows.
 
 ## On the main screen
 
