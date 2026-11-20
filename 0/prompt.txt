@@ -1,0 +1,19 @@
+<pasted_content id="c56e">
+/grill-me This calendar app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or REQUIREMENTS.md. After collecting the user input update the REQUIREMENTS.md. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+General:
+- The calendar app is pretty bad formatted on my Android. It does not scale the divs correctly, exceeding the screen
+- The android is connected. Test it on the PWA / browser if possibe, otherwise use the desktop browser with mobile view
+
+In the task creation 'entry-form' popup:
+- In the top row add 'S' for stage and 'E' for estimate and remove the buttons/text filed.
+- tasks are always 'todo' upon creation and estimate is 1
+
+Throughout the app:
+- make the 'save' icon button green and 'trashcan' red everywhere
+```
+</pasted_content id="c56e">
+
+---
+
+commit and start implementation
