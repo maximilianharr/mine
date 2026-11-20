@@ -1,0 +1,44 @@
+<pasted_content id="f012">
+/grill-me This calendar app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or REQUIREMENTS.md. After collecting the user input update the REQUIREMENTS.md. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+In the calendar month view:
+- remove the rectangle for tasks and the '...' to show as much of the title as possibe
+- in the header row:
+  - remove the "today" and "+" button on the top. 
+  - shorten the month and year to 'MMM/YY' e.g. 'NOV/26'
+  - Add a home icon instead of the left arrow
+  - Instead of ('D', 'W', 'M', 'Y') use ('-', '+') to zoom in and out
+
+In the calendar year view:
+- when clicking on a month open the month view
+- in the create event/task popup:
+  - add a small vertical dash after task and event so that it implies that these are the main settings
+  - For event order the top row icons as follows: details, category, repeat, alert, location, participants
+  - Instead of 'D' for details and 'T' for task use an icon as well so that all are icons
+  - For task order use the same top row icons as the event one
+  - For task order put stage, priority, estimate icons to the same row as the all-day icon
+  - for both task and event make the all-day icon similar to (stage, priority, estimate) a clickable icon with green background if turned on
+  - for (all-day, stage, priority, estimate) use a single icon instead of text like 'S' and 'P'
+  
+In the kanban view:
+- In the header row:
+  - remove the today button
+  - For the sprint only show the number.
+  - When clicking on the sprint in the popup rename the current sprint 'current' and add a brighter background (for dark mode)
+  - Instead of ('D', 'W', 'M', 'Y') show a calender icon to go back to calender month view
+- In the mobile view instead of swiping from todo,doing,done add a '<','>' button left of the 'todo'/'doing'/'done' text field and remove the swiping behaviour. 
+- When switching between the stages. e.g. in 'Doing' the 'Done' row is partly visible. Fix this. probably possible in combination with removing the switching mechanism.
+```
+</pasted_content id="f012">
+
+---
+
+For the calendar year view in the mobile app clicking a month opens a month as discussed. For desktop app keep current behaviour where user can create a task/event when clicking on a date. In the calendar view and desktop view the month name is clickable to zoom into month view.
+
+---
+
+Actually, keep the calendar year view behaviour as is. That means clicking a day opens the popup with the tasks. But make the month names icons that can be clicked which then zooms into the respective months view.
+
+---
+
+commit the changes and then implement them. Once finished commit and push so I can test it on my phone.
