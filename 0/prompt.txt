@@ -1,0 +1,45 @@
+<pasted_content id="fc5d">
+/grill-me This calendar app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or REQUIREMENTS.md. After collecting the user input update the REQUIREMENTS.md. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+in the calendar task/event popup
+- instead of priority 1-3 just do important and use a '!' icon for high prio tasks
+- instead of the 'sun' icon use a '24h' icon. I know this is text instead of icon but is clearer
+
+in the calendar day view:
+- remove the 'TUE 20' below the header row as this is already in the header row.
+
+system wide
+- on all popups put the close/discard button 'x' to the rightmost place
+
+in the calendar settings:
+- make this more lean, currently looks very messy
+- do not list all groups but open a popup when user clicks on a 'edit groups' button
+
+in the kanban view:
+- for the tickets:
+  - when the user clicks on any icon in the ticket (e.g. move via '>') then the ticket opens but it shall not open
+  - remove the 'pen' edit icon. Editing is opened when user clicks on the ticket
+  - remove the 'trashcan'. Ticket is deleted when opened
+  - remove the estimate and sprint value of the ticket preview. 
+  - Replace the 'P1' priority preview with the '!' for high prio tickets
+
+in the calendar/kanban view:
+- in the filter do not list all groups but add a 'groups' dropdown
+```
+</pasted_content id="fc5d">
+
+---
+
+rename 'priority' to 'important' and make it binary (true/false)
+
+---
+
+you don't have to remove the sprint value, I just don't want to see it in the preview
+
+---
+
+The sprint is derived from the date. If user wants to move it to a new sprint he changes the date. No sprint value for the ticket
+
+---
+
+bring the samples in line, update the tests. commit. then implement the features, commit and push. I will then check on the phone/desktop and provide feedback.
