@@ -46,9 +46,12 @@ device, so Mine looks like the rest of the phone until you say otherwise.
 
 One convention is the same in every app: **a save icon is green and a trashcan is red**, wherever
 either appears — a trashcan is red even where it only clears one field of a form that has not
-been saved, because the rule is the icon, not the consequence. A save keeps the weight of a
-primary action and is a filled green button; a trashcan is a red glyph on no background. The `x`
-that closes or abandons something is neither, and stays plain.
+been saved, because the rule is the icon, not the consequence. Both are **glyphs on no
+background**: a save is a green disk, a trashcan is a red trashcan. **Nothing in Mine is a filled
+green button.** The weight of a primary action comes from the icon being the familiar one in the
+familiar corner, not from a block of colour — and a save drawn like the rest of the row cannot be
+mistaken for a background that means something. The `x` that closes or abandons something is
+neither green nor red, and stays plain.
 
 ## Using it
 

@@ -60,22 +60,52 @@ cell that holds text needs `min-width: 0` or it does not shrink. The other offen
 period label in the top pane, which is long enough in the week and sprint views to overflow a
 narrow phone on its own.
 
-**The entry popup's icon row and all-day row.** That the icon row holds icons alone, with no
-letter anywhere in it, and that the six field icons read details, category, repeat, alerts,
-location, participants — in that order on a task and on an event alike. That a new entry is an
-event and its all-day row holds the sun by itself; that choosing a task puts stage, priority and
-estimate on that same row and switching back to an event takes all three away again. That stage
-cycles through three stages in three badge colours and back, that priority cycles 1, 2, 3, none
-with the digit on its own colour, and that the estimate opens a popup prefilled with one day,
-badges `3d` once set and loses its badge once cleared. That all-day lights with the ordinary
-enabled background and never with `--good`, because green is the save button's.
+**The entry popup's icon row, toggle row and field rows.** That the icon row holds icons alone,
+with no letter anywhere in it, and that it holds nothing but the type pair and the three on the
+right — task, event, then close, delete, save — with no field icon and no dash left in it.
 
-**The top pane.** That it holds no Today button and no `+`. That `-` and `+` walk the zoom
-through year, month, week and day, `+` towards the day, and that each is disabled at its end of
-the scale instead of wrapping. That the board icon reaches the kanban and is a calendar icon
-there, returning to the month view, and that the home icon leaves for the Mine tile screen.
-That the label reads `NOV/26`, `W47/NOV`, `FR 20/NOV`, `2026` and `7` in the five views, and
-that the week label keeps its ISO number with *show calendar weeks* off.
+That a new entry is an event and its toggle row holds the sun by itself; that choosing a task
+puts stage, priority and estimate on that same row and switching back to an event takes all
+three away again. That stage cycles through three stages in three badge colours and back, that
+priority cycles 1, 2, 3, none with the digit on its own colour, and that the estimate opens a
+popup prefilled with one day, badges `3d` once set and loses its badge once cleared. That all-day
+lights with the ordinary enabled background and never with `--good`, because green is the save
+button's. That the row sits **below** the start and end fields, not above them — resolved from
+the elements' document order, since a row that merely looks right can still be the old one.
+
+That the six field rows read details, category, repeat, alerts, location, participants, in that
+order on a task and on an event alike, each one carrying its icon and its name; that every field
+has a row whether it is set or not; that setting one moves its row above the unset ones while the
+order inside each group stays canonical; that a set row shows the field's value and no pen; and
+that a set row carries no enabled background, because position and value are what say it is set.
+
+**The popup is centred.** At 320 px, that the entry popup, a field sub-popup, the settings panel
+and the day preview each sit clear of the bottom edge — their bounding box's bottom is above the
+viewport's, and their top below it. Nothing in the app is a bottom sheet any more, and a card
+that still stretches to the bottom edge is the old sheet in new paint.
+
+**The top pane.** That it holds no Today button, no `+`, and no `-` or `+` zoom pair — the two
+zoom buttons are gone, and a check for their absence is what keeps them gone. That **clicking the
+label walks the zoom** year → month → week → day → year, round the cycle, with nothing disabled
+at an end. That on the board clicking the label opens the sprint list instead and does not zoom.
+That the **caret is a button of its own** and opens the picker, and that clicking the label does
+not open it. That the board icon reaches the kanban and is a calendar icon there, returning to
+the month view, and that the home icon leaves for the Mine tile screen. That the label reads
+`NOV/26`, `W47/NOV`, `FR 20/NOV`, `2026` and `7` in the five views, and that the week label keeps
+its ISO number with *show calendar weeks* off.
+
+**The pane's order and its phone layout.** That the controls run board, filter, then the centred
+period group, then settings and home — read from their left edges, so a reordering that looks
+right but wires the wrong button cannot pass. That at 320 px the pane is **one line**: every
+control's bounding box shares the same row, none wraps to a second, and none is dropped. That
+the `‹` `›` are not rendered at that width, and that a horizontal swipe on the label steps the
+period while the same swipe on the grid below it changes nothing.
+
+**The month fills the window.** That the month grid's bottom edge reaches the bottom of the
+calendar window — within a pixel or two of the sync line above the viewport's end — rather than
+stopping at the height its cells happen to need, and that it does so at 320 px and on a desktop
+alike without the page gaining a vertical scroll. That a cell still shows at most four lines on
+a desktop and two at 320 px: the rows got taller, the cap did not change.
 
 **A month cell.** That a task line carries no done-rectangle, and that a long title is clipped
 with no `…` — resolved from the computed `text-overflow` and the line's width against the
@@ -88,13 +118,23 @@ to be in.
 
 **The kanban on a phone.** That exactly one column is visible: the next column's left edge is at
 or past the viewport's right edge. This is the check the sliver of `done` beside `doing` failed,
-and a gap reintroduced between the columns must turn it red. That the header's `<` `>` page
+and a gap reintroduced between the columns must turn it red. That the header's `‹` `›` page
 between the columns and are disabled at todo and at done, that a sideways touch gesture on the
-board changes nothing, and that a column header's `+` opens a new task in that stage.
+board changes nothing, and that a column header's `+` opens a new task in that stage. That the
+header carries **no card count and no colour dot**, and that the stage name is drawn in its own
+stage colour — red, yellow, green — resolved against the same table the cards use.
 
-**A save is green and a trashcan is red**, in the entry popup, its detail rows, a field
-sub-popup, a kanban card and the settings panel. The check resolves `--good` and `--bad` from
-the page rather than naming colours, so retheming does not break it.
+**The kanban on a desktop.** That a column header has no `‹` `›` at all, since every column is on
+screen, and that **a card has none either** — a card's top row is a trashcan, a pen and the
+title, and the stage is changed by dragging. On a phone the card keeps its pair, so the same
+check must come out the other way at 320 px.
+
+**A save is green and a trashcan is red**, in the entry popup, a field sub-popup, a kanban card
+and the settings panel. The check resolves `--good` and `--bad` from the page rather than naming
+colours, so retheming does not break it. Both are **glyphs**: the save's `--good` must be its
+text colour and its background must be transparent. A filled green button anywhere in Mine is a
+failure, so the check reads the background as well as the colour — that is the half of it that
+can catch a regression to the old style.
 
 **What a saved task writes.** A new task saved with nothing but a title must land as
 `stage: todo` with `estimate: 1`, and a task whose estimate was cleared must have no `estimate`
