@@ -239,9 +239,22 @@ function groupNames() {
   return out;
 }
 
+// Groups are a dropdown rather than a list: one row saying how many are on, which opens to the
+// same checkboxes. Folding the list away is all it does - any subset can still be hidden, which
+// a single-select control could not do - and it keeps a repo with twenty groups from giving the
+// filter a panel taller than the screen.
+let groupsOpen = false;
+
 function renderFilter() {
-  const kids = [el('div', 'pop-sub', 'Groups')];
-  for (const [name, label] of groupNames()) {
+  const names = groupNames();
+  const on = names.filter(([n]) => !S.hidden.has(n)).length;
+  const drop = el('button', 'gdrop', `groups · ${on} of ${names.length} ${groupsOpen ? '▴' : '▾'}`);
+  drop.type = 'button';
+  drop.setAttribute('aria-expanded', String(groupsOpen));
+  drop.addEventListener('click', () => { groupsOpen = !groupsOpen; renderFilter(); });
+  const kids = [drop];
+
+  if (groupsOpen) for (const [name, label] of names) {
     const lab = el('label', 'glab');
     const box = el('input');
     box.type = 'checkbox';
@@ -257,19 +270,21 @@ function renderFilter() {
     kids.push(lab);
   }
 
-  // Priority and assignee narrow the board, where a sprint can hold more cards than fit.
+  // Importance and assignee narrow the board, where a sprint can hold more cards than fit. One
+  // switch, now that importance is a yes or no rather than three tiers to pick between.
   if (S.view.mode === 'K') {
-    kids.push(el('div', 'pop-sub', 'Priority'));
+    kids.push(el('div', 'pop-sub', 'Important'));
     const chips = el('div', 'chiprow');
-    for (const [v, text] of [[1, 'P1'], [2, 'P2'], [3, 'P3'], [0, 'none']]) {
-      const b = el('button', `chip p${v}${S.kfilter.priority.has(v) ? ' on' : ''}`, text);
-      b.type = 'button';
-      b.addEventListener('click', () => {
-        if (S.kfilter.priority.has(v)) S.kfilter.priority.delete(v); else S.kfilter.priority.add(v);
-        render();
-      });
-      chips.append(b);
-    }
+    const b = el('button', `chip${S.kfilter.importantOnly ? ' on' : ''}`, '!');
+    b.type = 'button';
+    b.title = 'Important only';
+    b.setAttribute('aria-label', 'Important only');
+    b.setAttribute('aria-pressed', String(S.kfilter.importantOnly));
+    b.addEventListener('click', () => {
+      S.kfilter.importantOnly = !S.kfilter.importantOnly;
+      render();
+    });
+    chips.append(b);
     kids.push(chips, el('div', 'pop-sub', 'Assignee'));
     const people = [...new Set([...S.model.dated, ...S.model.rules]
       .flatMap(e => [].concat(e.data.participants ?? []).map(String)))].sort();

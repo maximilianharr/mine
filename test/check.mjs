@@ -829,7 +829,7 @@ await viewport(900);
 await open();
 const importantIn = async title => {
   await ev(`[...document.querySelectorAll('.eline')]
-    .find(l => l.textContent.includes(${'$'}{JSON.stringify(title)})).click()`);
+    .find(l => l.textContent.includes(${JSON.stringify(title)})).click()`);
   await sleep(500);
   const g = (await ev(FLAGS))[2] || '';
   await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);

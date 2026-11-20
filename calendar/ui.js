@@ -24,7 +24,7 @@ export const S = {
   view: { mode: 'M', anchor: todayKey(), sprint: 1, col: 0 },
   prefs: { weekStart: 1, showWeeks: false, timeZone: '', theme: 'system', dateFormat: 'auto' },
   hidden: new Set(),                 // group names switched off in the filter
-  kfilter: { priority: new Set(), assignee: '' },   // kanban only
+  kfilter: { importantOnly: false, assignee: '' },   // kanban only
   visible: new Map(),                // occurrence key -> occurrence, for what is on screen
   render: () => {},
   status: () => {},
@@ -97,10 +97,10 @@ const ICON = {
   // A ticked square for task, three lines of text for details: the icon row carries no letters.
   check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
   lines:  { d: 'M3 4.6h10M3 8h10M3 11.4h6.4', stroke: 1.6 },
-  // The all-day row: a sun, three columns, a flag, an hourglass.
-  sun:    { d: 'M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6M8 1.3v1.9M8 12.8v1.9M1.3 8h1.9M12.8 8h1.9M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M12.7 3.3l-1.4 1.4M4.7 11.3l-1.4 1.4', stroke: 1.4 },
+  // The toggle row: three columns for the stage and an hourglass for the estimate. All-day and
+  // important are the words `24h` and `!`, which iconBtn renders as glyphs - there is no icon
+  // for either, deliberately: the sun was taken for weather and a flag needed a digit.
   cols:   { d: 'M3.4 12.8V9.4M8 12.8V5.8M12.6 12.8V2.8', stroke: 2 },
-  flag:   { d: 'M3.1 1.8h1.5v12.4H3.1zM5.4 2.5h7.5l-1.7 2.9 1.7 2.9H5.4z' },
   glass:  { d: 'M3.8 1.8h8.4v1.3L9.1 8l3.1 4.9v1.3H3.8v-1.3L6.9 8 3.8 3.1z' },
   // The two ways out of a view, and the way out of the calendar.
   board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
@@ -125,8 +125,8 @@ export function icon(name) {
   return svg;
 }
 
-// `name` is an icon name, or any other string to use as a glyph. The entry popup's rows are
-// icons throughout; only the top pane's zoom pair and arrows are characters.
+// `name` is an icon name, or any other string to use as a glyph. The entry popup's icon row is
+// icons throughout; the toggle row's `24h` and `!`, and the top pane's arrows, are characters.
 export function iconBtn(name, label, cls = '') {
   const b = el('button', ['ib', cls].filter(Boolean).join(' '));
   b.type = 'button';

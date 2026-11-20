@@ -8,7 +8,7 @@
 // exception is adding a category, which is a different file: see below.
 import {
   isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, STAGES, createEntry, updateEntry,
-  deleteEntry, saveOverride, skipOccurrence, createGroup, priorityOf
+  deleteEntry, saveOverride, skipOccurrence, createGroup, saveGroups
 } from './data.js';
 import { S, $, el, icon, iconBtn, labelOf, inkOn, STAGE_COLOR } from './ui.js';
 
@@ -17,8 +17,10 @@ const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Bool
 
 // Keys the form owns. Anything else in the file - exdate, rdate, status, a hand-added key -
 // survives a save untouched. `done` is in the list and never written back out again.
-const FORM_KEYS = ['title', 'type', 'start', 'end', 'done', 'stage', 'priority', 'estimate',
-  'group', 'location', 'recurrence', 'alerts', 'participants'];
+// `priority` is in the list and never written back out again, the same way `done` is: the UI
+// writes `important` now, and a file that still carries the old key loses it on this save.
+const FORM_KEYS = ['title', 'type', 'start', 'end', 'done', 'stage', 'priority', 'important',
+  'estimate', 'group', 'location', 'recurrence', 'alerts', 'participants'];
 
 let D = null;      // the draft
 let sub = null;    // the open sub-popup: { field, read }
@@ -89,7 +91,7 @@ function draft(occ, scope, seed) {
     occ, scope, base: data,
     type: occ ? (data.type === 'task' ? 'task' : 'event') : (seed.type || 'event'),
     stage: occ ? (occ.stage || 'todo') : (seed.stage || 'todo'),
-    priority: occ ? occ.priority : null,
+    important: occ ? occ.important : false,
     estimate: occ ? (occ.estimate ?? null) : 1,
     title: occ ? String(data.title ?? '') : '',
     allDay, startDate: sd, startTime: allDay ? '' : st, endDate: ed, endTime: allDay ? '' : et,
@@ -143,6 +145,9 @@ function fillForm() {
 // A ticked square and a calendar page choose the type, and that is all the row holds besides the
 // three on the right: the fields are rows below. Every button is an icon; none carries a letter.
 // No dash divides the two groups - the gap to the right-aligned trio already does.
+//
+// The trio runs trashcan, disk, x: the x is rightmost in every popup in Mine, so the way out of
+// an overlay is in the same corner wherever you are.
 function iconRow() {
   const kids = [];
   for (const [t, ic, label] of [['task', 'check', 'Task'], ['event', 'cal', 'Event']]) {
@@ -153,9 +158,6 @@ function iconRow() {
   }
   kids.push(el('span', 'spacer'));
 
-  const x = iconBtn('x', 'Close and discard');
-  x.addEventListener('click', closePopup);
-  kids.push(x);
   if (D.occ) {
     const t = iconBtn('trash', D.occ.seriesId ? 'Delete the whole repeating entry' : 'Delete',
       'bad');
@@ -165,21 +167,28 @@ function iconRow() {
   const disk = iconBtn('disk', 'Save', 'save');
   disk.type = 'submit';
   kids.push(disk);
+  const x = iconBtn('x', 'Close and discard');
+  x.addEventListener('click', closePopup);
+  kids.push(x);
 
   $('#f-icons').replaceChildren(...kids);
 }
 
-// The toggle row, under start and end: a sun, and on a task stage, priority and estimate.
+// The toggle row, under start and end: `24h`, and on a task stage, important and estimate.
 function flagsRow() {
   const kids = [allDayBtn()];
-  if (D.type === 'task') kids.push(stageBtn(), prioBtn(), estBtn());
+  if (D.type === 'task') kids.push(stageBtn(), bangBtn(), estBtn());
   $('#f-flags').replaceChildren(...kids);
 }
 
-// All-day is a clickable icon rather than a checkbox, and it lights with the ordinary enabled
+// All-day is a clickable control rather than a checkbox, and it lights with the ordinary enabled
 // background - deliberately not the save button's green, which in Mine means a save.
+//
+// It reads `24h` rather than carrying an icon: every drawing of a whole day reads as something
+// else, and the sun this replaces was taken for weather. Only the button says `24h` - the grids'
+// strip and the prose still say all-day, which is the clearer word where there is room for it.
 function allDayBtn() {
-  const b = iconBtn('sun', 'All-day', D.allDay ? 'on' : '');
+  const b = iconBtn('24h', 'All-day', D.allDay ? 'on' : '');
   b.setAttribute('aria-pressed', String(D.allDay));
   b.addEventListener('click', () => {
     D.allDay = !D.allDay;
@@ -190,10 +199,10 @@ function allDayBtn() {
   return b;
 }
 
-// Stage, priority and estimate are three small values rather than fields with a form each, so
-// they are edited in the row itself and show their value - as a badge on the icon's corner,
-// which is why the enabled rule above is about the six field icons alone. Only the estimate
-// opens a popup, because a number has to be typed.
+// Stage, important and estimate are three small values rather than fields with a form each, so
+// they are edited in the row itself. Stage and the estimate show their value as a badge on the
+// icon's corner; important has nothing to put in one and lights instead. Only the estimate opens
+// a popup, because a number has to be typed.
 const badged = (b, text, cls, color) => {
   const s = el('span', ['badge', cls].filter(Boolean).join(' '), text);
   if (color) { s.style.background = color; s.style.color = inkOn(color); }
@@ -210,11 +219,12 @@ function stageBtn() {
   return b;
 }
 
-function prioBtn() {
-  const p = D.priority ?? 0;
-  const b = iconBtn('flag', `Priority: ${p || 'none'}`);
-  if (p) badged(b, String(p), `p${p}`);
-  b.addEventListener('click', () => { D.priority = p === 3 ? null : p + 1; fillForm(); });
+// A toggle, not a cycle: there is no third state to reach, and no badge, because the lit state
+// has already said everything a yes or no has to say.
+function bangBtn() {
+  const b = iconBtn('!', 'Important', D.important ? 'on' : '');
+  b.setAttribute('aria-pressed', String(D.important));
+  b.addEventListener('click', () => { D.important = !D.important; fillForm(); });
   return b;
 }
 
@@ -252,9 +262,17 @@ function openSub(f) {
   sub = { f, read: ed.read };
   $('#sub-title').textContent = f.label;
   $('#sub-body').replaceChildren(ed.node);
+  showSub(false);
+  requestAnimationFrame(() => $('#sub-body').querySelector('input, select, textarea')?.focus());
+}
+
+// The group manager reached from settings shows the x alone: `clear this field` and `use this
+// value` mean nothing when there is no field and the writes have already happened.
+function showSub(manage) {
+  for (const [id, hidden] of [['#sub-clear', manage], ['#sub-ok', manage],
+    ['#sub-cancel', manage], ['#sub-close', !manage]]) $(id).hidden = hidden;
   $('#sub').hidden = false;
   $('#sub-scrim').hidden = false;
-  requestAnimationFrame(() => $('#sub-body').querySelector('input, select, textarea')?.focus());
 }
 
 function closeSub() {
@@ -277,6 +295,7 @@ $('#sub-ok').addEventListener('click', () => {
   closeSub();
   fillForm();
 });
+$('#sub-close').addEventListener('click', closeSub);
 $('#sub-scrim').addEventListener('click', closeSub);
 
 // ---- the editors ---------------------------------------------------------------------------
@@ -342,49 +361,113 @@ function bodyEditor(cur) {
            read: () => t.value };
 }
 
-// The groups, each with its colour, and a + to add one. Adding writes groups.md straight away:
-// it is a different file from the entry, and a category must not vanish because the entry was
-// discarded. Its stored name is derived from the label and never shown, which is why
-// relabelling or recolouring later touches no entry.
+// The groups, each with its colour, a pen, a trashcan and a + to add one. Everything here writes
+// groups.md straight away rather than staging it: that is a different file from the entry, and a
+// category must not vanish because the entry it was made for was discarded. A group's stored name
+// is derived from its label and never shown, which is why relabelling or recolouring touches no
+// entry; entries naming a deleted one render grey.
+//
+// One list, reached from two places. From the category field it also picks, and `chosen` holds
+// the pick; from the settings panel's `edit groups` it only manages, and `chosen` stays null,
+// which is what takes the picking out.
+let editing = null;      // the group whose row is in edit mode; '' is the new one
+
+export function openGroups() {
+  editing = null;
+  sub = null;
+  $('#sub-title').textContent = 'Groups';
+  $('#sub-body').replaceChildren(groupList(null).node);
+  showSub(true);
+}
+
 function groupPicker(cur) {
-  let chosen = cur || '';
+  return groupList(cur || '');
+}
+
+function groupList(initial) {
+  let chosen = initial;
   const wrap = el('div', 'glist');
-  const draw = () => {
-    const kids = [];
-    for (const [name, g] of Object.entries(S.model.groups)) {
+
+  // The list is redrawn from the reloaded model rather than from what was typed, so a failed
+  // write leaves the rows showing what is actually in the repo.
+  const commit = async (what, fn) => {
+    const made = await fn();
+    editing = null;
+    if (made && chosen !== null) chosen = made;
+    S.model = await S.reload();
+    S.render();
+    S.push(`calendar: ${what}`);
+    draw();
+  };
+
+  const groupRow = (name, g) => {
+    const r = el('div', 'grow');
+    const text = g.label || name;
+    const sw = el('span', 'swatch');
+    sw.style.background = g.color || '#9aa5b1';
+    if (chosen === null) r.append(sw, el('span', 'gname', text));
+    else {
       const b = el('button', `gpick${name === chosen ? ' on' : ''}`);
       b.type = 'button';
-      const sw = el('span', 'swatch');
-      sw.style.background = g.color || '#9aa5b1';
-      b.append(sw, el('span', '', g.label || name));
+      b.append(sw, el('span', '', text));
       b.addEventListener('click', () => { chosen = name; draw(); });
-      kids.push(b);
+      r.append(b);
     }
-    const none = el('button', `gpick${chosen === '' ? ' on' : ''}`, 'no category');
-    none.type = 'button';
-    none.addEventListener('click', () => { chosen = ''; draw(); });
-    kids.push(none);
+    const pen = iconBtn('pen', `Edit ${text}`);
+    pen.addEventListener('click', () => { editing = name; draw(); });
+    const del = iconBtn('trash', `Delete ${text}`, 'bad');
+    del.addEventListener('click', () => {
+      if (!confirm(`Delete the category "${text}"? Entries still naming it render grey.`)) return;
+      const rest = { ...S.model.groups };
+      delete rest[name];
+      commit(`delete category ${text}`, () => saveGroups(rest));
+    });
+    r.append(pen, del);
+    return r;
+  };
 
+  const groupForm = (name, g) => {
+    const r = el('div', 'grow');
     const label = el('input');
-    label.placeholder = 'New category';
+    label.value = g.label || name;
+    label.placeholder = 'Label';
     const color = el('input');
     color.type = 'color';
-    color.value = '#2980b9';
-    const add = iconBtn('plus', 'Add category');
-    add.addEventListener('click', async () => {
+    color.value = g.color || '#2980b9';
+    const ok = iconBtn('disk', 'Save', 'save');
+    ok.addEventListener('click', () => {
       const text = label.value.trim();
       if (!text) return;
-      chosen = await createGroup(S.model.groups, text, color.value);
-      S.model = await S.reload();
-      S.push(`calendar: add category ${text}`);
-      label.value = '';
-      draw();
+      commit(`${name ? 'edit' : 'add'} category ${text}`, () => name
+        ? saveGroups({ ...S.model.groups, [name]: { color: color.value, label: text } })
+        : createGroup(S.model.groups, text, color.value));
     });
-    const form = el('div', 'gadd');
-    form.append(label, color, add);
-    kids.push(form);
+    const cancel = iconBtn('x', 'Cancel');
+    cancel.addEventListener('click', () => { editing = null; draw(); });
+    r.append(label, color, ok, cancel);
+    return r;
+  };
+
+  const draw = () => {
+    const kids = [];
+    for (const [name, g] of Object.entries(S.model.groups))
+      kids.push(name === editing ? groupForm(name, g) : groupRow(name, g));
+    if (chosen !== null) {
+      const none = el('button', `gpick${chosen === '' ? ' on' : ''}`, 'no category');
+      none.type = 'button';
+      none.addEventListener('click', () => { chosen = ''; draw(); });
+      kids.push(none);
+    }
+    if (editing === '') kids.push(groupForm('', { color: '#2980b9', label: '' }));
+    else {
+      const add = el('button', 'link', '+ add category');
+      add.type = 'button';
+      add.addEventListener('click', () => { editing = ''; draw(); });
+      kids.push(add);
+    }
     wrap.replaceChildren(...kids);
   };
+
   draw();
   return { node: wrap, read: () => chosen };
 }
@@ -537,8 +620,7 @@ function collect() {
   }
   if (D.type === 'task') {
     data.stage = STAGES.includes(D.stage) ? D.stage : 'todo';
-    const p = priorityOf(D.priority);
-    if (p) data.priority = p;
+    if (D.important) data.important = true;
     if (D.estimate) data.estimate = D.estimate;
   }
   if (D.v.group) data.group = D.v.group;

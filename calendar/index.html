@@ -55,7 +55,7 @@
   <div class="pick-body" id="pick-body"></div>
 </div>
 
-<!-- view filter: groups always, priority and assignee on the board -->
+<!-- view filter: a groups dropdown always, important and assignee on the board -->
 <div class="pop" id="filter-pop" hidden>
   <div id="filter-body"></div>
 </div>
@@ -95,7 +95,7 @@
       <label class="t">Time <input type="time" id="f-end-time"></label>
     </div>
 
-    <!-- the toggle row, under start and end: all-day, and on a task stage, priority, estimate -->
+    <!-- the toggle row, under start and end: 24h, and on a task stage, important, estimate -->
     <div class="iconbar flags" id="f-flags"></div>
 
     <div class="frows" id="f-rows"></div>
@@ -109,8 +109,9 @@
   <div class="pop-head">
     <strong id="sub-title">—</strong><span class="spacer"></span>
     <button class="ib bad" id="sub-clear" type="button" title="Clear this field" aria-label="Clear this field"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 1.6h3.6l.6 1.2h2.8v1.5H2.8V2.8h2.8l.6-1.2zM3.9 5.6h8.2l-.7 8.8H4.6z"/></svg></button>
-    <button class="ib" id="sub-cancel" type="button" title="Abandon this edit" aria-label="Abandon this edit"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
     <button class="ib save" id="sub-ok" type="button" title="Use this value" aria-label="Use this value"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.6 2h8.2L14 5.2V14H2.6zm3 0v3.6h4.6V2zM5 9h6v5H5z"/></svg></button>
+    <button class="ib" id="sub-cancel" type="button" title="Abandon this edit" aria-label="Abandon this edit"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
+    <button class="ib" id="sub-close" type="button" title="Close" aria-label="Close" hidden><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
   </div>
   <div id="sub-body"></div>
 </div>

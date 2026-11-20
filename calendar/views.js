@@ -171,14 +171,20 @@ function timeGrid(keys, byDay) {
   const wrap = el('div', 'tg');
   wrap.style.setProperty('--cols', String(keys.length));
 
-  const head = el('div', 'tg-head');
-  head.append(el('span', 'tcorner'));
-  for (const k of keys) {
-    const h = el('div', ['tgd', isWeekend(k) ? 'we' : '', k === todayKey() ? 'today' : '']
-      .filter(Boolean).join(' '));
-    h.dataset.day = k;
-    h.append(el('span', 'dw', weekdayName(k, 'short')), el('span', 'dn', String(partsOf(k)[2])));
-    head.append(h);
+  // The day view has no header row at all: its weekday and date are the period label in the top
+  // pane already, and `TUE 20` directly beneath that label was the same fact twice. The week's
+  // seven stay - they name seven days the pane names none of, and one of them opens the day
+  // preview. Each row carries its own column template, so dropping this one shifts nothing.
+  const head = keys.length === 1 ? null : el('div', 'tg-head');
+  if (head) {
+    head.append(el('span', 'tcorner'));
+    for (const k of keys) {
+      const h = el('div', ['tgd', isWeekend(k) ? 'we' : '', k === todayKey() ? 'today' : '']
+        .filter(Boolean).join(' '));
+      h.dataset.day = k;
+      h.append(el('span', 'dw', weekdayName(k, 'short')), el('span', 'dn', String(partsOf(k)[2])));
+      head.append(h);
+    }
   }
 
   const strip = el('div', 'tg-allday');
@@ -203,7 +209,7 @@ function timeGrid(keys, byDay) {
     body.append(col);
   }
 
-  wrap.append(head, strip, body);
+  wrap.append(...[head, strip, body].filter(Boolean));
   return wrap;
 }
 
@@ -277,7 +283,10 @@ function onClick(e) {
 
   const tick = e.target.closest('[data-tick]');
   if (tick) return tickTask(S.visible.get(tick.dataset.tick));
+  // A control inside an entry has already done its job - a kanban card's stage arrows are the
+  // only ones that reach here - so the click must not also open the entry on top of the move.
   const row = e.target.closest('[data-key]');
+  if (row && e.target.closest('button')) return;
   if (row) return openEntry(S.visible.get(row.dataset.key));
 
   const cell = e.target.closest('[data-day]');

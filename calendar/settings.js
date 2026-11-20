@@ -1,52 +1,70 @@
 // The settings panel behind the gear.
 //
-// Everything here is stored on the device except the groups, the kanban interval and the kanban
-// first week start date: those three are data and live in the repo, because the sprint a task
-// belongs to is derived from them and two devices that disagreed would put the same card in
-// different sprints. Theme and date format are Mine-wide, not the calendar's.
+// Everything here is stored on the device except the groups, the sprint length and the first
+// sprint date: those three are data and live in the repo, because the sprint a task belongs to
+// is derived from them and two devices that disagreed would put the same card in different
+// sprints. Theme and date format are Mine-wide, not the calendar's.
+//
+// Every row is two halves - the label on the left, its control on the right - so the controls
+// line up in one column. That alignment is the whole of what the panel was missing: a select, a
+// text box, a checkbox and a date field each started wherever its own label happened to end.
+// The groups are behind a button rather than listed, because a list grew with the repo and
+// pushed the eight settings that never change below the fold.
 import { setKV } from '../shared/store.js';
-import { saveGroups, saveSettings, createGroup, setZone, getZone } from './data.js';
+import { saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
-import { S, $, el, iconBtn, closePops } from './ui.js';
-
-let editing = null;        // the group name whose row is in edit mode
+import { openGroups } from './popup.js';
+import { S, $, el, closePops } from './ui.js';
 
 export function openSettings() {
   closePops();
-  editing = null;
   build();
   $('#settings-sheet').hidden = false;
   $('#scrim').hidden = false;
 }
 
+// Eight rows and nothing after them: there is no paragraph explaining what is stored where,
+// because that belongs in REQUIREMENTS.md and not on a panel opened to change the theme.
 function build() {
   $('#settings-body').replaceChildren(
-    el('h3', 'shead', 'Groups'),
-    groupList(),
+    row('Groups', groupsButton()),
     row('Start week on', choose([[1, 'Monday'], [0, 'Sunday']], S.prefs.weekStart,
       v => local('weekStart', Number(v)))),
     row('Time zone', zoneField()),
     row('Date format', choose(DATE_FORMATS.map(f => [f, f]), S.prefs.dateFormat,
       v => mine('dateFormat', v))),
-    row('Show calendar weeks', toggle(S.prefs.showWeeks, v => local('showWeeks', v))),
-    row('Kanban interval', numberField(S.model.settings.interval, 1,
+    row('Calendar weeks', toggle(S.prefs.showWeeks, v => local('showWeeks', v))),
+    row('Sprint length', numberField(S.model.settings.interval, 1,
       v => sprints({ interval: v })), 'weeks'),
-    row('Kanban first week start date', dateField(S.model.settings.anchor,
-      v => sprints({ anchor: v }))),
-    row('Theme', choose(THEMES.map(t => [t, t]), S.prefs.theme, v => mine('theme', v))),
-    el('p', 'note', 'Stored on this device, except the groups, the kanban interval and the '
-      + 'kanban first week start date: those are data and live in the repo, so they follow you '
-      + 'and mean the same thing everywhere. Theme and date format apply to all of Mine.')
+    row('First sprint', dateField(S.model.settings.anchor, v => sprints({ anchor: v }))),
+    row('Theme', choose(THEMES.map(t => [t, t]), S.prefs.theme, v => mine('theme', v)))
   );
 }
 
 // ---- rows ----------------------------------------------------------------------------------
 
+// Two halves. A unit shares the right half with its control rather than dropping below it,
+// which is the one place a row would otherwise go ragged again.
 function row(label, control, suffix) {
   const r = el('div', 'srow');
-  r.append(el('span', 'slab', label), control);
-  if (suffix) r.append(el('span', 'ssuf', suffix));
+  r.append(el('span', 'slab', label));
+  if (!suffix) r.append(control);
+  else {
+    const v = el('div', 'sval');
+    v.append(control, el('span', 'ssuf', suffix));
+    r.append(v);
+  }
   return r;
+}
+
+// The same popup the entry popup's category field opens, in its manage-only form: one place
+// where a group is named or coloured, so there is no second list to keep in step.
+function groupsButton() {
+  const b = el('button', 'link', 'edit groups');
+  b.type = 'button';
+  b.id = 'edit-groups';
+  b.addEventListener('click', openGroups);
+  return b;
 }
 
 function choose(options, current, onChange) {
@@ -110,88 +128,15 @@ function zoneField() {
   return i;
 }
 
-// ---- groups --------------------------------------------------------------------------------
-// A group's stored name is derived from its label and never shown, which is why relabelling or
-// recolouring touches no entry. Entries naming a deleted group render grey.
-
-function groupList() {
-  const wrap = el('div', 'glist');
-  for (const [name, g] of Object.entries(S.model.groups))
-    wrap.append(name === editing ? groupForm(name, g) : groupRow(name, g));
-  if (editing === '') wrap.append(groupForm('', { color: '#2980b9', label: '' }));
-  else {
-    const add = el('button', 'link', '+ add group');
-    add.type = 'button';
-    add.addEventListener('click', () => { editing = ''; build(); });
-    wrap.append(add);
-  }
-  return wrap;
-}
-
-function groupRow(name, g) {
-  const r = el('div', 'grow');
-  const sw = el('span', 'swatch');
-  sw.style.background = g.color || '#9aa5b1';
-  r.append(sw, el('span', 'gname', g.label || name));
-  const pen = iconBtn('pen', `Edit ${g.label || name}`);
-  pen.addEventListener('click', () => { editing = name; build(); });
-  const del = iconBtn('trash', `Delete ${g.label || name}`, 'bad');
-  del.addEventListener('click', () => removeGroup(name, g));
-  r.append(pen, del);
-  return r;
-}
-
-function groupForm(name, g) {
-  const r = el('div', 'grow');
-  const label = el('input');
-  label.value = g.label || name;
-  label.placeholder = 'Label';
-  const color = el('input');
-  color.type = 'color';
-  color.value = g.color || '#2980b9';
-  const ok = iconBtn('disk', 'Save', 'save');
-  ok.addEventListener('click', async () => {
-    const text = label.value.trim();
-    if (!text) return;
-    if (name) await write({ ...S.model.groups, [name]: { color: color.value, label: text } },
-      `edit category ${text}`);
-    else {
-      await createGroup(S.model.groups, text, color.value);
-      await after(`add category ${text}`);
-    }
-  });
-  const cancel = iconBtn('x', 'Cancel');
-  cancel.addEventListener('click', () => { editing = null; build(); });
-  r.append(label, color, ok, cancel);
-  return r;
-}
-
-function removeGroup(name, g) {
-  if (!confirm(`Delete the category "${g.label || name}"? Entries still naming it render grey.`)) return;
-  const rest = { ...S.model.groups };
-  delete rest[name];
-  write(rest, `delete category ${g.label || name}`);
-}
-
-async function write(groups, what) {
-  await saveGroups(groups);
-  await after(what);
-}
+// ---- writes --------------------------------------------------------------------------------
 
 async function sprints(patch) {
   await saveSettings({ ...S.model.settings, ...patch });
-  await after('sprint settings');
-}
-
-async function after(what) {
-  editing = null;
   S.model = await S.reload();
   build();
   S.render();
-  S.push(`calendar: ${what}`);
+  S.push('calendar: sprint settings');
 }
-
-// ---- device preferences --------------------------------------------------------------------
 
 async function local(key, value) {
   S.prefs[key] = value;

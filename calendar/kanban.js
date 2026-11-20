@@ -4,13 +4,10 @@
 // A sprint is a date range, not a stored field, so moving a card to another sprint is exactly a
 // change of its start and end - and a repeating task contributes one card per occurrence inside
 // the sprint, each moved by an override of its own.
-import {
-  STAGES, sprintRange, sprintOf, diffDays, addDays, isAllDay, byPriority, patchOccurrence,
-  deleteEntry, skipOccurrence, wallParts, toInstant
-} from './data.js';
+import { STAGES, sprintRange, byImportance, patchOccurrence } from './data.js';
 import { S, el, phone, colorOf, iconBtn, dayLabel, STAGE_COLOR } from './ui.js';
 import { collect } from './views.js';
-import { openEntry, openNew } from './popup.js';
+import { openNew } from './popup.js';
 
 export function renderKanban(host) {
   const range = sprintRange(S.view.sprint, S.model.settings);
@@ -19,7 +16,7 @@ export function renderKanban(host) {
   const board = el('div', 'kb');
   board.style.setProperty('--col', String(S.view.col));
   for (const stage of STAGES) {
-    const cards = tasks.filter(o => o.stage === stage).sort(byPriority);
+    const cards = tasks.filter(o => o.stage === stage).sort(byImportance);
     const col = el('div', 'kcol');
     col.dataset.stage = stage;
     const head = columnHead(stage, range.start);
@@ -73,7 +70,7 @@ function pager(dir) {
 // The group filter is applied by collect(); these two are the board's own.
 function passes(o) {
   const f = S.kfilter;
-  if (f.priority.size && !f.priority.has(o.priority ?? 0)) return false;
+  if (f.importantOnly && !o.important) return false;
   if (f.assignee && !o.participants.includes(f.assignee)) return false;
   return true;
 }
@@ -86,12 +83,13 @@ function card(o) {
   const bar = el('span', 'kbar');
   bar.style.background = colorOf(o.group);
 
+  // A `!` in front of the title when the task is important, and the title. No pen - the card
+  // opens on a click already - and no trashcan, which put the one irreversible action a thumb's
+  // width from the title you were aiming at. The `!` is a marker, not a button: it is read here
+  // and set in the entry popup's toggle row.
   const top = el('div', 'ktop');
-  const del = iconBtn('trash', o.seriesId ? 'Skip this occurrence' : 'Delete', 'bad');
-  del.addEventListener('click', () => removeCard(o));
-  const pen = iconBtn('pen', 'Edit');
-  pen.addEventListener('click', () => openEntry(o));
-  top.append(del, pen, el('span', 'ktitle', o.title));
+  if (o.important) top.append(el('span', 'kbang', '!'));
+  top.append(el('span', 'ktitle', o.title));
 
   // On a desktop the card is dragged between the columns, so a pair of arrows on every card is a
   // second way to do what the drag already does - in the one place it is also easiest to mistake
@@ -106,29 +104,17 @@ function card(o) {
     top.append(back, fwd);
   }
 
+  // That is the whole card: a coloured bar, a title and two lines. The estimate is edited in
+  // the entry popup, and the sprint number was the same on every card, because a board shows
+  // one sprint. There is no sprint control anywhere - a sprint is derived from the start date,
+  // so moving a task to another one is changing its date.
   const main = el('div', 'kmain');
   main.append(top);
   if (o.body.trim()) main.append(el('p', 'kbody', o.body.trim()));
   main.append(el('p', 'kwhen', dayLabel(o.dayKey)));
 
-  const chips = el('div', 'kchips');
-  chips.append(
-    chip(`p${o.priority ?? 0}`, o.priority ? `P${o.priority}` : 'P–', 'Priority',
-      () => patch(o, { priority: (o.priority ?? 0) % 3 + 1 }, 'priority')),
-    chip('', o.estimate ? `${o.estimate}d` : 'est', 'Estimate in days', () => editEstimate(o)),
-    chip('', `S${sprintOf(o.dayKey, S.model.settings) ?? '–'}`, 'Sprint', () => moveSprint(o)));
-
-  c.append(bar, main, chips);
+  c.append(bar, main);
   return c;
-}
-
-function chip(cls, text, label, onClick) {
-  const b = el('button', `chip ${cls}`.trim(), text);
-  b.type = 'button';
-  b.title = label;
-  b.setAttribute('aria-label', label);
-  b.addEventListener('click', onClick);
-  return b;
 }
 
 // ---- moving a card -------------------------------------------------------------------------
@@ -138,52 +124,8 @@ const shiftStage = (o, dir) => {
   if (next) patch(o, { stage: next }, `-> ${next}`);
 };
 
-function editEstimate(o) {
-  const v = prompt(`Estimate for "${o.title}", in days`, o.estimate ?? '');
-  if (v === null) return;
-  const n = Number(v);
-  patch(o, { estimate: v.trim() && n > 0 ? n : null }, 'estimate');
-}
-
-// Changing the sprint moves the task's start and end into that sprint's range, keeping its
-// offset within the sprint and its wall-clock time.
-function moveSprint(o) {
-  const settings = S.model.settings;
-  const cur = sprintOf(o.dayKey, settings);
-  const v = prompt(`Move "${o.title}" to which sprint?`, String(cur ?? S.view.sprint));
-  const n = Number(v);
-  if (!v || !Number.isInteger(n) || n < 1) return;
-  const span = settings.interval * 7;
-  const offset = cur === null ? 0
-    : Math.max(0, Math.min(span - 1, diffDays(sprintRange(cur, settings).start, o.dayKey)));
-  patch(o, moveTo(o, addDays(sprintRange(n, settings).start, offset)), `to sprint ${n}`);
-}
-
-// Shifting an instant by whole days through its wall clock, not by 86400000 ms: a week that
-// crosses a DST change would otherwise arrive an hour early.
-const shiftTimed = (iso, days) => {
-  const [d, t] = wallParts(iso);
-  return toInstant(addDays(d, days), t);
-};
-
-function moveTo(o, dayKey) {
-  const days = diffDays(o.dayKey, dayKey);
-  const out = { start: o.allDay ? addDays(o.start.slice(0, 10), days) : shiftTimed(o.start, days) };
-  if (o.end) out.end = isAllDay(o.end) ? addDays(o.end, days) : shiftTimed(o.end, days);
-  return out;
-}
-
-// A card of a repeating task is one occurrence: deleting it skips that occurrence rather than
-// taking the rule with it.
-function removeCard(o) {
-  const what = o.seriesId
-    ? `Skip "${o.title}" on ${dayLabel(o.dayKey)}? The repeating task itself stays.`
-    : `Delete "${o.title}"?`;
-  if (!confirm(what)) return;
-  act(o.seriesId ? `skip ${o.title}` : `delete ${o.title}`,
-    () => o.seriesId ? skipOccurrence(o) : deleteEntry(o.path));
-}
-
+// A card is deleted from the entry popup, not from the board: clicking the card opens it, its
+// trashcan deletes the whole entry and its skip control drops a single occurrence.
 const patch = (o, p, what) => act(`${o.title} ${what}`, () => patchOccurrence(o, p));
 
 async function act(what, fn) {

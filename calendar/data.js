@@ -154,12 +154,12 @@ const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
 export const stageOf = data =>
   STAGES.includes(data.stage) ? data.stage : data.done === true ? 'done' : 'todo';
 
-// RFC 5545 PRIORITY is 1-9 and the UI writes 1-3, so those three must read back unchanged.
-// A hand-written 4-9 is bucketed up into them.
-export const priorityOf = v => {
-  const n = Number(v);
-  if (!Number.isFinite(n) || n < 1) return null;
-  return n <= 3 ? Math.round(n) : n <= 6 ? 2 : 3;
+// Importance is a yes or no. `important: true` is what the app writes; a file carrying the old
+// RFC 5545 `priority` is still read, 1 as important and 2-9 as not, so the one tier that meant
+// urgent survives the change and the other two do not silently become it.
+export const importantOf = data => {
+  if (data.important != null) return data.important === true || data.important === 'true';
+  return Number(data.priority) === 1;
 };
 
 const estimateOf = v => {
@@ -242,9 +242,9 @@ export function byStart(a, b) {
   return (a.minutes ?? 0) - (b.minutes ?? 0) || a.title.localeCompare(b.title);
 }
 
-// Cards: priority first, then start. Cards are never reordered by hand.
-export function byPriority(a, b) {
-  return (a.priority ?? 9) - (b.priority ?? 9) || byStart(a, b);
+// Cards: the important ones first, then start. Cards are never reordered by hand.
+export function byImportance(a, b) {
+  return (b.important ? 1 : 0) - (a.important ? 1 : 0) || byStart(a, b);
 }
 
 function occurrence(file, { data, body, base = null, series = null, recId = null, override = null }) {
@@ -265,7 +265,7 @@ function occurrence(file, { data, body, base = null, series = null, recId = null
     type,
     group: data.group ?? '',
     stage: type === 'task' ? stageOf(data) : null,
-    priority: type === 'task' ? priorityOf(data.priority) : null,
+    important: type === 'task' ? importantOf(data) : false,
     estimate: type === 'task' ? estimateOf(data.estimate) : null,
     location: data.location ?? '',
     participants: list(data.participants).map(String),
@@ -380,7 +380,7 @@ export const idTail = path => path.replace(/\.md$/, '').split('-').pop();
 
 // RFC 5545 naming, ordered as the samples are. serialize() drops empty keys rather than
 // writing `None`, which a parser would hand back as the string "None".
-const ORDER = ['series', 'recurrence-id', 'title', 'type', 'start', 'end', 'stage', 'priority',
+const ORDER = ['series', 'recurrence-id', 'title', 'type', 'start', 'end', 'stage', 'important',
   'estimate', 'group', 'location', 'recurrence', 'exdate', 'rdate', 'alerts', 'participants',
   'status'];
 
