@@ -10,7 +10,7 @@ import {
   isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, STAGES, createEntry, updateEntry,
   deleteEntry, saveOverride, skipOccurrence, createGroup, priorityOf
 } from './data.js';
-import { S, $, el, iconBtn, labelOf } from './ui.js';
+import { S, $, el, iconBtn, labelOf, inkOn, STAGE_COLOR } from './ui.js';
 
 const pad = n => String(n).padStart(2, '0');
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
@@ -39,6 +39,12 @@ const FIELDS = [
   { k: 'body', ic: 'D', label: 'Details', empty: '',
     set: v => !!v.trim(), sum: v => v.trim().split('\n').find(Boolean) || '', ed: bodyEditor }
 ];
+
+// The estimate has a sub-popup but no place in D.v, so the sub reads and writes through these
+// two rather than reaching into D.v itself.
+const EST = { k: 'estimate', label: 'Estimate', empty: null, ed: estimateEditor };
+const readField = f => f.k === 'estimate' ? D.estimate : D.v[f.k];
+const writeField = (f, v) => { if (f.k === 'estimate') D.estimate = v; else D.v[f.k] = v; };
 
 const alertText = n => n === 0 ? 'at start' : `${n} min before`;
 
@@ -82,7 +88,7 @@ function draft(occ, scope, seed) {
     type: occ ? (data.type === 'task' ? 'task' : 'event') : (seed.type || 'event'),
     stage: occ ? (occ.stage || 'todo') : (seed.stage || 'todo'),
     priority: occ ? occ.priority : null,
-    estimate: occ ? occ.estimate : null,
+    estimate: occ ? (occ.estimate ?? null) : 1,
     title: occ ? String(data.title ?? '') : '',
     allDay, startDate: sd, startTime: allDay ? '' : st, endDate: ed, endTime: allDay ? '' : et,
     v: {
@@ -114,13 +120,6 @@ function fillForm() {
   for (const b of document.querySelectorAll('[data-scope]'))
     b.setAttribute('aria-pressed', String(b.dataset.scope === D.scope));
 
-  $('#f-task').hidden = D.type !== 'task';
-  for (const b of document.querySelectorAll('[data-stage]'))
-    b.setAttribute('aria-pressed', String(b.dataset.stage === D.stage));
-  for (const b of document.querySelectorAll('[data-prio]'))
-    b.setAttribute('aria-pressed', String(Number(b.dataset.prio) === (D.priority ?? 0)));
-  $('#f-estimate').value = D.estimate ?? '';
-
   $('#f-allday').checked = D.allDay;
   $('#f-start-date').value = D.startDate;
   $('#f-start-time').value = D.startTime;
@@ -139,16 +138,18 @@ function fillForm() {
         : D.occ.path;
 }
 
-// T and E choose the type; the seven field icons open their popups; an icon whose field is set
-// is shown enabled, so the row doubles as a summary of what the entry carries.
+// T and a calendar page choose the type; on a task, S, P and E follow; then the six field
+// icons, which open their popups. An icon whose field is set is shown enabled, so the row
+// doubles as a summary of what the entry carries.
 function iconRow() {
   const kids = [];
-  for (const [t, glyph, label] of [['task', 'T', 'Task'], ['event', 'E', 'Event']]) {
+  for (const [t, glyph, label] of [['task', 'T', 'Task'], ['event', 'cal', 'Event']]) {
     const b = iconBtn(glyph, label, D.type === t ? 'on' : '');
     b.setAttribute('aria-pressed', String(D.type === t));
     b.addEventListener('click', () => { D.type = t; fillForm(); });
     kids.push(b);
   }
+  if (D.type === 'task') kids.push(stageBtn(), prioBtn(), estBtn());
   for (const f of FIELDS) {
     const b = iconBtn(f.ic, f.label, f.set(D.v[f.k]) ? 'on' : '');
     if (f.k === 'recurrence' && !canRule()) b.disabled = true;
@@ -161,7 +162,8 @@ function iconRow() {
   x.addEventListener('click', closePopup);
   kids.push(x);
   if (D.occ) {
-    const t = iconBtn('trash', D.occ.seriesId ? 'Delete the whole repeating entry' : 'Delete');
+    const t = iconBtn('trash', D.occ.seriesId ? 'Delete the whole repeating entry' : 'Delete',
+      'bad');
     t.addEventListener('click', removeEntry);
     kids.push(t);
   }
@@ -170,6 +172,36 @@ function iconRow() {
   kids.push(disk);
 
   $('#f-icons').replaceChildren(...kids);
+}
+
+// Stage, priority and estimate are three small values rather than fields with a form each, so
+// they are edited in the row itself and show their value rather than merely whether they have
+// one - which is why the enabled rule above is about the six field icons alone. Only the
+// estimate opens a popup, because a number has to be typed.
+function stageBtn() {
+  const c = STAGE_COLOR[D.stage];
+  const b = iconBtn('S', `Stage: ${D.stage}`);
+  b.style.background = c;
+  b.style.color = inkOn(c);
+  b.addEventListener('click', () => {
+    D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
+    fillForm();
+  });
+  return b;
+}
+
+function prioBtn() {
+  const p = D.priority ?? 0;
+  const b = iconBtn(p ? String(p) : 'P', `Priority: ${p || 'none'}`, p ? `p${p}` : '');
+  b.addEventListener('click', () => { D.priority = p === 3 ? null : p + 1; fillForm(); });
+  return b;
+}
+
+function estBtn() {
+  const b = iconBtn(D.estimate ? `${D.estimate}d` : 'E',
+    `Estimate: ${D.estimate ? `${D.estimate} day(s)` : 'none'}`, 'est');
+  b.addEventListener('click', () => openSub(EST));
+  return b;
 }
 
 // One row per field that is set, in the order of the icons above - so a location that has been
@@ -183,7 +215,7 @@ function detailRows() {
     row.append(el('span', 'flab', f.label), el('span', 'fval', f.sum(D.v[f.k])));
     const pen = iconBtn('pen', `Edit ${f.label}`);
     pen.addEventListener('click', () => openSub(f));
-    const tr = iconBtn('trash', `Clear ${f.label}`);
+    const tr = iconBtn('trash', `Clear ${f.label}`, 'bad');
     tr.addEventListener('click', () => { D.v[f.k] = f.empty; fillForm(); });
     row.append(pen, tr);
     rows.push(row);
@@ -194,7 +226,7 @@ function detailRows() {
 // ---- sub-popups ----------------------------------------------------------------------------
 
 function openSub(f) {
-  const ed = f.ed(D.v[f.k]);
+  const ed = f.ed(readField(f));
   sub = { f, read: ed.read };
   $('#sub-title').textContent = f.label;
   $('#sub-body').replaceChildren(ed.node);
@@ -212,14 +244,14 @@ function closeSub() {
 // Every sub-popup has the same three: a trashcan that clears that one field, an x that abandons
 // the sub-edit, and a disk that commits the value into the draft and lights the icon.
 $('#sub-clear').addEventListener('click', () => {
-  D.v[sub.f.k] = sub.f.empty;
+  writeField(sub.f, sub.f.empty);
   closeSub();
   fillForm();
 });
 $('#sub-cancel').addEventListener('click', closeSub);
 $('#sub-ok').addEventListener('click', () => {
   const v = sub.read();
-  if (v !== undefined) D.v[sub.f.k] = v;
+  if (v !== undefined) writeField(sub.f, v);
   closeSub();
   fillForm();
 });
@@ -241,6 +273,19 @@ function textEditor(labelText, placeholder) {
     i.value = cur || '';
     i.placeholder = placeholder;
     return { node: field(labelText, i), read: () => i.value.trim() };
+  };
+}
+
+function estimateEditor(cur) {
+  const i = el('input');
+  i.type = 'number';
+  i.min = '0';
+  i.step = '0.5';
+  i.inputMode = 'decimal';
+  i.value = cur ?? '';
+  return {
+    node: field('Days', i, 'Cleared, the task simply has no estimate.'),
+    read: () => { const n = Number(i.value); return Number.isFinite(n) && n > 0 ? n : null; }
   };
 }
 
@@ -456,19 +501,6 @@ $('#f-allday').addEventListener('change', e => {
   fillForm();
 });
 
-$('#f-estimate').addEventListener('input', e => {
-  const n = Number(e.target.value);
-  D.estimate = Number.isFinite(n) && n > 0 ? n : null;
-});
-
-for (const b of document.querySelectorAll('[data-stage]'))
-  b.addEventListener('click', () => { D.stage = b.dataset.stage; fillForm(); });
-for (const b of document.querySelectorAll('[data-prio]'))
-  b.addEventListener('click', () => {
-    const n = Number(b.dataset.prio);
-    D.priority = n && D.priority !== n ? n : null;
-    fillForm();
-  });
 for (const b of document.querySelectorAll('[data-scope]'))
   b.addEventListener('click', () => { D = draft(D.occ, b.dataset.scope, {}); fillForm(); });
 

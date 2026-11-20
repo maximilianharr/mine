@@ -29,11 +29,16 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 }
 .nav.wide { font-size: .8rem; padding: .5rem .6rem; }
 .nav.ic svg { width: 1.05rem; height: 1.05rem; display: block; }
+/* A week or sprint label is long - "Sprint 7 - 02.11.2026 - 15.11.2026" is wider than a narrow
+   phone on its own - so the label shrinks and ellipsises rather than pushing the page sideways.
+   The dropdown still shows the period in full. */
 .period {
+  display: inline-flex; align-items: center; min-width: 0;
   width: auto; margin: 0; padding: .4rem .5rem; font-size: .95rem; font-weight: 600;
   color: var(--fg); background: none; border: 0; white-space: nowrap;
 }
-.caret { margin-left: .3rem; font-size: .7rem; opacity: .6; }
+#period-label { overflow: hidden; text-overflow: ellipsis; }
+.caret { flex: none; margin-left: .3rem; font-size: .7rem; opacity: .6; }
 
 .modes { display: flex; }
 .mode {
@@ -66,7 +71,7 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 }
 .day {
   display: flex; flex-direction: column; align-items: stretch; gap: .1rem;
-  min-height: var(--cell); padding: .15rem .12rem;
+  min-width: 0; min-height: var(--cell); padding: .15rem .12rem;
   text-align: left; color: var(--fg); background: var(--bg); border-radius: .3rem; cursor: pointer;
 }
 .day.we { background: var(--soft); }
@@ -195,9 +200,9 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: .3rem; cursor: pointer;
 }
-.chip.p1 { color: #fff; background: #c0392b; border-color: #c0392b; }
-.chip.p2 { color: #fff; background: #d97706; border-color: #d97706; }
-.chip.p3 { color: #1b1f24; background: #e3c019; border-color: #e3c019; }
+.chip.p1, .ib.p1 { color: #fff; background: #c0392b; border-color: #c0392b; }
+.chip.p2, .ib.p2 { color: #fff; background: #d97706; border-color: #d97706; }
+.chip.p3, .ib.p3 { color: #1b1f24; background: #e3c019; border-color: #e3c019; }
 .chip.on { outline: 2px solid var(--today); outline-offset: 1px; }
 .chiprow { display: flex; gap: .3rem; }
 
@@ -212,7 +217,10 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .ib[disabled] { opacity: .3; }
 /* An icon whose field is set reads as enabled: darker in light mode, brighter in dark. */
 .ib.on { color: var(--bg); background: var(--accent); }
-.ib.primary { color: #fff; background: var(--today); }
+.ib.primary { color: var(--bg); background: var(--good); }
+.ib.bad { color: var(--bad); }
+/* The estimate carries a day count rather than one character. */
+.ib.est { width: auto; min-width: 2.1rem; padding: 0 .25rem; }
 .ib.next svg { transform: rotate(180deg); }
 
 /* ---- popovers, sheets, modal ---- */
@@ -275,6 +283,7 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .dentry .tick { width: 1.4rem; height: 1.1rem; }
 
 @media (max-width: 599px) {
+  .grid .eline .when { display: none; }
   #day-pop {
     left: 0 !important; top: auto !important; bottom: 0; width: 100%;
     max-height: 80dvh; overflow-y: auto; border-radius: 1rem 1rem 0 0;
@@ -317,10 +326,6 @@ select {
 .seg:first-child { border-radius: .5rem 0 0 .5rem; }
 .seg:last-child { border-radius: 0 .5rem .5rem 0; border-left: 0; }
 .seg[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-.btngroup.tight { width: auto; margin: 0; flex: none; }
-.btngroup.tight .seg { flex: none; padding: .35rem .55rem; }
-.taskrow { display: flex; align-items: center; flex-wrap: wrap; gap: .4rem; margin-top: .6rem; }
-.est-in { width: 4.4rem; margin: 0; padding: .35rem .4rem; }
 .scope { margin-top: .7rem; }
 .scope-note { font-size: .75rem; color: var(--muted); }
 .body-in {

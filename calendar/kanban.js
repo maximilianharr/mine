@@ -8,11 +8,9 @@ import {
   STAGES, sprintRange, sprintOf, diffDays, addDays, isAllDay, byPriority, patchOccurrence,
   deleteEntry, skipOccurrence, wallParts, toInstant
 } from './data.js';
-import { S, el, phone, colorOf, iconBtn, dayLabel } from './ui.js';
+import { S, el, phone, colorOf, iconBtn, dayLabel, STAGE_COLOR } from './ui.js';
 import { collect } from './views.js';
 import { openEntry } from './popup.js';
-
-const STAGE_COLOR = { todo: '#c0392b', doing: '#e0a500', done: '#27ae60' };
 
 export function renderKanban(host) {
   const range = sprintRange(S.view.sprint, S.model.settings);
@@ -57,7 +55,7 @@ function card(o) {
   bar.style.background = colorOf(o.group);
 
   const top = el('div', 'ktop');
-  const del = iconBtn('trash', o.seriesId ? 'Skip this occurrence' : 'Delete');
+  const del = iconBtn('trash', o.seriesId ? 'Skip this occurrence' : 'Delete', 'bad');
   del.addEventListener('click', () => removeCard(o));
   const pen = iconBtn('pen', 'Edit');
   pen.addEventListener('click', () => openEntry(o));

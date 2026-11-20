@@ -135,7 +135,7 @@ function groupRow(name, g) {
   r.append(sw, el('span', 'gname', g.label || name));
   const pen = iconBtn('pen', `Edit ${g.label || name}`);
   pen.addEventListener('click', () => { editing = name; build(); });
-  const del = iconBtn('trash', `Delete ${g.label || name}`);
+  const del = iconBtn('trash', `Delete ${g.label || name}`, 'bad');
   del.addEventListener('click', () => removeGroup(name, g));
   r.append(pen, del);
   return r;
@@ -149,7 +149,7 @@ function groupForm(name, g) {
   const color = el('input');
   color.type = 'color';
   color.value = g.color || '#2980b9';
-  const ok = iconBtn('disk', 'Save');
+  const ok = iconBtn('disk', 'Save', 'primary');
   ok.addEventListener('click', async () => {
     const text = label.value.trim();
     if (!text) return;

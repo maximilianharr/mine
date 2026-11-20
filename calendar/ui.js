@@ -32,6 +32,10 @@ export const S = {
   reload: async () => S.model
 };
 
+// The kanban's column colours. In ui.js rather than kanban.js because the entry popup's stage
+// button carries the same three, and one table is the only way they cannot drift apart.
+export const STAGE_COLOR = { todo: '#c0392b', doing: '#e0a500', done: '#27ae60' };
+
 export const colorOf = g => groupColor(S.model.groups, g);
 export const labelOf = g => groupLabel(S.model.groups, g);
 export const dayLabel = key => formatDate(key, S.prefs.dateFormat);
@@ -79,6 +83,7 @@ const NS = 'http://www.w3.org/2000/svg';
 const ICON = {
   repeat: { d: 'M2.6 8.4A5.4 5.4 0 0 1 12.6 5.6M13.4 7.6A5.4 5.4 0 0 1 3.4 10.4M12.9 2.6v3.2H9.7M3.1 13.4v-3.2h3.2', stroke: 1.5 },
   ball:   { d: 'M8 2.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 8 2.6z' },
+  cal:    { d: 'M2.8 4.6h10.4v8.8H2.8zM2.8 7.4h10.4M5.6 2.6v3M10.4 2.6v3', stroke: 1.4 },
   pin:    { d: 'M8 1.4a4.4 4.4 0 0 0-4.4 4.4C3.6 9.2 8 14.6 8 14.6s4.4-5.4 4.4-8.8A4.4 4.4 0 0 0 8 1.4zm0 6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z' },
   bell:   { d: 'M8 1.6a3.6 3.6 0 0 0-3.6 3.6v2.6L2.8 10.4h10.4L11.6 7.8V5.2A3.6 3.6 0 0 0 8 1.6zM6.3 11.6a1.8 1.8 0 0 0 3.4 0z' },
   person: { d: 'M8 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2zM2.4 14c0-3.1 2.5-4.9 5.6-4.9s5.6 1.8 5.6 4.9z' },
@@ -109,8 +114,8 @@ export function icon(name) {
   return svg;
 }
 
-// `name` is an icon name, or any other string to use as a glyph - T, E, D and the gear are
-// letters in the design, not drawings.
+// `name` is an icon name, or any other string to use as a glyph - T, S, P, E, D and the gear
+// are letters in the design, not drawings.
 export function iconBtn(name, label, cls = '') {
   const b = el('button', ['ib', cls].filter(Boolean).join(' '));
   b.type = 'button';

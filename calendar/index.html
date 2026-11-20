@@ -87,25 +87,6 @@
       <button type="button" class="link" id="f-skip" hidden>skip this one</button>
     </div>
 
-    <div id="f-task" hidden>
-      <div class="btngroup" role="radiogroup" aria-label="Stage">
-        <button type="button" class="seg" data-stage="todo">todo</button>
-        <button type="button" class="seg" data-stage="doing">doing</button>
-        <button type="button" class="seg" data-stage="done">done</button>
-      </div>
-      <div class="taskrow">
-        <span class="flab">Priority</span>
-        <div class="btngroup tight" role="radiogroup" aria-label="Priority">
-          <button type="button" class="seg" data-prio="1">1</button>
-          <button type="button" class="seg" data-prio="2">2</button>
-          <button type="button" class="seg" data-prio="3">3</button>
-        </div>
-        <span class="flab">Estimate</span>
-        <input id="f-estimate" class="est-in" type="number" min="0" step="0.5" inputmode="decimal">
-        <span class="flab">days</span>
-      </div>
-    </div>
-
     <label class="check"><input type="checkbox" id="f-allday"> all-day</label>
 
     <div class="row2">
@@ -127,7 +108,7 @@
 <div class="pop sub" id="sub" hidden>
   <div class="pop-head">
     <strong id="sub-title">—</strong><span class="spacer"></span>
-    <button class="ib" id="sub-clear" type="button" title="Clear this field" aria-label="Clear this field"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 1.6h3.6l.6 1.2h2.8v1.5H2.8V2.8h2.8l.6-1.2zM3.9 5.6h8.2l-.7 8.8H4.6z"/></svg></button>
+    <button class="ib bad" id="sub-clear" type="button" title="Clear this field" aria-label="Clear this field"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 1.6h3.6l.6 1.2h2.8v1.5H2.8V2.8h2.8l.6-1.2zM3.9 5.6h8.2l-.7 8.8H4.6z"/></svg></button>
     <button class="ib" id="sub-cancel" type="button" title="Abandon this edit" aria-label="Abandon this edit"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
     <button class="ib primary" id="sub-ok" type="button" title="Use this value" aria-label="Use this value"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.6 2h8.2L14 5.2V14H2.6zm3 0v3.6h4.6V2zM5 9h6v5H5z"/></svg></button>
   </div>
