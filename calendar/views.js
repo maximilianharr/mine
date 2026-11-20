@@ -90,14 +90,16 @@ function monthCell(key, month, items, cap) {
   cell.dataset.day = key;
   cell.append(el('span', 'num', String(d)));
   const rows = el('div', 'rows');
-  for (const o of items.slice(0, cap)) rows.append(entryLine(o));
+  // No done-rectangle in the month view: that width goes to the title instead.
+  for (const o of items.slice(0, cap)) rows.append(entryLine(o, false));
   if (items.length > cap) rows.append(el('div', 'more', `+${items.length - cap}`));
   cell.append(rows);
   return cell;
 }
 
-// A small line carrying the title on the group's background colour.
-function entryLine(o) {
+// A small line carrying the title on the group's background colour. `tick` is false in the
+// month view, where the width goes to the title; everywhere else a task keeps its one-tap done.
+function entryLine(o, tick = true) {
   const r = el('div', `eline${o.stage === 'done' ? ' done' : ''}`);
   r.dataset.key = o.key;
   const c = colorOf(o.group);
@@ -105,7 +107,7 @@ function entryLine(o) {
   r.style.color = inkOn(c);
   if (!o.allDay) r.append(el('span', 'when', timeLabel(o.start)));
   r.append(el('span', 'what', o.title));
-  if (o.type === 'task') r.append(tickButton(o));
+  if (tick && o.type === 'task') r.append(tickButton(o));
   return r;
 }
 
@@ -129,7 +131,13 @@ function yearGrid(byDay) {
   const letters = weekLetters();
   for (let m = 0; m < 12; m++) {
     const box = el('div', 'ymonth');
-    box.append(el('div', 'ycap', new Date(y, m, 1, 12).toLocaleDateString(undefined, { month: 'long' })));
+    // The caption reads as a caption but is a button: clicking it zooms into that month, and
+    // the whole label is the target, because a day in a year grid is not finger-sized.
+    const cap = el('button', 'ycap',
+      new Date(y, m, 1, 12).toLocaleDateString(undefined, { month: 'long' }));
+    cap.type = 'button';
+    cap.dataset.month = String(m + 1);
+    box.append(cap);
     const g = el('div', 'ygrid');
     g.append(...letters.map(([n, we]) => el('span', `ywh${we ? ' we' : ''}`, n)));
     for (const k of monthGrid(y, m, S.prefs.weekStart)) {
@@ -264,6 +272,9 @@ export function wireView() {
 }
 
 function onClick(e) {
+  const cap = e.target.closest('[data-month]');
+  if (cap) return openMonth(Number(cap.dataset.month));
+
   const tick = e.target.closest('[data-tick]');
   if (tick) return tickTask(S.visible.get(tick.dataset.tick));
   const row = e.target.closest('[data-key]');
@@ -279,6 +290,14 @@ function onClick(e) {
   const r = cell.getBoundingClientRect();
   openNew({ dayKey: key, hour: Math.max(0, Math.min(23,
     Math.floor((e.clientY - r.top) / r.height * 24))) });
+}
+
+// Zooming from the year view into the month that was clicked, not the one the anchor is in.
+function openMonth(month) {
+  closePops();
+  S.view.mode = 'M';
+  S.view.anchor = `${partsOf(S.view.anchor)[0]}-${pad(month)}-01`;
+  S.render();
 }
 
 // The change is in the local mirror before the push is attempted, so the view is right either

@@ -25,19 +25,21 @@ let sub = null;    // the open sub-popup: { field, read }
 
 // ---- the fields behind the icons ------------------------------------------------------------
 
+// The order is the same on a task as on an event, so the row does not reshuffle when the type
+// changes - and the detail rows below follow it, which puts participants at the bottom.
 const FIELDS = [
-  { k: 'recurrence', ic: 'repeat', label: 'Repeat', empty: '',
-    set: v => !!v, sum: v => ruleText(v), ed: recurrenceEditor },
+  { k: 'body', ic: 'lines', label: 'Details', empty: '',
+    set: v => !!v.trim(), sum: v => v.trim().split('\n').find(Boolean) || '', ed: bodyEditor },
   { k: 'group', ic: 'ball', label: 'Category', empty: '',
     set: v => !!v, sum: v => labelOf(v), ed: groupPicker },
-  { k: 'location', ic: 'pin', label: 'Location', empty: '',
-    set: v => !!v, sum: v => v, ed: textEditor('Where', 'Conference room 3B') },
+  { k: 'recurrence', ic: 'repeat', label: 'Repeat', empty: '',
+    set: v => !!v, sum: v => ruleText(v), ed: recurrenceEditor },
   { k: 'alerts', ic: 'bell', label: 'Alerts', empty: [],
     set: v => v.length > 0, sum: v => v.map(alertText).join(', '), ed: alertsEditor },
+  { k: 'location', ic: 'pin', label: 'Location', empty: '',
+    set: v => !!v, sum: v => v, ed: textEditor('Where', 'Conference room 3B') },
   { k: 'participants', ic: 'person', label: 'Participants', empty: [],
-    set: v => v.length > 0, sum: v => v.join(', '), ed: participantsEditor },
-  { k: 'body', ic: 'D', label: 'Details', empty: '',
-    set: v => !!v.trim(), sum: v => v.trim().split('\n').find(Boolean) || '', ed: bodyEditor }
+    set: v => v.length > 0, sum: v => v.join(', '), ed: participantsEditor }
 ];
 
 // The estimate has a sub-popup but no place in D.v, so the sub reads and writes through these
@@ -120,7 +122,7 @@ function fillForm() {
   for (const b of document.querySelectorAll('[data-scope]'))
     b.setAttribute('aria-pressed', String(b.dataset.scope === D.scope));
 
-  $('#f-allday').checked = D.allDay;
+  flagsRow();
   $('#f-start-date').value = D.startDate;
   $('#f-start-time').value = D.startTime;
   $('#f-end-date').value = D.endDate;
@@ -138,18 +140,19 @@ function fillForm() {
         : D.occ.path;
 }
 
-// T and a calendar page choose the type; on a task, S, P and E follow; then the six field
-// icons, which open their popups. An icon whose field is set is shown enabled, so the row
-// doubles as a summary of what the entry carries.
+// A ticked square and a calendar page choose the type, then a short vertical dash, then the six
+// field icons, which open their popups. Every button is an icon; none carries a letter. An icon
+// whose field is set is shown enabled, so the row doubles as a summary of what the entry carries.
 function iconRow() {
   const kids = [];
-  for (const [t, glyph, label] of [['task', 'T', 'Task'], ['event', 'cal', 'Event']]) {
-    const b = iconBtn(glyph, label, D.type === t ? 'on' : '');
+  for (const [t, ic, label] of [['task', 'check', 'Task'], ['event', 'cal', 'Event']]) {
+    const b = iconBtn(ic, label, D.type === t ? 'on' : '');
     b.setAttribute('aria-pressed', String(D.type === t));
     b.addEventListener('click', () => { D.type = t; fillForm(); });
     kids.push(b);
   }
-  if (D.type === 'task') kids.push(stageBtn(), prioBtn(), estBtn());
+  // What the entry is comes first and governs the rest, so it is set apart from it.
+  kids.push(el('span', 'vdash'));
   for (const f of FIELDS) {
     const b = iconBtn(f.ic, f.label, f.set(D.v[f.k]) ? 'on' : '');
     if (f.k === 'recurrence' && !canRule()) b.disabled = true;
@@ -174,15 +177,40 @@ function iconRow() {
   $('#f-icons').replaceChildren(...kids);
 }
 
+// The all-day row: a sun, and on a task stage, priority and estimate beside it.
+function flagsRow() {
+  const kids = [allDayBtn()];
+  if (D.type === 'task') kids.push(stageBtn(), prioBtn(), estBtn());
+  $('#f-flags').replaceChildren(...kids);
+}
+
+// All-day is a clickable icon rather than a checkbox, and it lights with the ordinary enabled
+// background - deliberately not the save button's green, which in Mine means a save.
+function allDayBtn() {
+  const b = iconBtn('sun', 'All-day', D.allDay ? 'on' : '');
+  b.setAttribute('aria-pressed', String(D.allDay));
+  b.addEventListener('click', () => {
+    D.allDay = !D.allDay;
+    if (D.allDay) { D.startTime = ''; D.endTime = ''; }
+    else { D.startTime = D.startTime || '09:00'; D.endTime = D.endTime || '10:00'; }
+    fillForm();
+  });
+  return b;
+}
+
 // Stage, priority and estimate are three small values rather than fields with a form each, so
-// they are edited in the row itself and show their value rather than merely whether they have
-// one - which is why the enabled rule above is about the six field icons alone. Only the
-// estimate opens a popup, because a number has to be typed.
+// they are edited in the row itself and show their value - as a badge on the icon's corner,
+// which is why the enabled rule above is about the six field icons alone. Only the estimate
+// opens a popup, because a number has to be typed.
+const badged = (b, text, cls, color) => {
+  const s = el('span', ['badge', cls].filter(Boolean).join(' '), text);
+  if (color) { s.style.background = color; s.style.color = inkOn(color); }
+  b.append(s);
+  return b;
+};
+
 function stageBtn() {
-  const c = STAGE_COLOR[D.stage];
-  const b = iconBtn('S', `Stage: ${D.stage}`);
-  b.style.background = c;
-  b.style.color = inkOn(c);
+  const b = badged(iconBtn('cols', `Stage: ${D.stage}`), '', '', STAGE_COLOR[D.stage]);
   b.addEventListener('click', () => {
     D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
     fillForm();
@@ -192,14 +220,15 @@ function stageBtn() {
 
 function prioBtn() {
   const p = D.priority ?? 0;
-  const b = iconBtn(p ? String(p) : 'P', `Priority: ${p || 'none'}`, p ? `p${p}` : '');
+  const b = iconBtn('flag', `Priority: ${p || 'none'}`);
+  if (p) badged(b, String(p), `p${p}`);
   b.addEventListener('click', () => { D.priority = p === 3 ? null : p + 1; fillForm(); });
   return b;
 }
 
 function estBtn() {
-  const b = iconBtn(D.estimate ? `${D.estimate}d` : 'E',
-    `Estimate: ${D.estimate ? `${D.estimate} day(s)` : 'none'}`, 'est');
+  const b = iconBtn('glass', `Estimate: ${D.estimate ? `${D.estimate} day(s)` : 'none'}`);
+  if (D.estimate) badged(b, `${D.estimate}d`, 'wide');
   b.addEventListener('click', () => openSub(EST));
   return b;
 }
@@ -493,13 +522,6 @@ $('#f-title').addEventListener('input', e => { D.title = e.target.value; });
 for (const [id, k] of [['#f-start-date', 'startDate'], ['#f-start-time', 'startTime'],
   ['#f-end-date', 'endDate'], ['#f-end-time', 'endTime']])
   $(id).addEventListener('input', e => { D[k] = e.target.value; });
-
-$('#f-allday').addEventListener('change', e => {
-  D.allDay = e.target.checked;
-  if (D.allDay) { D.startTime = ''; D.endTime = ''; }
-  else { D.startTime = D.startTime || '09:00'; D.endTime = D.endTime || '10:00'; }
-  fillForm();
-});
 
 for (const b of document.querySelectorAll('[data-scope]'))
   b.addEventListener('click', () => { D = draft(D.occ, b.dataset.scope, {}); fillForm(); });

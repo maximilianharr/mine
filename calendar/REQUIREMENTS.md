@@ -247,7 +247,7 @@ A card shows:
 
 On desktop all three columns are shown and a card can be dragged between them. On a phone one
 column fills the screen and its header pages between the three: `[<] doing [>]`, the two
-buttons flanking the stage name, drawn larger and without the card buttons' borders — because
+buttons flanking the stage name, drawn larger and on a background of their own — because
 the `<` `>` on a card mean something else entirely, they move that card. The header pair is
 disabled at todo and at done rather than wrapping.
 
@@ -288,8 +288,8 @@ main app's settings shows the same two rows.
 The views above describe the desktop. The same screens adapt:
 
 - The top pane keeps every control and wraps onto a second line rather than dropping any:
-  `[‹] [NOV/26 ▾] [›] [board] [-] [+] [filter] [⚙] [⌂]`. The short labels are what usually
-  make one line enough.
+  `[‹] [NOV/26 ▾] [›] [board] [-] [+] [filter] [⚙] [⌂]`. The short labels are what keep it to
+  one line on a wider phone; at 320 and 360 px it takes two, and the kanban's shorter pane one.
 - A month cell shows at most two entry lines, then `+N`; a line carries the title alone, with no
   time prefix and no done-rectangle, clipped at the cell's edge. A year cell stays a coloured
   day.

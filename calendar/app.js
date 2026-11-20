@@ -7,45 +7,82 @@ import {
   sprintRange, sprintOf
 } from './data.js';
 import {
-  S, $, el, phone, colorOf, labelOf, dayLabel, longDayLabel, defaultDay, currentSprint,
-  openPop, closePops
+  S, $, el, phone, colorOf, labelOf, dayLabel, icon, currentSprint, openPop, closePops
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
-import { openNew, closePopup } from './popup.js';
+import { closePopup } from './popup.js';
 import { openSettings } from './settings.js';
-import { loadPrefs, applyTheme } from '../shared/prefs.js';
+import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
 
 // ---- rendering -----------------------------------------------------------------------------
 
 function render() {
+  const k = S.view.mode === 'K';
   $('#period-label').textContent = periodLabel();
-  for (const b of document.querySelectorAll('[data-mode]'))
-    b.setAttribute('aria-pressed', String(b.dataset.mode === S.view.mode));
-  if (S.view.mode === 'K') renderKanban($('#view'));
+
+  // One slot carries the way to the other kind of view, and the zoom pair is not shown on the
+  // board because the board is not a zoom step.
+  $('#board').replaceChildren(icon(k ? 'cal' : 'board'));
+  $('#board').setAttribute('aria-label', k ? 'Back to the month view' : 'Kanban');
+  for (const [id, dir] of [['#zoom-out', -1], ['#zoom-in', 1]]) {
+    $(id).hidden = k;
+    $(id).disabled = !k && !ZOOM[ZOOM.indexOf(S.view.mode) + dir];
+  }
+
+  if (k) renderKanban($('#view'));
   else renderView($('#view'));
   renderFilter();
 }
 
+// The pane has to fit a phone, so every label is short. The month name is the device locale's
+// abbreviation, upper-cased - short beats English.
+const shortMonth = key => new Date(`${key}T12:00:00`)
+  .toLocaleDateString(undefined, { month: 'short' }).replace(/\./g, '').toUpperCase();
+
 function periodLabel() {
   const { mode, anchor } = S.view;
-  if (mode === 'D') return longDayLabel(anchor);
+  const [y, , d] = partsOf(anchor);
+  if (mode === 'D')
+    return `${weekdayName(anchor, 'short').slice(0, 2).toUpperCase()} ${d}/${shortMonth(anchor)}`;
   if (mode === 'W') {
+    // The ISO number is in the label whether or not the gutter is on, and the month is the one
+    // the row's fourth day is in - the rule the gutter uses, so the two cannot disagree.
     const a = weekStartOf(anchor, S.prefs.weekStart);
-    return `${S.prefs.showWeeks ? `W${isoWeek(a)} · ` : ''}${dayLabel(a)} – ${dayLabel(addDays(a, 6))}`;
+    return `W${isoWeek(addDays(a, 3))}/${shortMonth(addDays(a, 3))}`;
   }
-  if (mode === 'M') {
-    const [y, m] = partsOf(anchor);
-    return new Date(y, m - 1, 1, 12).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
-  }
-  if (mode === 'Y') return String(partsOf(anchor)[0]);
-  const r = sprintRange(S.view.sprint, S.model.settings);
-  return `Sprint ${r.n} · ${dayLabel(r.start)} – ${dayLabel(r.end)}`;
+  if (mode === 'M') return `${shortMonth(anchor)}/${String(y).slice(2)}`;
+  if (mode === 'Y') return String(y);
+  return String(S.view.sprint);
 }
 
 // ---- navigation ----------------------------------------------------------------------------
+
+// The calendar's zoom, outermost first. `+` zooms in towards the day and is disabled at the
+// end of the scale rather than wrapping.
+const ZOOM = ['Y', 'M', 'W', 'D'];
+
+function zoom(dir) {
+  const next = ZOOM[ZOOM.indexOf(S.view.mode) + dir];
+  if (!next) return;
+  S.view.mode = next;
+  closePops();
+  render();
+}
+$('#zoom-out').addEventListener('click', () => zoom(-1));
+$('#zoom-in').addEventListener('click', () => zoom(1));
+
+$('#board').addEventListener('click', () => {
+  if (S.view.mode === 'K') S.view.mode = 'M';
+  else {
+    S.view.mode = 'K';
+    S.view.sprint = sprintOf(S.view.anchor, S.model.settings) || currentSprint();
+  }
+  closePops();
+  render();
+});
 
 function step(dir) {
   const v = S.view;
@@ -60,31 +97,11 @@ function step(dir) {
 $('#prev').addEventListener('click', () => step(-1));
 $('#next').addEventListener('click', () => step(1));
 
-$('#today').addEventListener('click', () => {
-  closePops();
-  S.view.anchor = todayKey();
-  S.view.sprint = currentSprint();
-  render();
-});
+// There is no jump-to-today button and no `+` in the pane: today is the highlighted day in the
+// dropdown, and an entry is created where it will live - a cell, the day preview, or a kanban
+// column header.
 
-for (const b of document.querySelectorAll('[data-mode]'))
-  b.addEventListener('click', () => {
-    S.view.mode = b.dataset.mode;
-    if (b.dataset.mode === 'K')
-      S.view.sprint = sprintOf(S.view.anchor, S.model.settings) || currentSprint();
-    closePops();
-    render();
-  });
-
-// Defaults to today when today is in view, otherwise to the first day on screen - in the
-// kanban, the first day of the selected sprint, in its todo column.
-$('#add').addEventListener('click', () => {
-  closePops();
-  openNew(S.view.mode === 'K'
-    ? { dayKey: defaultDay(), type: 'task', stage: 'todo', allDay: true }
-    : { dayKey: defaultDay() });
-});
-
+$('#home').append(icon('house'));
 $('#gear').addEventListener('click', openSettings);
 $('#settings-close').addEventListener('click', closePops);
 
@@ -130,8 +147,11 @@ function renderPicker() {
     body.className = 'pick-body sprints';
     body.replaceChildren(...Array.from({ length: 9 }, (_, i) => {
       const r = sprintRange(pick.base + i, S.model.settings);
-      const b = el('button', `pk wide${r.n === S.view.sprint ? ' now' : ''}`,
-        `Sprint ${r.n} · ${dayLabel(r.start)} – ${dayLabel(r.end)}`);
+      // The sprint today falls in reads `current` and carries the brighter background; the
+      // selected one is marked, not renamed, so the two can be the same row.
+      const cur = r.n === currentSprint();
+      const b = el('button', `pk wide${cur ? ' cur' : ''}${r.n === S.view.sprint ? ' now' : ''}`,
+        `${cur ? 'current' : `Sprint ${r.n}`} · ${dayLabel(r.start)} – ${dayLabel(r.end)}`);
       b.type = 'button';
       b.addEventListener('click', () => {
         closePops();

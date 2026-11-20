@@ -93,7 +93,18 @@ const ICON = {
   plus:   { d: 'M8 3v10M3 8h10', stroke: 1.8 },
   x:      { d: 'M4 4l8 8M12 4l-8 8', stroke: 1.8 },
   filter: { d: 'M2 3h12l-4.8 5.8V14L6.8 12.6V8.8z' },
-  chev:   { d: 'M10 3.5 5.5 8l4.5 4.5', stroke: 1.8 }
+  chev:   { d: 'M10 3.5 5.5 8l4.5 4.5', stroke: 1.8 },
+  // A ticked square for task, three lines of text for details: the icon row carries no letters.
+  check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
+  lines:  { d: 'M3 4.6h10M3 8h10M3 11.4h6.4', stroke: 1.6 },
+  // The all-day row: a sun, three columns, a flag, an hourglass.
+  sun:    { d: 'M8 5.2a2.8 2.8 0 1 0 0 5.6 2.8 2.8 0 0 0 0-5.6M8 1.3v1.9M8 12.8v1.9M1.3 8h1.9M12.8 8h1.9M3.3 3.3l1.4 1.4M11.3 11.3l1.4 1.4M12.7 3.3l-1.4 1.4M4.7 11.3l-1.4 1.4', stroke: 1.4 },
+  cols:   { d: 'M3.4 12.8V9.4M8 12.8V5.8M12.6 12.8V2.8', stroke: 2 },
+  flag:   { d: 'M3.1 1.8h1.5v12.4H3.1zM5.4 2.5h7.5l-1.7 2.9 1.7 2.9H5.4z' },
+  glass:  { d: 'M3.8 1.8h8.4v1.3L9.1 8l3.1 4.9v1.3H3.8v-1.3L6.9 8 3.8 3.1z' },
+  // The two ways out of a view, and the way out of the calendar.
+  board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
+  house:  { d: 'M8 1.9 1.5 7.4h1.8V14h3.3V9.9h2.8V14h3.3V7.4h1.8z' }
 };
 
 export function icon(name) {
@@ -114,8 +125,8 @@ export function icon(name) {
   return svg;
 }
 
-// `name` is an icon name, or any other string to use as a glyph - T, S, P, E, D and the gear
-// are letters in the design, not drawings.
+// `name` is an icon name, or any other string to use as a glyph. The entry popup's rows are
+// icons throughout; only the top pane's zoom pair and arrows are characters.
 export function iconBtn(name, label, cls = '') {
   const b = el('button', ['ib', cls].filter(Boolean).join(' '));
   b.type = 'button';

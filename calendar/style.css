@@ -27,7 +27,6 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   font-size: 1.05rem; line-height: 1; font-weight: 500; text-decoration: none;
   color: var(--fg); background: var(--soft); border: 0; border-radius: .5rem;
 }
-.nav.wide { font-size: .8rem; padding: .5rem .6rem; }
 .nav.ic svg { width: 1.05rem; height: 1.05rem; display: block; }
 /* A week or sprint label is long - "Sprint 7 - 02.11.2026 - 15.11.2026" is wider than a narrow
    phone on its own - so the label shrinks and ellipsises rather than pushing the page sideways.
@@ -40,7 +39,8 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 #period-label { overflow: hidden; text-overflow: ellipsis; }
 .caret { flex: none; margin-left: .3rem; font-size: .7rem; opacity: .6; }
 
-.modes { display: flex; }
+/* The zoom pair and the two single-glyph navs sit flush, like one control. */
+.topbar .nav.ic svg { width: 1.05rem; height: 1.05rem; display: block; }
 .mode {
   width: auto; min-width: 1.7rem; margin: 0; padding: .45rem .2rem;
   font-size: .76rem; font-weight: 700; line-height: 1;
@@ -91,6 +91,10 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 }
 .eline .when { flex: none; font-variant-numeric: tabular-nums; opacity: .8; }
 .eline .what { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* In a month cell the title is clipped rather than ellipsised: three dots cost three characters
+   in the one place in the app where characters are scarcest, and a clipped word already says
+   there is more. */
+.grid .eline .what { text-overflow: clip; }
 .eline.done .what { text-decoration: line-through; opacity: .75; }
 .more { font-size: .6rem; color: var(--muted); padding-left: .2rem; }
 
@@ -107,7 +111,15 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
   gap: .7rem; padding: .5rem;
 }
-.ycap { font-size: .8rem; font-weight: 600; margin-bottom: .25rem; }
+/* A caption that is a button: clicking it zooms into that month. The whole label is the
+   target, because a day in a year grid is not finger-sized. */
+.ycap {
+  display: block; width: 100%; margin: 0 0 .25rem; padding: .15rem .2rem;
+  font: inherit; font-size: .8rem; font-weight: 600; text-align: left;
+  color: var(--fg); background: none; border: 0; border-radius: .3rem; cursor: pointer;
+}
+.ycap:hover { background: var(--soft); }
+.ycap:active { background: var(--line); }
 .ygrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 1px; }
 .ywh { font-size: .55rem; color: var(--muted); text-align: center; text-transform: uppercase; }
 .ywh.we { color: var(--today); }
@@ -165,10 +177,14 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 /* ---- kanban ---- */
 .kb { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; padding: .5rem; }
 .view.vK.one { overflow: hidden; }
+/* Exactly one column is visible. The strip is shifted by whole multiples of its own width, so
+   it must carry neither gap nor padding - either one leaves a sliver of the next column at the
+   edge of the screen. The spacing lives inside each column instead. */
 .one .kb {
-  grid-template-columns: repeat(3, 100%);
+  grid-template-columns: repeat(3, 100%); gap: 0; padding: 0;
   transform: translateX(calc(var(--col) * -100%)); transition: transform .18s ease-out;
 }
+.one .kcol { margin: .5rem; }
 .kcol {
   display: flex; flex-direction: column; gap: .4rem;
   padding: .4rem; background: var(--soft); border-radius: .6rem;
@@ -177,6 +193,12 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .kdot { flex: none; width: .6rem; height: .6rem; border-radius: 999px; }
 .kname { text-transform: capitalize; }
 .kcount { margin-left: auto; font-size: .75rem; color: var(--muted); }
+/* The header's pagers are bigger and sit on a background of their own, so they cannot be read
+   as a card's move buttons, which do something else entirely. */
+.knav { width: 1.9rem; height: 1.9rem; background: var(--bg); }
+.knav[disabled] { background: none; }
+.knav svg { width: 1.2rem; height: 1.2rem; }
+.kadd { width: 1.7rem; height: 1.7rem; }
 .kcards { display: flex; flex-direction: column; gap: .4rem; }
 .kcard {
   display: flex; gap: .4rem; padding: .4rem;
@@ -200,9 +222,9 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: .3rem; cursor: pointer;
 }
-.chip.p1, .ib.p1 { color: #fff; background: #c0392b; border-color: #c0392b; }
-.chip.p2, .ib.p2 { color: #fff; background: #d97706; border-color: #d97706; }
-.chip.p3, .ib.p3 { color: #1b1f24; background: #e3c019; border-color: #e3c019; }
+.chip.p1 { color: #fff; background: #c0392b; border-color: #c0392b; }
+.chip.p2 { color: #fff; background: #d97706; border-color: #d97706; }
+.chip.p3 { color: #1b1f24; background: #e3c019; border-color: #e3c019; }
 .chip.on { outline: 2px solid var(--today); outline-offset: 1px; }
 .chiprow { display: flex; gap: .3rem; }
 
@@ -219,8 +241,6 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .ib.on { color: var(--bg); background: var(--accent); }
 .ib.primary { color: var(--bg); background: var(--good); }
 .ib.bad { color: var(--bad); }
-/* The estimate carries a day count rather than one character. */
-.ib.est { width: auto; min-width: 2.1rem; padding: 0 .25rem; }
 .ib.next svg { transform: rotate(180deg); }
 
 /* ---- popovers, sheets, modal ---- */
@@ -253,6 +273,9 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .pk.wide { padding: .5rem .5rem; font-size: .78rem; text-align: left; }
 .pk.out { color: var(--muted); opacity: .55; }
 .pk.now { color: #fff; background: var(--today); font-weight: 700; }
+/* The sprint today falls in: brighter than the rest in dark mode, darker in light. */
+.pk.cur { background: var(--accent); color: var(--bg); }
+.pk.cur.now { color: #fff; background: var(--today); }
 .pick-body.years .pk { padding: .7rem .1rem; }
 
 .glab { display: flex; align-items: center; gap: .55rem; padding: .45rem .3rem; font-size: .9rem; color: var(--fg); cursor: pointer; }
@@ -306,14 +329,29 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   padding-bottom: .5rem; margin-bottom: .5rem; border-bottom: 1px solid var(--line);
 }
 .iconbar .spacer { flex: 1; }
+/* What the entry is comes first, and the dash sets it apart from the fields that follow. */
+.vdash { flex: none; width: 1px; height: 1.2rem; margin: 0 .3rem; background: var(--muted); opacity: .5; }
+/* The all-day row: all-day alone on an event, with stage, priority and estimate on a task. */
+.flags { padding-bottom: .4rem; margin-bottom: .2rem; }
+.flags .ib { position: relative; }
+/* Stage, priority and estimate show their value as a badge on the icon's corner. */
+.badge {
+  position: absolute; right: .25rem; bottom: .25rem;
+  min-width: .95rem; padding: 0 .1rem;
+  font-size: .58rem; font-weight: 700; line-height: .95rem; text-align: center;
+  color: var(--bg); background: var(--fg); border-radius: 999px;
+}
+.badge:empty { min-width: .55rem; height: .55rem; line-height: .55rem; }
+.badge.wide { min-width: 1.15rem; }
+.badge.p1 { color: #fff; background: #c0392b; }
+.badge.p2 { color: #fff; background: #d97706; }
+.badge.p3 { color: #1b1f24; background: #e3c019; }
 .title-in { font-size: 1.1rem; font-weight: 600; padding: .65rem .6rem; }
 .card label { margin: .7rem 0 0; }
 .card small { display: block; margin-top: .25rem; font-size: .7rem; color: var(--muted); }
 .row2 { display: flex; gap: .6rem; }
 .row2 label { flex: 1; }
 .row2 label.t { flex: 0 0 8rem; }
-.check { display: flex; align-items: center; gap: .5rem; margin: .7rem 0 0; font-size: .9rem; color: var(--fg); }
-.check input { width: 1.1rem; height: 1.1rem; margin: 0; }
 select {
   display: block; width: 100%; margin-top: .3rem; padding: .7rem; font: inherit;
   color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem;

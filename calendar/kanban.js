@@ -10,7 +10,7 @@ import {
 } from './data.js';
 import { S, el, phone, colorOf, iconBtn, dayLabel, STAGE_COLOR } from './ui.js';
 import { collect } from './views.js';
-import { openEntry } from './popup.js';
+import { openEntry, openNew } from './popup.js';
 
 export function renderKanban(host) {
   const range = sprintRange(S.view.sprint, S.model.settings);
@@ -22,10 +22,7 @@ export function renderKanban(host) {
     const cards = tasks.filter(o => o.stage === stage).sort(byPriority);
     const col = el('div', 'kcol');
     col.dataset.stage = stage;
-    const head = el('div', 'khead');
-    const dot = el('span', 'kdot');
-    dot.style.background = STAGE_COLOR[stage];
-    head.append(dot, el('span', 'kname', stage), el('span', 'kcount', String(cards.length)));
+    const head = columnHead(stage, cards.length, range.start);
     const body = el('div', 'kcards');
     if (!cards.length) body.append(el('p', 'day-empty', 'Nothing here.'));
     for (const o of cards) body.append(card(o));
@@ -36,6 +33,39 @@ export function renderKanban(host) {
   host.className = `view vK${phone() ? ' one' : ''}`;
   host.replaceChildren(board);
   wire(board);
+}
+
+// A column header carries its state, its colour, a card count and a `+` that creates a task in
+// that stage - the pane has no `+`, so this is the board's only way to make one. On a phone the
+// header is also how you page between the three columns.
+function columnHead(stage, count, sprintStart) {
+  const head = el('div', 'khead');
+  const dot = el('span', 'kdot');
+  dot.style.background = STAGE_COLOR[stage];
+  head.append(dot);
+
+  // `<` `>` flank the name and are drawn apart from the card buttons, which mean something
+  // else entirely: they move a card. Disabled at either end rather than wrapping.
+  if (phone()) head.append(pager(-1));
+  head.append(el('span', 'kname', stage));
+  if (phone()) head.append(pager(1));
+
+  const add = iconBtn('plus', `Add a task to ${stage}`, 'kadd');
+  add.addEventListener('click', () =>
+    openNew({ dayKey: sprintStart, type: 'task', stage, allDay: true }));
+  head.append(el('span', 'kcount', String(count)), add);
+  return head;
+}
+
+function pager(dir) {
+  const b = iconBtn('chev', dir < 0 ? 'Previous column' : 'Next column',
+    `knav${dir > 0 ? ' next' : ''}`);
+  b.disabled = dir < 0 ? S.view.col === 0 : S.view.col === STAGES.length - 1;
+  b.addEventListener('click', () => {
+    S.view.col = Math.max(0, Math.min(STAGES.length - 1, S.view.col + dir));
+    S.render();
+  });
+  return b;
 }
 
 // The group filter is applied by collect(); these two are the board's own.
@@ -49,7 +79,7 @@ function passes(o) {
 function card(o) {
   const c = el('div', 'kcard');
   c.dataset.key = o.key;
-  if (!phone()) c.draggable = true;       // on a phone the gesture is a swipe between columns
+  if (!phone()) c.draggable = true;       // on a phone the columns are paged from the header
 
   const bar = el('span', 'kbar');
   bar.style.background = colorOf(o.group);
@@ -158,7 +188,9 @@ async function act(what, fn) {
   S.push(`calendar: ${what}`);
 }
 
-// ---- gestures ------------------------------------------------------------------------------
+// ---- dragging ------------------------------------------------------------------------------
+// Desktop only. There is no swipe: on a phone one column fills the screen and the header's
+// `<` `>` page between them, so a sideways gesture never has to be told apart from a drag.
 
 function wire(board) {
   board.addEventListener('dragstart', e => {
@@ -174,18 +206,5 @@ function wire(board) {
     e.preventDefault();
     const o = S.visible.get(e.dataTransfer.getData('text/plain'));
     if (o && o.stage !== col.dataset.stage) patch(o, { stage: col.dataset.stage }, `-> ${col.dataset.stage}`);
-  });
-
-  // One column fills a phone screen and a sideways swipe moves between them. Cards are not
-  // draggable there, so the swipe never has to be told apart from a drag.
-  let x0 = null;
-  board.addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
-  board.addEventListener('touchend', e => {
-    if (x0 === null) return;
-    const dx = e.changedTouches[0].clientX - x0;
-    x0 = null;
-    if (Math.abs(dx) < 50) return;
-    S.view.col = Math.max(0, Math.min(2, S.view.col + (dx < 0 ? 1 : -1)));
-    S.render();
   });
 }
