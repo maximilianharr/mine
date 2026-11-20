@@ -60,11 +60,37 @@ cell that holds text needs `min-width: 0` or it does not shrink. The other offen
 period label in the top pane, which is long enough in the week and sprint views to overflow a
 narrow phone on its own.
 
-**The entry popup's icon row.** That a new entry is an event and carries no stage, priority or
-estimate; that choosing a task brings `S`, `P` and `E`; that `S` cycles through three stages in
-three colours and back, that `P` cycles 1, 2, 3, none, each in its own colour, and that `E`
-opens a popup prefilled with one day, shows `3d` once set and its letter once cleared; and that
-switching back to an event takes all three away again.
+**The entry popup's icon row and all-day row.** That the icon row holds icons alone, with no
+letter anywhere in it, and that the six field icons read details, category, repeat, alerts,
+location, participants — in that order on a task and on an event alike. That a new entry is an
+event and its all-day row holds the sun by itself; that choosing a task puts stage, priority and
+estimate on that same row and switching back to an event takes all three away again. That stage
+cycles through three stages in three badge colours and back, that priority cycles 1, 2, 3, none
+with the digit on its own colour, and that the estimate opens a popup prefilled with one day,
+badges `3d` once set and loses its badge once cleared. That all-day lights with the ordinary
+enabled background and never with `--good`, because green is the save button's.
+
+**The top pane.** That it holds no Today button and no `+`. That `-` and `+` walk the zoom
+through year, month, week and day, `+` towards the day, and that each is disabled at its end of
+the scale instead of wrapping. That the board icon reaches the kanban and is a calendar icon
+there, returning to the month view, and that the home icon leaves for the Mine tile screen.
+That the label reads `NOV/26`, `W47/NOV`, `FR 20/NOV`, `2026` and `7` in the five views, and
+that the week label keeps its ISO number with *show calendar weeks* off.
+
+**A month cell.** That a task line carries no done-rectangle, and that a long title is clipped
+with no `…` — resolved from the computed `text-overflow` and the line's width against the
+cell's, not from a screenshot. One-tap done must still be there in the week grid, the day grid
+and the day preview.
+
+**The year view.** That clicking a day opens the day preview, and that clicking a month's name
+zooms into the month view showing the month that was clicked — not the month the anchor happened
+to be in.
+
+**The kanban on a phone.** That exactly one column is visible: the next column's left edge is at
+or past the viewport's right edge. This is the check the sliver of `done` beside `doing` failed,
+and a gap reintroduced between the columns must turn it red. That the header's `<` `>` page
+between the columns and are disabled at todo and at done, that a sideways touch gesture on the
+board changes nothing, and that a column header's `+` opens a new task in that stage.
 
 **A save is green and a trashcan is red**, in the entry popup, its detail rows, a field
 sub-popup, a kanban card and the settings panel. The check resolves `--good` and `--bad` from
