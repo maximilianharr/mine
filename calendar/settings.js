@@ -149,7 +149,7 @@ function groupForm(name, g) {
   const color = el('input');
   color.type = 'color';
   color.value = g.color || '#2980b9';
-  const ok = iconBtn('disk', 'Save', 'primary');
+  const ok = iconBtn('disk', 'Save', 'save');
   ok.addEventListener('click', async () => {
     const text = label.value.trim();
     if (!text) return;

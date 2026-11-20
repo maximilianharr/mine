@@ -22,7 +22,7 @@ export function renderKanban(host) {
     const cards = tasks.filter(o => o.stage === stage).sort(byPriority);
     const col = el('div', 'kcol');
     col.dataset.stage = stage;
-    const head = columnHead(stage, cards.length, range.start);
+    const head = columnHead(stage, range.start);
     const body = el('div', 'kcards');
     if (!cards.length) body.append(el('p', 'day-empty', 'Nothing here.'));
     for (const o of cards) body.append(card(o));
@@ -35,25 +35,27 @@ export function renderKanban(host) {
   wire(board);
 }
 
-// A column header carries its state, its colour, a card count and a `+` that creates a task in
-// that stage - the pane has no `+`, so this is the board's only way to make one. On a phone the
-// header is also how you page between the three columns.
-function columnHead(stage, count, sprintStart) {
+// A column header carries its state, in that state's colour, and a `+` that creates a task in
+// that stage - the pane has no `+`, so this is the board's only way to make one. There is no
+// colour dot and no card count: the dot said what the coloured name says, and a count is a
+// number nobody acts on. On a phone the header is also how you page between the three columns.
+function columnHead(stage, sprintStart) {
   const head = el('div', 'khead');
-  const dot = el('span', 'kdot');
-  dot.style.background = STAGE_COLOR[stage];
-  head.append(dot);
+  const mid = el('div', 'kmid');
 
-  // `<` `>` flank the name and are drawn apart from the card buttons, which mean something
-  // else entirely: they move a card. Disabled at either end rather than wrapping.
-  if (phone()) head.append(pager(-1));
-  head.append(el('span', 'kname', stage));
-  if (phone()) head.append(pager(1));
+  // `‹` `›` flank the name and are drawn apart from the card buttons, which mean something
+  // else entirely: they move a card. Disabled at either end rather than wrapping. On a desktop
+  // every column is on screen, so there is nothing for them to page.
+  if (phone()) mid.append(pager(-1));
+  const name = el('span', 'kname', stage);
+  name.style.color = STAGE_COLOR[stage];
+  mid.append(name);
+  if (phone()) mid.append(pager(1));
 
   const add = iconBtn('plus', `Add a task to ${stage}`, 'kadd');
   add.addEventListener('click', () =>
     openNew({ dayKey: sprintStart, type: 'task', stage, allDay: true }));
-  head.append(el('span', 'kcount', String(count)), add);
+  head.append(el('span', ''), mid, add);
   return head;
 }
 
@@ -89,13 +91,20 @@ function card(o) {
   del.addEventListener('click', () => removeCard(o));
   const pen = iconBtn('pen', 'Edit');
   pen.addEventListener('click', () => openEntry(o));
-  const back = iconBtn('chev', 'Previous stage', 'prev');
-  const fwd = iconBtn('chev', 'Next stage', 'next');
-  back.disabled = o.stage === 'todo';
-  fwd.disabled = o.stage === 'done';
-  back.addEventListener('click', () => shiftStage(o, -1));
-  fwd.addEventListener('click', () => shiftStage(o, 1));
-  top.append(del, pen, el('span', 'ktitle', o.title), back, fwd);
+  top.append(del, pen, el('span', 'ktitle', o.title));
+
+  // On a desktop the card is dragged between the columns, so a pair of arrows on every card is a
+  // second way to do what the drag already does - in the one place it is also easiest to mistake
+  // for the header's pager. On a phone there is nothing to drag onto, so the pair stays.
+  if (phone()) {
+    const back = iconBtn('chev', 'Previous stage', 'prev');
+    const fwd = iconBtn('chev', 'Next stage', 'next');
+    back.disabled = o.stage === 'todo';
+    fwd.disabled = o.stage === 'done';
+    back.addEventListener('click', () => shiftStage(o, -1));
+    fwd.addEventListener('click', () => shiftStage(o, 1));
+    top.append(back, fwd);
+  }
 
   const main = el('div', 'kmain');
   main.append(top);

@@ -153,5 +153,5 @@ const POPS = ['#picker', '#filter-pop', '#day-pop', '#settings-sheet'];
 
 export function closePops() {
   for (const id of [...POPS, '#scrim']) $(id).hidden = true;
-  for (const id of ['#period', '#filter-btn']) $(id).setAttribute('aria-expanded', 'false');
+  for (const id of ['#caret', '#filter-btn']) $(id).setAttribute('aria-expanded', 'false');
 }

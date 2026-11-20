@@ -86,8 +86,9 @@ const seed = () => ev(`(async () => {
   return files.length;
 })()`);
 
-// The app opens on the month view. The zoom pair walks year, month, week, day; the board has
-// a slot of its own, which is also the way back to the month view.
+// The app opens on the month view. Clicking the period label walks the zoom year, month, week,
+// day and round again; the board has a slot of its own, which is also the way back to the month
+// view.
 const ZOOM = ['Y', 'M', 'W', 'D'];
 const open = async (mode = 'M') => {
   await send('Page.navigate', { url: `${ORIGIN}/calendar/` });
@@ -97,9 +98,9 @@ const open = async (mode = 'M') => {
     await sleep(500);
     return;
   }
-  const steps = ZOOM.indexOf(mode) - ZOOM.indexOf('M');
-  for (let i = 0; i < Math.abs(steps); i++) {
-    await ev(`document.querySelector('${steps > 0 ? '#zoom-in' : '#zoom-out'}').click()`);
+  const steps = (ZOOM.indexOf(mode) - ZOOM.indexOf('M') + ZOOM.length) % ZOOM.length;
+  for (let i = 0; i < steps; i++) {
+    await ev(`document.querySelector('#period').click()`);
     await sleep(250);
   }
 };
@@ -117,7 +118,7 @@ const shoot = async name => {
   (await import('fs')).writeFileSync(`${SHOT}/${name}.png`, Buffer.from(s.data, 'base64'));
 };
 
-// Each row as label plus background, and - on the all-day row - the badge that carries the
+// Each row as label plus background, and - on the toggle row - the badge that carries the
 // value, which is the whole of what the two rows promise.
 const row = sel => `[...document.querySelectorAll('${sel} .ib')].map(b => {
   const cs = getComputedStyle(b), d = b.querySelector('.badge');
@@ -131,6 +132,24 @@ const click = n => ev(`document.querySelectorAll('#f-icons .ib')[${n}].click()`)
 const flag = n => ev(`document.querySelectorAll('#f-flags .ib')[${n}].click()`);
 const label = g => g.split('@')[0].split('[')[0];
 const badge = g => (g.match(/\[(.*)\]/) || [, ''])[1];
+
+// A field row: its name, the value it shows once set, whether it carries a button of its own,
+// and its background - a set row has to stay plain, because position and value are what say it
+// is set.
+const ROWS = `[...document.querySelectorAll('#f-rows .frow')].map(r => ({
+  label: r.querySelector('.flab').textContent,
+  value: r.querySelector('.fval') ? r.querySelector('.fval').textContent : '',
+  buttons: r.querySelectorAll('button, .ib').length,
+  bg: getComputedStyle(r).backgroundColor
+}))`;
+const openRow = name => ev(`[...document.querySelectorAll('#f-rows .frow')]
+  .find(r => r.querySelector('.flab').textContent === '${name}').click()`);
+const box = sel => ev(`(() => {
+  const r = document.querySelector('${sel}').getBoundingClientRect();
+  return { top: Math.round(r.top), bottom: Math.round(r.bottom),
+           h: document.documentElement.clientHeight };
+})()`);
+const centred = b => b.top > 0 && b.bottom < b.h - 8;
 
 // ---- 1. every view fits a phone, in both schemes ----------------------------------------------
 
@@ -150,7 +169,7 @@ for (const scheme of ['light', 'dark']) {
   }
 }
 
-// ---- 2. the entry popup's icon row ------------------------------------------------------------
+// ---- 2. the entry popup's icon row, toggle row and field rows --------------------------------
 
 await viewport(900);
 await open();
@@ -163,11 +182,48 @@ const GOOD = await rgb(good), BAD = await rgb(bad);
 
 await newEntry();
 const asEvent = await ev(ROW);
-eq('the field icons are in order', asEvent.slice(2, 8).map(label),
-  ['Details', 'Category', 'Repeat', 'Alerts', 'Location', 'Participants']);
+eq('the icon row holds the type pair and the three on the right', asEvent.map(label),
+  ['Task', 'Event', 'Close and discard', 'Save']);
 eq('no letter anywhere in either row', await ev(glyphs), 0);
+eq('and no dash is left in it', await ev(`document.querySelectorAll('#f-icons .vdash').length`), 0);
 eq('a new entry is an event', (await ev(FLAGS)).map(label), ['All-day']);
-ok('save is green', asEvent.at(-1).endsWith('@' + GOOD), asEvent.at(-1));
+
+// A save is a green disk, not a filled green button: the background is the half of this that
+// catches a regression to the old style.
+const disk = await ev(`(() => {
+  const b = [...document.querySelectorAll('#f-icons .ib')]
+    .find(x => /^Save/.test(x.getAttribute('aria-label')));
+  const cs = getComputedStyle(b);
+  return { color: cs.color, bg: cs.backgroundColor };
+})()`);
+eq('the save disk is a green glyph', disk.color, GOOD);
+eq('and carries no background', disk.bg, 'rgba(0, 0, 0, 0)');
+
+// The toggle row sits below the dates now. Read from the document order, because a row that
+// merely looks right can still be the old one.
+eq('the toggle row is below the end date', await ev(
+  `(document.querySelector('#f-flags').compareDocumentPosition(
+      document.querySelector('#f-end-date')) & Node.DOCUMENT_POSITION_PRECEDING) ? 'below' : 'above'`),
+  'below');
+
+// Every field has a row, set or not, and the canonical order is the order they read in.
+const rows0 = await ev(ROWS);
+eq('every field has a row, in canonical order', rows0.map(r => r.label),
+  ['Details', 'Category', 'Repeat', 'Alerts', 'Location', 'Participants']);
+eq('none of them is set yet', rows0.map(r => r.value).join(''), '');
+eq('a row carries no pen and no trashcan', rows0.reduce((n, r) => n + r.buttons, 0), 0);
+
+await openRow('Location');
+await sleep(300);
+await ev(`document.querySelector('#sub-body input').value = 'Conference room 3B';
+          document.querySelector('#sub-ok').click()`);
+await sleep(350);
+const rows1 = await ev(ROWS);
+eq('a set row moves to the top', rows1[0].label, 'Location');
+eq('and shows its value', rows1[0].value, 'Conference room 3B');
+eq('and stays plain', rows1[0].bg, 'rgba(0, 0, 0, 0)');
+eq('the unset rows keep their order', rows1.slice(1).map(r => r.label),
+  ['Details', 'Category', 'Repeat', 'Alerts', 'Participants']);
 
 await flag(0);                                   // all-day on
 await sleep(220);
@@ -182,8 +238,8 @@ await sleep(250);
 const asTask = await ev(FLAGS);
 eq('a task row carries the three', asTask.map(label),
   ['All-day', 'Stage', 'Priority', 'Estimate']);
-eq('the field icons do not reshuffle', (await ev(ROW)).slice(2, 8).map(label),
-  asEvent.slice(2, 8).map(label));
+eq('the field rows do not reshuffle', (await ev(ROWS)).map(r => r.label),
+  rows1.map(r => r.label));
 eq('a new estimate is one day', badge(asTask[3]), '1d');
 ok('a new task starts at todo', !!badge(asTask[1]), 'the stage badge carries its colour');
 
@@ -205,12 +261,14 @@ const sub = await ev(`({
   title: document.querySelector('#sub-title').textContent,
   value: document.querySelector('#sub-body input').value,
   clear: getComputedStyle(document.querySelector('#sub-clear')).color,
-  save: getComputedStyle(document.querySelector('#sub-ok')).backgroundColor
+  save: getComputedStyle(document.querySelector('#sub-ok')).color,
+  saveBg: getComputedStyle(document.querySelector('#sub-ok')).backgroundColor
 })`);
 ok('E opens the estimate popup', sub.open && sub.title === 'Estimate', JSON.stringify(sub.title));
 eq('prefilled with one day', sub.value, '1');
 eq('its trashcan is red', sub.clear, BAD);
 eq('its disk is green', sub.save, GOOD);
+eq('and a glyph, not a filled button', sub.saveBg, 'rgba(0, 0, 0, 0)');
 
 await ev(`document.querySelector('#sub-body input').value = '3';
           document.querySelector('#sub-ok').click()`);
@@ -236,8 +294,8 @@ await sleep(400);
 eq('the delete trashcan is red', await ev(
   `getComputedStyle([...document.querySelectorAll('#f-icons .ib')]
      .find(b => /Delete/.test(b.getAttribute('aria-label')))).color`), BAD);
-eq('a detail row clears in red', await ev(
-  `getComputedStyle(document.querySelector('#f-rows .ib:last-child')).color`), BAD);
+eq('a field row still carries no button', await ev(
+  `document.querySelectorAll('#f-rows .ib').length`), 0);
 await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
 await sleep(250);
 
@@ -256,14 +314,17 @@ await ev(`document.querySelector('#settings-body .grow .ib').click()`);
 await sleep(400);
 eq('settings saves a group in green', await ev(
   `getComputedStyle([...document.querySelectorAll('#settings-body .ib')]
-     .find(b => /^Save/.test(b.getAttribute('aria-label')))).backgroundColor`), GOOD);
+     .find(b => /^Save/.test(b.getAttribute('aria-label')))).color`), GOOD);
+eq('and that save carries no background either', await ev(
+  `getComputedStyle([...document.querySelectorAll('#settings-body .ib')]
+     .find(b => /^Save/.test(b.getAttribute('aria-label')))).backgroundColor`), 'rgba(0, 0, 0, 0)');
 
 // ---- 4. the top pane ---------------------------------------------------------------------------
 
 await viewport(900);
 await open();
-eq('the pane dropped Today, + and D W M Y K',
-  await ev(`document.querySelectorAll('#today, #add, [data-mode]').length`), 0);
+eq('the pane dropped Today, +, D W M Y K and the zoom pair',
+  await ev(`document.querySelectorAll('#today, #add, [data-mode], #zoom-in, #zoom-out').length`), 0);
 eq('home leaves for Mine', await ev(`document.querySelector('#home').getAttribute('href')`), '../');
 
 const periodLabel = () => ev(`document.querySelector('#period-label').textContent`);
@@ -294,19 +355,101 @@ ok('the week keeps its number with the gutter off', /^W\d/.test(await periodLabe
 eq('and the gutter is gone', await ev(`document.querySelectorAll('.wk').length`), 0);
 await setWeeks(true);
 
-await open('Y');
-eq('zoom out stops at the year', await ev(`document.querySelector('#zoom-out').disabled`), true);
-await open('D');
-eq('zoom in stops at the day', await ev(`document.querySelector('#zoom-in').disabled`), true);
+// The label walks the zoom and comes round again: nothing is disabled at an end, because one
+// target cannot be the way on and be disabled at the same time.
+await open();
+const walk = [];
+for (let i = 0; i < 4; i++) {
+  await ev(`document.querySelector('#period').click()`);
+  await sleep(300);
+  walk.push((await ev(`document.querySelector('#view').className`)).replace('view v', ''));
+}
+eq('the label walks the zoom and round again', walk, ['W', 'D', 'Y', 'M']);
+eq('and it does not open the picker', await ev(`document.querySelector('#picker').hidden`), true);
+
+await ev(`document.querySelector('#caret').click()`);
+await sleep(350);
+eq('the caret opens the picker', await ev(`!document.querySelector('#picker').hidden`), true);
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(250);
+
+await open('K');
+await ev(`document.querySelector('#period').click()`);
+await sleep(350);
+eq('on the board the label opens the sprint list', await ev(
+  `!document.querySelector('#picker').hidden && !!document.querySelector('.pick-body.sprints')`), true);
+eq('and does not zoom', await ev(`document.querySelector('#view').className.includes('vK')`), true);
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(250);
 
 await open();
 await ev(`document.querySelector('#board').click()`);
 await sleep(500);
 eq('the board icon reaches the kanban', await ev(`!!document.querySelector('.kb')`), true);
-eq('and the zoom pair is not shown there', await ev(`document.querySelector('#zoom-in').hidden`), true);
 await ev(`document.querySelector('#board').click()`);
 await sleep(500);
 eq('and the calendar icon returns to the month', await ev(`!!document.querySelector('.grid')`), true);
+
+// Read from the left edges, so a reordering that looks right but wires the wrong button cannot
+// pass - and at 320 px every control has to share one line.
+const pane = `(() => {
+  const on = ['#board', '#filter-btn', '#prev', '#period', '#caret', '#next', '#gear', '#home']
+    .map(id => [id, document.querySelector(id)])
+    .filter(([, n]) => n && n.getClientRects().length)
+    .map(([id, n]) => { const r = n.getBoundingClientRect();
+      return { id, left: r.left, mid: r.top + r.height / 2 }; })
+    .sort((a, b) => a.left - b.left);
+  const mids = on.map(o => o.mid);
+  return { order: on.map(o => o.id),
+           spread: Math.round(Math.max(...mids) - Math.min(...mids)) };
+})()`;
+
+await viewport(900);
+await open();
+eq('the pane reads view, filter, period, settings, home', (await ev(pane)).order,
+  ['#board', '#filter-btn', '#prev', '#period', '#caret', '#next', '#gear', '#home']);
+
+await viewport(320);
+await open();
+const narrow = await ev(pane);
+eq('on a phone the arrows are not there', narrow.order,
+  ['#board', '#filter-btn', '#period', '#caret', '#gear', '#home']);
+ok('and the pane stays on one line', narrow.spread <= 4, `${narrow.spread}px apart vertically`);
+
+// The swipe lives on the label alone: the same gesture on the grid below it changes nothing.
+// The label is read before the gesture: touchend steps the period synchronously, so reading it
+// afterwards would compare the new label with itself and pass whatever happened.
+const swipeOn = sel => ev(`(() => {
+  const n = document.querySelector('${sel}');
+  const before = document.querySelector('#period-label').textContent;
+  const r = n.getBoundingClientRect();
+  const t = x => new Touch({ identifier: 2, target: n, clientX: x, clientY: r.top + 4 });
+  n.dispatchEvent(new TouchEvent('touchstart',
+    { bubbles: true, touches: [t(200)], changedTouches: [t(200)] }));
+  n.dispatchEvent(new TouchEvent('touchend',
+    { bubbles: true, touches: [], changedTouches: [t(40)] }));
+  return before;
+})()`);
+const wasLabel = await swipeOn('#period');
+await sleep(400);
+ok('a swipe on the label steps the period', (await periodLabel()) !== wasLabel,
+  `still ${wasLabel}`);
+const held = await swipeOn('.grid');
+await sleep(400);
+eq('and the same swipe on the grid does not', await periodLabel(), held);
+
+// A clipped label is worse than a smaller one: at twice the size, the five labels still have to
+// fit the pane whole at 320 px, or the date - the one thing the pane is for - is unreadable.
+for (const mode of ['M', 'W', 'D', 'Y', 'K']) {
+  await open(mode);
+  const cut = await ev(`(() => { const n = document.querySelector('#period-label');
+    return Math.round(n.scrollWidth - n.clientWidth); })()`);
+  ok(`the ${mode} label fits the phone pane`, cut <= 1, `clipped by ${cut}px`);
+}
+
+// The swipe above left another month on screen: the checks below want the fixture's own.
+await viewport(900);
+await open();
 
 // ---- 5. the month cell and the year view -------------------------------------------------------
 
@@ -320,6 +463,56 @@ await open('W');
 ok('one-tap done stays in the week grid',
   await ev(`document.querySelectorAll('.tick').length`) > 0, 'no tick left in the week grid');
 
+// The month fills the window: the grid's bottom reaches the calendar window's, rather than
+// stopping at the height its cells happen to need - and the rows got taller, not fuller.
+await viewport(900);
+await open();
+const fill = await ev(`(() => {
+  const g = document.querySelector('.grid').getBoundingClientRect();
+  const v = document.querySelector('#view').getBoundingClientRect();
+  return { gap: Math.round(v.bottom - g.bottom),
+           over: document.documentElement.scrollHeight - document.documentElement.clientHeight,
+           lines: Math.max(...[...document.querySelectorAll('.day .rows')]
+             .map(r => r.querySelectorAll('.eline').length)) };
+})()`);
+ok('the month fills the window', fill.gap <= 4, `${fill.gap}px short of the window`);
+ok('and the page does not scroll', fill.over <= 0, `scrolls by ${fill.over}px`);
+// The rows got taller, the cap did not change. The fullest cell has to hold more than a phone
+// shows for the pair below to mean anything, which is what the fixture's busy day is for.
+ok('a desktop cell still caps at four lines', fill.lines > 2 && fill.lines <= 4,
+  `${fill.lines} lines in the fullest cell`);
+await viewport(320);
+await open();
+const narrowCell = await ev(`({
+  lines: Math.max(...[...document.querySelectorAll('.day .rows')]
+    .map(r => r.querySelectorAll('.eline').length)),
+  more: document.querySelectorAll('.day .more').length
+})`);
+eq('and a phone cell at two', narrowCell.lines, 2);
+ok('with the rest behind a +N', narrowCell.more > 0, 'no +N anywhere, so nothing was capped');
+
+// Nothing is a bottom sheet any more: at 320 px every overlay sits clear of the bottom edge.
+await ev(`document.querySelector('.day .num').click()`);     // a phone cell opens the preview
+await sleep(400);
+ok('the day preview is centred', centred(await box('#day-pop')), JSON.stringify(await box('#day-pop')));
+await ev(`document.querySelector('#day-add').click()`);
+await sleep(450);
+ok('the entry popup is centred', centred(await box('.card')), JSON.stringify(await box('.card')));
+await openRow('Location');
+await sleep(350);
+ok("a field's popup is centred", centred(await box('#sub')), JSON.stringify(await box('#sub')));
+await ev(`document.querySelector('#sub-cancel').click()`);
+await sleep(250);
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(250);
+await ev(`document.querySelector('#gear').click()`);
+await sleep(500);
+ok('the settings panel is centred', centred(await box('#settings-sheet')),
+  JSON.stringify(await box('#settings-sheet')));
+await ev(`document.querySelector('#settings-close').click()`);
+await sleep(250);
+
+await viewport(900);
 await open('Y');
 await ev(`document.querySelector('.yday:not(.out)').click()`);
 await sleep(400);
@@ -350,6 +543,12 @@ const shown = `(() => {
 })()`;
 const page = dir => ev(`[...document.querySelectorAll('.knav')]
   .find(b => b.getAttribute('aria-label') === '${dir} column').click()`);
+
+eq('the header carries no count and no dot', await ev(
+  `document.querySelectorAll('.khead .kcount, .khead .kdot').length`), 0);
+eq('the stage name carries its colour', await ev(
+  `getComputedStyle(document.querySelector('.kcol[data-stage="doing"] .kname')).color`),
+  await rgb('#e0a500'));
 
 const atTodo = await ev(shown);
 eq('exactly one column is visible', atTodo.count, 1);
@@ -394,6 +593,18 @@ eq('a column + opens a new task in that stage', await ev(`(() => {
 })()`), 'Stage: todo');
 await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
 await sleep(250);
+
+ok('a phone card keeps its move arrows',
+  await ev(`document.querySelectorAll('.kcard [aria-label$="stage"]').length`) > 0,
+  'no arrows on a phone card');
+
+// On a desktop the card is dragged between the columns, so neither the card nor the header
+// carries arrows: every column is already on screen.
+await viewport(900);
+await open('K');
+eq('a desktop header has no pager', await ev(`document.querySelectorAll('.khead .knav').length`), 0);
+eq('and a desktop card has no move arrows',
+  await ev(`document.querySelectorAll('.kcard [aria-label$="stage"]').length`), 0);
 
 // ---- 7. what a saved task actually writes ------------------------------------------------------
 

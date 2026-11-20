@@ -23,14 +23,11 @@ function render() {
   const k = S.view.mode === 'K';
   $('#period-label').textContent = periodLabel();
 
-  // One slot carries the way to the other kind of view, and the zoom pair is not shown on the
-  // board because the board is not a zoom step.
+  // One slot carries the way to the other kind of view. The board is not a zoom step, which is
+  // why it has a slot of its own rather than a place in the cycle the label walks.
   $('#board').replaceChildren(icon(k ? 'cal' : 'board'));
   $('#board').setAttribute('aria-label', k ? 'Back to the month view' : 'Kanban');
-  for (const [id, dir] of [['#zoom-out', -1], ['#zoom-in', 1]]) {
-    $(id).hidden = k;
-    $(id).disabled = !k && !ZOOM[ZOOM.indexOf(S.view.mode) + dir];
-  }
+  $('#period').setAttribute('aria-label', k ? 'Pick a sprint' : 'Zoom');
 
   if (k) renderKanban($('#view'));
   else renderView($('#view'));
@@ -60,19 +57,16 @@ function periodLabel() {
 
 // ---- navigation ----------------------------------------------------------------------------
 
-// The calendar's zoom, outermost first. `+` zooms in towards the day and is disabled at the
-// end of the scale rather than wrapping.
+// The calendar's zoom, outermost first. Clicking the period label walks it towards the day and
+// round again. It is a cycle rather than a scale with two ends, because a single target cannot
+// be disabled at an end and still be the way on - so there is no `-` and no `+` in the pane.
 const ZOOM = ['Y', 'M', 'W', 'D'];
 
-function zoom(dir) {
-  const next = ZOOM[ZOOM.indexOf(S.view.mode) + dir];
-  if (!next) return;
-  S.view.mode = next;
+function zoomIn() {
+  S.view.mode = ZOOM[(ZOOM.indexOf(S.view.mode) + 1) % ZOOM.length];
   closePops();
   render();
 }
-$('#zoom-out').addEventListener('click', () => zoom(-1));
-$('#zoom-in').addEventListener('click', () => zoom(1));
 
 $('#board').addEventListener('click', () => {
   if (S.view.mode === 'K') S.view.mode = 'M';
@@ -108,7 +102,9 @@ $('#settings-close').addEventListener('click', closePops);
 // ---- the dropdown date picker --------------------------------------------------------------
 // A month at a time, a 9-year grid, or - in the kanban - a list of sprints.
 
-$('#period').addEventListener('click', () => {
+// The caret is a button of its own, because the label itself zooms now - and the picker is the
+// only way back to today, so it cannot be a tap the zoom has taken.
+function openPicker() {
   if (!$('#picker').hidden) return closePops();
   closePops();
   const [y, m] = partsOf(S.view.anchor);
@@ -116,8 +112,32 @@ $('#period').addEventListener('click', () => {
     ? { mode: 'sprints', base: Math.max(1, S.view.sprint - 4) }
     : { mode: 'days', y, m: m - 1, base: y - 8 };
   renderPicker();
-  openPop($('#picker'), $('#period'));
+  openPop($('#picker'), $('#caret'), 'right');
+}
+$('#caret').addEventListener('click', openPicker);
+
+// The label zooms; on the board it opens the sprint list instead, because the board has no zoom.
+$('#period').addEventListener('click', () => {
+  if (swiped) return void (swiped = false);     // the swipe below is not a click
+  if (S.view.mode === 'K') openPicker();
+  else zoomIn();
 });
+
+// On a phone the pane has no `‹` `›` and the label is swiped instead. The gesture lives on the
+// label alone, so it never has to be told apart from a card drag or a scroll in a grid.
+let from = null, swiped = false;
+$('#period').addEventListener('touchstart', e => {
+  from = e.changedTouches[0].clientX;
+  swiped = false;
+}, { passive: true });
+$('#period').addEventListener('touchend', e => {
+  if (from === null) return;
+  const dx = e.changedTouches[0].clientX - from;
+  from = null;
+  if (Math.abs(dx) < 40) return;
+  swiped = true;
+  step(dx < 0 ? 1 : -1);
+}, { passive: true });
 
 $('#pick-title').addEventListener('click', () => {
   if (pick.mode === 'sprints') return;

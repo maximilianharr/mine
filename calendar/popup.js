@@ -10,7 +10,7 @@ import {
   isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, STAGES, createEntry, updateEntry,
   deleteEntry, saveOverride, skipOccurrence, createGroup, priorityOf
 } from './data.js';
-import { S, $, el, iconBtn, labelOf, inkOn, STAGE_COLOR } from './ui.js';
+import { S, $, el, icon, iconBtn, labelOf, inkOn, STAGE_COLOR } from './ui.js';
 
 const pad = n => String(n).padStart(2, '0');
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
@@ -130,7 +130,7 @@ function fillForm() {
   $('#f-start-time').disabled = D.allDay;
   $('#f-end-time').disabled = D.allDay;
 
-  detailRows();
+  fieldRows();
 
   const isOcc = D.occ && D.occ.seriesId && D.scope === 'occurrence';
   $('#f-skip').hidden = !isOcc;
@@ -140,23 +140,15 @@ function fillForm() {
         : D.occ.path;
 }
 
-// A ticked square and a calendar page choose the type, then a short vertical dash, then the six
-// field icons, which open their popups. Every button is an icon; none carries a letter. An icon
-// whose field is set is shown enabled, so the row doubles as a summary of what the entry carries.
+// A ticked square and a calendar page choose the type, and that is all the row holds besides the
+// three on the right: the fields are rows below. Every button is an icon; none carries a letter.
+// No dash divides the two groups - the gap to the right-aligned trio already does.
 function iconRow() {
   const kids = [];
   for (const [t, ic, label] of [['task', 'check', 'Task'], ['event', 'cal', 'Event']]) {
     const b = iconBtn(ic, label, D.type === t ? 'on' : '');
     b.setAttribute('aria-pressed', String(D.type === t));
     b.addEventListener('click', () => { D.type = t; fillForm(); });
-    kids.push(b);
-  }
-  // What the entry is comes first and governs the rest, so it is set apart from it.
-  kids.push(el('span', 'vdash'));
-  for (const f of FIELDS) {
-    const b = iconBtn(f.ic, f.label, f.set(D.v[f.k]) ? 'on' : '');
-    if (f.k === 'recurrence' && !canRule()) b.disabled = true;
-    b.addEventListener('click', () => openSub(f));
     kids.push(b);
   }
   kids.push(el('span', 'spacer'));
@@ -170,14 +162,14 @@ function iconRow() {
     t.addEventListener('click', removeEntry);
     kids.push(t);
   }
-  const disk = iconBtn('disk', 'Save', 'primary');
+  const disk = iconBtn('disk', 'Save', 'save');
   disk.type = 'submit';
   kids.push(disk);
 
   $('#f-icons').replaceChildren(...kids);
 }
 
-// The all-day row: a sun, and on a task stage, priority and estimate beside it.
+// The toggle row, under start and end: a sun, and on a task stage, priority and estimate.
 function flagsRow() {
   const kids = [allDayBtn()];
   if (D.type === 'task') kids.push(stageBtn(), prioBtn(), estBtn());
@@ -233,22 +225,23 @@ function estBtn() {
   return b;
 }
 
-// One row per field that is set, in the order of the icons above - so a location that has been
-// given appears at the bottom. A pen reopens its popup, a trashcan clears it.
-function detailRows() {
-  const rows = [];
-  for (const f of FIELDS) {
-    if (!f.set(D.v[f.k])) continue;
-    if (f.k === 'recurrence' && !canRule()) continue;
-    const row = el('div', 'frow');
-    row.append(el('span', 'flab', f.label), el('span', 'fval', f.sum(D.v[f.k])));
-    const pen = iconBtn('pen', `Edit ${f.label}`);
-    pen.addEventListener('click', () => openSub(f));
-    const tr = iconBtn('trash', `Clear ${f.label}`, 'bad');
-    tr.addEventListener('click', () => { D.v[f.k] = f.empty; fillForm(); });
-    row.append(pen, tr);
-    rows.push(row);
-  }
+// Every field is a row: its icon, its name, and its value once it is set. The rows that are set
+// come first and the rest follow, in the canonical order inside each group - so setting a field
+// lifts its row and shuffles nothing else. The row is the pen, and clearing a field is the
+// trashcan inside its own popup; a set row is plain, because position and value already say it
+// is set. A rule the popup must not rewrite has no row at all.
+function fieldRows() {
+  const usable = FIELDS.filter(f => f.k !== 'recurrence' || canRule());
+  const isSet = f => f.set(D.v[f.k]);
+  const rows = [...usable.filter(isSet), ...usable.filter(f => !isSet(f))].map(f => {
+    const row = el('button', 'frow');
+    row.type = 'button';
+    row.setAttribute('aria-label', `${f.label}${isSet(f) ? `: ${f.sum(D.v[f.k])}` : ''}`);
+    row.append(icon(f.ic), el('span', 'flab', f.label));
+    if (isSet(f)) row.append(el('span', 'fval', f.sum(D.v[f.k])));
+    row.addEventListener('click', () => openSub(f));
+    return row;
+  });
   $('#f-rows').replaceChildren(...rows);
 }
 
