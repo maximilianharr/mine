@@ -1,0 +1,39 @@
+add sample files with priority and estimate, same for calender/settings.md. Implement all the new requirements. Prompt for feedback if necessary or unclear.
+
+---
+
+<task-notification>
+<task-id>b09ws26lo</task-id>
+<tool-use-id>toolu_01JemDDym74eBo94dcrdJysz</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/6ce505f1-7588-401a-a7e4-c35831d73c9c/tasks/b09ws26lo.output</output-file>
+<status>failed</status>
+<summary>Background command "Start the harness server" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bg89ksm9s</task-id>
+<tool-use-id>toolu_01Jws46ixRySqsaZxVEea2HA</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/6ce505f1-7588-401a-a7e4-c35831d73c9c/tasks/bg89ksm9s.output</output-file>
+<status>failed</status>
+<summary>Background command "Restart the harness server" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b7x1cll5g</task-id>
+<tool-use-id>toolu_01DApMLu24fWxDNKsUNzr3DU</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/6ce505f1-7588-401a-a7e4-c35831d73c9c/tasks/b7x1cll5g.output</output-file>
+<status>failed</status>
+<summary>Background command "Restart the server with the deploy endpoint" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+commit this
+
+---
+
+commit this to main
