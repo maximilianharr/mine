@@ -230,7 +230,8 @@ to be. The only sideways movement anywhere in the app is the kanban's column swi
 scrolls or extends horizontally, in any view, at any width. A view that demands more width than
 the screen has is a defect even when it looks right on a desktop, and a cell insisting on room
 for a time, a title and an icon at once is the usual cause — seven of them across a phone is
-where it shows.
+where it shows. `test/run.sh` checks every view at 320 and 360 px, in light and dark; see
+[../TEST-REQUIREMENTS.md](../TEST-REQUIREMENTS.md).
 
 ## On the main screen
 

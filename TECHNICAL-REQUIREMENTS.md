@@ -24,10 +24,15 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 /shared/  apps.js  store.js  github.js  md.js  prefs.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
+/test/    run.sh  serve.py  check.mjs
 ```
 
 No build step: no bundler, no CI, no node_modules. `git push` deploys, every page opens from
 disk, all paths relative so the `/mine/` prefix needs no config.
+
+The checks in `test/` hold to the same rule: `run.sh` drives a headless Chromium over the
+DevTools protocol with nothing installed, and what it covers — and the two mistakes that make
+it lie to you — are in [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md).
 
 `shared/apps.js` exports the app list and is imported by both the tile screen and `sw.js`, so
 adding an app means editing one array. An app may export `summary()` from `widget.js`.

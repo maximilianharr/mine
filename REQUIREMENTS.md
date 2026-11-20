@@ -11,7 +11,8 @@ lives completely in a 'calendar' folder as does the zettelkasten and all the oth
 folder contains a 'sample' folder with samples how the markdowns shall look, a REQUIREMENTS.md
 describing how the PWA works and a TECHNICAL-REQUIREMENTS.md describing how it is built.
 
-See [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) for how this is built.
+See [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) for how this is built, and
+[TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md) for how it is checked.
 
 ## One app, one setup
 
