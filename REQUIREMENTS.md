@@ -38,13 +38,20 @@ next one — which matters, because opening the app is the only reminder that wo
 Settings are stored on the device only. The token is never displayed again after entry, and the
 app warns 14 days before it expires.
 
+Two settings belong to Mine rather than to any one app, and the same two rows appear in the main
+settings and in each app's: **theme** (system, light or dark) and **date format** (auto, which
+follows the device's locale, or `dd.mm.yyyy`, or `mm/dd/yy`). Both default to following the
+device, so Mine looks like the rest of the phone until you say otherwise.
+
 ## Using it
 
 - Changes appear instantly and are queued for GitHub in the background.
 - A sync indicator shows: in sync / pending / error.
 - Offline, the queue is kept and sent when you are back online or reopen the app.
 - Editing the same entry on two devices never loses either version: the other device's version
-  keeps the file, yours is kept beside it, and the app asks which to keep.
+  keeps the file, yours is kept beside it and flagged, and the sync indicator tells you there is
+  something to review. Nothing is discarded and nothing is silently overwritten — but the app
+  does not interrupt you to ask which to keep, because by then you are somewhere else.
 - Everything works offline, including dates and search, because the app keeps a full local copy.
 
 ## Reminders
@@ -57,6 +64,11 @@ exported, and they fire while the app is open. The summary on the tile screen is
 
 When a new version is deployed the app shows "Update ready — reload". It never updates while you
 are in the middle of editing.
+
+The banner appears only when the version waiting to take over genuinely differs from the one
+running. A new worker can sit waiting while being identical to the active one, so "a worker is
+waiting" is not the test — if it were, the banner would appear on an app with no update at all
+and never go away. Reloading twice with no deploy in between must leave no banner.
 
 ## Privacy
 

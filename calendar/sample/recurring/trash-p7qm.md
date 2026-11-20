@@ -2,7 +2,7 @@
 title: "take out the trash"
 type: task
 start: 2026-04-18
-done: false
+stage: todo
 group: home
 recurrence: "FREQ=WEEKLY;BYDAY=SA"
 exdate:

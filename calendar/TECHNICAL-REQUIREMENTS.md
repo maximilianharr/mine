@@ -10,6 +10,7 @@ calendar/2026/04/2026-04-18-1400-k3f9.md     one-off entry
 calendar/2026/04/2026-04-25-0000-ov1q.md     occurrence override
 calendar/recurring/trash-p7qm.md             entry with a recurrence rule
 calendar/groups.md                           group -> colour and label
+calendar/settings.md                         kanban anchor and interval
 ```
 
 The whole folder is mirrored locally, so the path is not a loading optimisation. It is for
@@ -38,21 +39,31 @@ parser hands back the text `"None"`.
 | `start` | both | `DTSTART`. A bare date (`2026-04-18`) is all-day; a timestamp (`2026-04-18T14:00:00Z`) is an instant |
 | `end` | both | same value types as `start`; omitted when a single all-day item |
 | `group` | both | a name, resolved through `groups.md` |
-| `done` | `task` only | `true` / `false` |
+| `stage` | `task` only | `todo` / `doing` / `done`. Replaces the old `done` boolean |
+| `priority` | `task` only | `PRIORITY`. The UI writes 1-3; 1-9 is read and bucketed into the three |
+| `estimate` | `task` only | days. Ours, no RFC 5545 equivalent |
 | `location` | both | free text |
 | `alerts` | both | minutes before start, `0` = at start. Stored and exported only; nothing fires in the background |
 | `participants` | both | list of email addresses |
 | `recurrence` | both | RRULE string, e.g. `FREQ=WEEKLY;BYDAY=SA` |
 | `exdate` / `rdate` | recurring | occurrences to skip / extra occurrences |
+| `status` | override | `cancelled` removes the occurrence. The only value used |
 | `series` | override | id of the recurring file it belongs to |
 | `recurrence-id` | override | the original occurrence date this file replaces |
 | `conflictOf` | conflict file | written by sync |
 
 No `duration` key — it is `end - start`.
 
-Type and time are independent: `type` decides whether the entry can be ticked done, the value
-type of `start` decides whether it is all-day or timed. A task is usually all-day, but may carry
-a time and then renders at it.
+Type and time are independent: `type` decides whether the entry has a stage, a priority and an
+estimate, the value type of `start` decides whether it is all-day or timed. A task is usually
+all-day, but may carry a time and then renders at it.
+
+`stage` is a task's only progress field; there is no `done` key any more. A file written before
+the change, or by hand, is read for `done` as a fallback: `done: true` is stage `done`, anything
+else is `todo`. Nothing rewrites such a file until it is edited, and a write never emits `done`.
+
+`status` is deliberately *not* the stage field. It already means cancellation on an override,
+and one key cannot carry both without an override's cancellation reading as a kanban column.
 
 The bare-date form matters. An all-day task stored as `2026-04-18T00:00:00Z` lands on the wrong
 day outside UTC and shifts twice a year on DST.
@@ -83,8 +94,25 @@ is what makes month views slow.
 
 ## RRULE
 
-Full RRULE on read — files may be hand-written or imported. The UI only *writes* daily / weekly /
-monthly / yearly with `INTERVAL`, `BYDAY`, `UNTIL`, `COUNT`.
+Full RRULE on read — files may be hand-written or imported. The UI *writes* only the seven
+shapes its dropdown offers, plus the ends control:
+
+| Dropdown | Written |
+| --- | --- |
+| does not repeat | key omitted |
+| daily | `FREQ=DAILY` |
+| weekly | `FREQ=WEEKLY;BYDAY=<start's weekday>` |
+| every 2 weeks | `FREQ=WEEKLY;INTERVAL=2;BYDAY=<start's weekday>` |
+| monthly on the x-th | `FREQ=MONTHLY;BYMONTHDAY=<x>` |
+| monthly on the x-th weekday | `FREQ=MONTHLY;BYDAY=<n><DD>` |
+| yearly | `FREQ=YEARLY` |
+| ends on a date | `+UNTIL=<date>Z` |
+| ends after n | `+COUNT=<n>` |
+
+Anything the dropdown cannot round-trip to one of those is held as **custom**: displayed as
+text, not editable, and written back byte-for-byte unless the user picks a dropdown value. The
+test is round-tripping, not parsing — `FREQ=MONTHLY;BYDAY=-1FR` parses fine and is still custom,
+because no dropdown entry regenerates it.
 
 `rrule.js` works in UTC. For an all-day rule, set `DTSTART` to UTC midnight and read only the
 year/month/day back, never `getDate()` on a local Date — east of UTC that returns the previous
@@ -96,6 +124,44 @@ day. `UNTIL` must be written in the `Z` form.
 entry stores the name, so recolouring or relabelling is a one-file edit instead of a rewrite of
 every entry, and there is no cap on the number of groups. Unknown group renders grey. It lives in
 the data repo, so the mapping follows you across devices.
+
+## Settings
+
+Two of the settings are data, not preferences, and live in `calendar/settings.md`:
+
+```yaml
+---
+kanban-anchor: 2026-01-05     # bare date: the first day of sprint 1
+kanban-interval: 2            # weeks
+---
+```
+
+They are in the repo because the sprint a task belongs to is *derived* from them. On the device
+they would make the same file report a different sprint on a phone than on a laptop, and moving
+a card would then write the wrong date. Everything else — theme, date format, time zone, week
+start, show-calendar-weeks, the group filter — is a device preference in IndexedDB, the group
+filter under `calendar.hiddenGroups` as it already is. Theme and date format are Mine-wide keys,
+not the calendar's.
+
+## Sprints
+
+There is no `sprint` key. Sprint *n* runs from `anchor + (n-1) × interval` weeks for `interval`
+weeks, and a task's sprint is whichever range its `start` falls in. So:
+
+- the number can never contradict the date, because there is only the date;
+- moving a card to another sprint is a write of `start` and `end` and nothing else;
+- changing the interval renumbers every card at once, which is correct — it is one timeline.
+
+Computed on bare dates in whole days, never through a `Date` at local midnight: the anchor is a
+bare date and sprint boundaries must not shift by a day with the viewer's zone. A `start` before
+the anchor has no sprint and the card is not on the board.
+
+## Service worker version
+
+The update banner compares versions rather than merely noticing a waiting worker. The worker
+answers a `version` message with its `VERSION` constant; the UI shows "Update ready" only when a
+waiting worker's version differs from the active one's. `reg.waiting` alone is not the condition
+— a byte-identical worker can wait, and then the banner never goes away.
 
 ## Widget
 
