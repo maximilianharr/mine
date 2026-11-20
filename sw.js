@@ -1,11 +1,12 @@
 import { APPS } from './shared/apps.js';
 
-const VERSION = '2026-11-19.3';
+const VERSION = '2026-11-20.1';
 const CACHE = `mine-${VERSION}`;
 
 const SHELL = [
   './', './index.html', './app.js', './style.css', './manifest.json', './icon.svg',
   './shared/apps.js', './shared/store.js', './shared/github.js', './shared/md.js',
+  './shared/prefs.js',
   './shared/vendor/js-yaml.mjs', './shared/vendor/rrule.mjs', './shared/vendor/tslib.mjs',
   ...APPS.flatMap(a => [`./${a.slug}/`, `./${a.slug}/icon.svg`,
     ...(a.files || []).map(f => `./${a.slug}/${f}`)])
@@ -20,7 +21,13 @@ self.addEventListener('activate', e => e.waitUntil((async () => {
   await self.clients.claim();
 })()));
 
-self.addEventListener('message', e => { if (e.data === 'skip-waiting') self.skipWaiting(); });
+// The page asks both workers for their version and only offers the update when they differ:
+// a byte-identical worker can sit waiting, and then "a worker is waiting" would mean a banner
+// that never goes away.
+self.addEventListener('message', e => {
+  if (e.data === 'skip-waiting') self.skipWaiting();
+  else if (e.data === 'version') e.ports[0]?.postMessage(VERSION);
+});
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);

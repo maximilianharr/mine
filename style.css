@@ -2,10 +2,14 @@
   --bg: #fff; --fg: #1f2933; --muted: #6b7280; --line: #e4e7eb;
   --accent: #1f2933; --bad: #c0392b; --good: #0a7b3e; --soft: #f5f7fa;
 }
+/* Mine's theme setting is "system" by default, so the device decides; light and dark are the
+   two overrides, and the attribute is what carries them. */
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #15191e; --fg: #e8eaed; --muted: #9aa5b1; --line: #2b3138;
-          --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; }
+  :root:not([data-theme="light"]) { --bg: #15191e; --fg: #e8eaed; --muted: #9aa5b1; --line: #2b3138;
+    --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; }
 }
+:root[data-theme="dark"] { --bg: #15191e; --fg: #e8eaed; --muted: #9aa5b1; --line: #2b3138;
+    --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; }
 * { box-sizing: border-box; }
 body {
   margin: 0; padding: 16px max(16px, env(safe-area-inset-left)) 24px;
@@ -66,3 +70,11 @@ dd { margin: 0; word-break: break-word; }
 .steps li { margin: .35rem 0; }
 .steps li.done { color: var(--good); }
 .steps li.bad { color: var(--bad); }
+
+/* The two settings that belong to Mine rather than to one app. */
+.prefs { margin: 1rem 0; }
+.prefrow { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px solid var(--line); }
+.prefrow span { flex: 1; font-size: .85rem; }
+.prefrow select { width: auto; min-width: 8rem; margin: 0; padding: .5rem; font: inherit;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem; }
+.prefs .note { margin: .5rem 0 0; font-size: .75rem; color: var(--muted); }

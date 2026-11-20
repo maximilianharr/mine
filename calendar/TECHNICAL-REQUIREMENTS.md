@@ -40,7 +40,7 @@ parser hands back the text `"None"`.
 | `end` | both | same value types as `start`; omitted when a single all-day item |
 | `group` | both | a name, resolved through `groups.md` |
 | `stage` | `task` only | `todo` / `doing` / `done`. Replaces the old `done` boolean |
-| `priority` | `task` only | `PRIORITY`. The UI writes 1-3; 1-9 is read and bucketed into the three |
+| `priority` | `task` only | `PRIORITY`, 1-9. The UI writes 1-3, and those three read back unchanged; a hand-written 4-6 reads as 2 and 7-9 as 3 |
 | `estimate` | `task` only | days. Ours, no RFC 5545 equivalent |
 | `location` | both | free text |
 | `alerts` | both | minutes before start, `0` = at start. Stored and exported only; nothing fires in the background |
@@ -106,7 +106,7 @@ shapes its dropdown offers, plus the ends control:
 | monthly on the x-th | `FREQ=MONTHLY;BYMONTHDAY=<x>` |
 | monthly on the x-th weekday | `FREQ=MONTHLY;BYDAY=<n><DD>` |
 | yearly | `FREQ=YEARLY` |
-| ends on a date | `+UNTIL=<date>Z` |
+| ends on a date | `+UNTIL=<yyyymmdd>T000000Z` |
 | ends after n | `+COUNT=<n>` |
 
 Anything the dropdown cannot round-trip to one of those is held as **custom**: displayed as
@@ -136,6 +136,10 @@ kanban-interval: 2            # weeks
 ---
 ```
 
+With no `settings.md` at all the anchor is `2024-01-01`, a Monday, and the interval is 2 weeks.
+That fallback is a constant rather than anything read off the device, so two devices still agree
+on the numbering before the file exists.
+
 They are in the repo because the sprint a task belongs to is *derived* from them. On the device
 they would make the same file report a different sprint on a phone than on a laptop, and moving
 a card would then write the wrong date. Everything else — theme, date format, time zone, week
@@ -155,6 +159,45 @@ weeks, and a task's sprint is whichever range its `start` falls in. So:
 Computed on bare dates in whole days, never through a `Date` at local midnight: the anchor is a
 bare date and sprint boundaries must not shift by a day with the viewer's zone. A `start` before
 the anchor has no sprint and the card is not on the board.
+
+## Time zone
+
+One IANA zone name, defaulting to `Intl.DateTimeFormat().resolvedOptions().timeZone`, decides
+which day a timed entry falls in, its minute offset within that day, and what a wall-clock time
+typed into the form means. A bare date never goes near it.
+
+The offset is read off the zone's own wall clock with `Intl.DateTimeFormat.formatToParts`, so
+daylight saving comes for free and no table is needed. Converting a typed time to the stored
+instant takes **two passes**, because the offset depends on the answer: a time within an hour of
+a DST change resolves on the first pass with the wrong offset and on the second with the right
+one. A wall-clock time that does not exist — the hour a zone skips in spring — resolves onto the
+real time just before the gap, which is stable: it reads back as that time instead of drifting on
+every save.
+
+Read the hour with `% 24`: some engines answer `24` for midnight under `hour12: false`.
+
+An unknown zone name falls back to the device's rather than throwing, because a bad value in
+settings must not stop the calendar rendering.
+
+## Modules
+
+```
+calendar/data.js      the model, the date and sprint arithmetic, and the writes
+calendar/ui.js        DOM helpers, the icon set, and the state every view reads
+calendar/views.js     year, month, week, day, and the day preview
+calendar/kanban.js    the board
+calendar/popup.js     the entry popup and its field sub-popups
+calendar/settings.js  the settings panel
+calendar/app.js       the top pane, navigation, the picker, the filter, the sync line
+shared/prefs.js       theme and date format, which belong to Mine rather than to one app
+```
+
+`ui.js` holds the state in one object with `render`, `status`, `push` and `reload` as slots the
+shell fills in, so a view can ask for a redraw or a background push without importing `app.js`
+back and making an import cycle.
+
+`FIELDS` in `popup.js` is built while the module is still evaluating, so anything it calls must
+be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.
 
 ## Service worker version
 

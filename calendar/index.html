@@ -21,64 +21,61 @@
 
 <main id="cal" hidden>
   <div class="topbar">
-    <button id="prev" class="nav" aria-label="Previous month">‹</button>
-    <button id="next" class="nav" aria-label="Next month">›</button>
+    <button id="prev" class="nav" aria-label="Previous">‹</button>
+    <button id="next" class="nav" aria-label="Next">›</button>
     <button id="period" class="period" aria-haspopup="true" aria-expanded="false">
       <span id="period-label">—</span><span class="caret">▾</span>
     </button>
     <span class="spacer"></span>
     <button id="today" class="nav wide">Today</button>
-    <button id="groups-btn" class="nav wide" aria-haspopup="true" aria-expanded="false">Groups<span class="caret">▾</span></button>
-    <button id="menu-btn" class="nav" aria-label="Menu" aria-haspopup="true">≡</button>
+    <button id="add" class="nav ic" aria-label="Add an entry"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8 3v10M3 8h10"/></svg></button>
+    <button id="filter-btn" class="nav ic" aria-label="Filter" aria-haspopup="true" aria-expanded="false"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2 3h12l-4.8 5.8V14L6.8 12.6V8.8z"/></svg></button>
+    <div class="modes" role="radiogroup" aria-label="View">
+      <button class="mode" data-mode="D" aria-pressed="false" aria-label="Day">D</button>
+      <button class="mode" data-mode="W" aria-pressed="false" aria-label="Week">W</button>
+      <button class="mode" data-mode="M" aria-pressed="true" aria-label="Month">M</button>
+      <button class="mode" data-mode="Y" aria-pressed="false" aria-label="Year">Y</button>
+      <button class="mode" data-mode="K" aria-pressed="false" aria-label="Kanban">K</button>
+    </div>
+    <a class="nav" href="../" aria-label="Back to Mine">←</a>
+    <button id="gear" class="nav" aria-label="Settings">⚙</button>
   </div>
 
-  <div class="weekhead" id="weekhead"></div>
-  <div class="grid" id="grid"></div>
+  <div class="view" id="view"></div>
   <p class="sync" id="sync"></p>
 </main>
 
-<!-- dropdown date picker: a month at a time, or a 9-year grid -->
+<!-- dropdown date picker: a month at a time, a 9-year grid, or a list of sprints -->
 <div class="pop" id="picker" hidden>
   <div class="pop-head">
-    <button id="pick-title" class="pop-title"><span id="pick-label">—</span></button>
+    <button id="pick-title" class="pop-title" type="button"><span id="pick-label">—</span></button>
     <span class="spacer"></span>
-    <button id="pick-prev" class="nav" aria-label="Previous">‹</button>
-    <button id="pick-next" class="nav" aria-label="Next">›</button>
+    <button id="pick-prev" class="nav" type="button" aria-label="Previous">‹</button>
+    <button id="pick-next" class="nav" type="button" aria-label="Next">›</button>
   </div>
   <div class="pick-body" id="pick-body"></div>
 </div>
 
-<!-- group filter -->
-<div class="pop" id="groups-pop" hidden>
-  <div class="pop-head"><strong>Groups</strong><span class="spacer"></span>
-    <button id="groups-all" class="link">all</button>
-    <button id="groups-none" class="link">none</button>
+<!-- view filter: groups always, priority and assignee on the board -->
+<div class="pop" id="filter-pop" hidden>
+  <div id="filter-body"></div>
+</div>
+
+<!-- the day preview: a list on desktop, a sheet on a phone -->
+<div class="pop" id="day-pop" hidden>
+  <div class="pop-head">
+    <strong id="day-title">—</strong><span class="spacer"></span>
+    <button class="ib" id="day-add" type="button" title="Add an entry on this day" aria-label="Add an entry on this day"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M8 3v10M3 8h10"/></svg></button>
+    <button class="ib" id="day-close" type="button" title="Close" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
   </div>
-  <div id="groups-list" class="groups-list"></div>
-</div>
-
-<!-- phone: the ≡ menu -->
-<div class="sheet" id="menu-sheet" hidden>
-  <div class="sheet-grip"></div>
-  <h2>Calendar</h2>
-  <div id="menu-groups" class="groups-list"></div>
-  <button id="menu-today">Jump to today</button>
-  <a class="btn-link" href="../">Back to Mine</a>
-  <button id="menu-close" class="ghost">Close</button>
-</div>
-
-<!-- phone: the day sheet -->
-<div class="sheet" id="day-sheet" hidden>
-  <div class="sheet-grip"></div>
-  <h2 id="day-title">—</h2>
   <div id="day-list" class="day-list"></div>
-  <button id="day-add">+ add entry</button>
-  <button id="day-close" class="ghost">Close</button>
 </div>
 
-<!-- the entry popup -->
+<!-- the entry popup. The icon row and the detail rows are built in app code. -->
 <div class="modal" id="popup" hidden>
   <form class="card" id="entry-form" autocomplete="off">
+    <div class="iconbar" id="f-icons"></div>
+
     <input class="title-in" id="f-title" name="title" placeholder="Title" required>
 
     <div class="scope" id="f-scope" hidden>
@@ -87,14 +84,28 @@
         <button type="button" class="seg" data-scope="occurrence">This occurrence</button>
         <button type="button" class="seg" data-scope="series">Whole series</button>
       </div>
+      <button type="button" class="link" id="f-skip" hidden>skip this one</button>
     </div>
 
-    <div class="btngroup" role="radiogroup" aria-label="Type">
-      <button type="button" class="seg" data-type="event">event</button>
-      <button type="button" class="seg" data-type="task">task</button>
+    <div id="f-task" hidden>
+      <div class="btngroup" role="radiogroup" aria-label="Stage">
+        <button type="button" class="seg" data-stage="todo">todo</button>
+        <button type="button" class="seg" data-stage="doing">doing</button>
+        <button type="button" class="seg" data-stage="done">done</button>
+      </div>
+      <div class="taskrow">
+        <span class="flab">Priority</span>
+        <div class="btngroup tight" role="radiogroup" aria-label="Priority">
+          <button type="button" class="seg" data-prio="1">1</button>
+          <button type="button" class="seg" data-prio="2">2</button>
+          <button type="button" class="seg" data-prio="3">3</button>
+        </div>
+        <span class="flab">Estimate</span>
+        <input id="f-estimate" class="est-in" type="number" min="0" step="0.5" inputmode="decimal">
+        <span class="flab">days</span>
+      </div>
     </div>
 
-    <label class="check" id="f-done-wrap"><input type="checkbox" id="f-done"> done</label>
     <label class="check"><input type="checkbox" id="f-allday"> all-day</label>
 
     <div class="row2">
@@ -106,31 +117,34 @@
       <label class="t">Time <input type="time" id="f-end-time"></label>
     </div>
 
-    <label>Group <select id="f-group"></select></label>
-    <label>Location <input id="f-location"></label>
-    <label id="f-rec-wrap">Repeat <input id="f-recurrence" placeholder="FREQ=WEEKLY;BYDAY=SA"
-      autocapitalize="characters" autocorrect="off" spellcheck="false">
-      <small>RRULE, blank for a one-off. Any valid rule is read; this field writes it verbatim.</small></label>
-    <label>Alerts <input id="f-alerts" inputmode="numeric" placeholder="0, 15">
-      <small>Minutes before start. Stored and exported only — nothing fires in the background.</small></label>
-    <label>Participants <input id="f-participants" inputmode="email" autocapitalize="off"
-      autocorrect="off" spellcheck="false" placeholder="a@b.com, c@d.com"></label>
-
-    <label>Notes <textarea id="f-body" class="body-in" rows="4" spellcheck="false"></textarea>
-      <small>Raw markdown — exactly what lands in the file.</small></label>
-
+    <div class="frows" id="f-rows"></div>
     <p class="msg" id="f-msg"></p>
-    <div class="actions">
-      <button type="button" id="f-delete" class="danger" hidden>delete</button>
-      <button type="button" id="f-skip" class="ghost" hidden>skip this one</button>
-      <button type="button" id="f-discard" class="ghost">discard</button>
-      <button type="submit" id="f-save">save</button>
-    </div>
     <p class="path" id="f-path"></p>
   </form>
 </div>
 
+<!-- one field at a time, above the entry popup. Nothing here reaches the repo. -->
+<div class="pop sub" id="sub" hidden>
+  <div class="pop-head">
+    <strong id="sub-title">—</strong><span class="spacer"></span>
+    <button class="ib" id="sub-clear" type="button" title="Clear this field" aria-label="Clear this field"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M6.2 1.6h3.6l.6 1.2h2.8v1.5H2.8V2.8h2.8l.6-1.2zM3.9 5.6h8.2l-.7 8.8H4.6z"/></svg></button>
+    <button class="ib" id="sub-cancel" type="button" title="Abandon this edit" aria-label="Abandon this edit"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
+    <button class="ib primary" id="sub-ok" type="button" title="Use this value" aria-label="Use this value"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="currentColor" d="M2.6 2h8.2L14 5.2V14H2.6zm3 0v3.6h4.6V2zM5 9h6v5H5z"/></svg></button>
+  </div>
+  <div id="sub-body"></div>
+</div>
+
+<div class="sheet panel" id="settings-sheet" hidden>
+  <div class="sheet-grip"></div>
+  <div class="pop-head">
+    <h2>Calendar settings</h2><span class="spacer"></span>
+    <button class="ib" id="settings-close" type="button" title="Close" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" d="M4 4l8 8M12 4l-8 8"/></svg></button>
+  </div>
+  <div id="settings-body"></div>
+</div>
+
 <div class="scrim" id="scrim" hidden></div>
+<div class="scrim sub-scrim" id="sub-scrim" hidden></div>
 
 <script type="module" src="app.js"></script>
 </body>

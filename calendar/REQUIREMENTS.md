@@ -42,7 +42,9 @@ Saturday and Sunday tinted wherever they land. A Saturday task has to be visible
 
 When *show calendar weeks* is on, each week row carries its ISO 8601 week number in a left
 gutter, separated from the days by a thin vertical rule. The number is always ISO, whichever
-day the week is set to start on.
+day the week is set to start on. ISO weeks run Monday to Sunday, so a row beginning on Sunday
+holds one day of one ISO week and six of the next; the number shown is the one the rest of the
+row is in.
 
 A `+` button adds an entry. It defaults to today when today is in view, and otherwise to the
 first day on screen — in the kanban, to the first day of the selected sprint, in its todo
@@ -87,9 +89,10 @@ A row of icon buttons at the top, from left to right:
 An icon whose field is set is shown enabled: a brighter background in dark mode, a darker one in
 light mode. So the row doubles as a summary of what the entry carries.
 
-Each of the seven field buttons opens its own popup, and every popup has the same three buttons:
+Each of the six field buttons opens its own popup, and every popup has the same three buttons:
 a trashcan that clears that one field, an `x` that abandons the sub-edit, and a disk that commits
-the value into the entry form and lights the icon. **A sub-popup never writes to the repo.**
+the value into the entry form and lights the icon. **A sub-popup never writes to the repo**,
+with the single exception noted under Category.
 Nothing is written until the entry popup's own disk, so one entry edit is one commit, and the
 entry popup's `x` discards the staged fields along with everything else. This is also what makes
 a brand-new entry work, since it has no file for a sub-popup to write to.
@@ -97,7 +100,9 @@ a brand-new entry work, since it has no file for a sub-popup to write to.
 Below the icon row:
 
 - the title field;
-- for a task, a `todo` / `doing` / `done` button group;
+- for a task, a `todo` / `doing` / `done` button group, and beside it a priority of 1, 2 or 3
+  and an estimate in days — the same two fields a kanban card edits, so a task that is not on a
+  board can still carry them;
 - the start and end fields;
 - then one row per field that is set, in the order of the icons above — so a location that has
   been given appears at the bottom. Each row has a pen to reopen its popup and a trashcan to
@@ -127,7 +132,9 @@ silently rewritten.
 
 The groups, each with its colour, and a `+ add` button. Adding a group asks for a label and a
 colour; its stored name is derived from the label and never shown, which is why relabelling or
-recolouring later touches no entry. A pen edits a group, a trashcan deletes it — and entries
+recolouring later touches no entry. Adding one writes `groups.md` immediately rather than staging
+it: that is a different file from the entry, and a category must not disappear because the entry
+it was created for was discarded. A pen edits a group, a trashcan deletes it — and entries
 still naming a deleted group render grey.
 
 ## Kanban
@@ -154,8 +161,9 @@ A card shows:
   previous or next stage — `<` disabled in todo, `>` disabled in done;
 - below it two lines of the markdown body;
 - on the right a priority chip (1 red, 2 orange, 3 yellow), the estimate in days, and the sprint
-  number. Clicking any of the three changes it; changing the sprint moves the task's start and
-  end to that sprint's range.
+  number. Clicking any of the three changes it: the priority chip cycles 1 → 2 → 3, and the
+  estimate and the sprint ask for a number. Changing the sprint moves the task's start and end
+  into that sprint's range, keeping its offset within the sprint and its time of day.
 
 On desktop all three columns are shown and a card can be dragged between them. On a phone one
 column fills the screen, swiping sideways moves between them, and the `<` `>` buttons on each
@@ -168,8 +176,11 @@ The gear button opens a panel whose top right has an `x` to close:
 
 - **Groups** — the list of groups, each with its colour, a pen to edit and a `+` to add.
 - **Start week on** — Monday or Sunday.
-- **Time zone** — a zone name such as `Europe/Berlin`, defaulting to the device's own. A plain
-  `UTC+1` is not offered: it is an hour wrong for half the year in any zone with daylight saving.
+- **Time zone** — a zone name such as `Europe/Berlin`, defaulting to the device's own. This
+  zone, not the device's, decides which day a timed entry lands in, where it sits in the week and
+  day grids, and what a time you type means. A plain `UTC+1` is not offered: it is an hour wrong
+  for half the year in any zone with daylight saving. All-day entries are bare dates and are
+  never run through it at all.
 - **Date format** — `auto` (the device's locale), `dd.mm.yyyy` or `mm/dd/yy`.
 - **Show calendar weeks**.
 - **Kanban interval** — in weeks.
@@ -185,7 +196,8 @@ main app's settings shows the same two rows.
 
 The views above describe the desktop. The same screens adapt:
 
-- The top pane collapses to `[<] [April 2026 v] [D W M Y K] [←] [⚙]`.
+- The top pane keeps every control and wraps onto a second line rather than dropping any:
+  `[‹] [›] [April 2026 ▾] [+] [filter] [D W M Y K] [←] [⚙]`.
 - A month cell shows at most two entry lines, then `+N`; a year cell stays a coloured day.
 - Tapping a day opens that day's entries as a sheet, each one tappable, with the small `+` and
   `x` in its top right — so nothing is ever smaller than a finger.

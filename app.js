@@ -1,5 +1,6 @@
 import { APPS } from './shared/apps.js';
 import { getConfig, setConfig, persist, queuedCount } from './shared/store.js';
+import { THEMES, DATE_FORMATS, loadPrefs, setPref, applyTheme } from './shared/prefs.js';
 import { testConnection, bootstrap, pull, write, drain } from './shared/github.js';
 import { serialize } from './shared/md.js';
 
@@ -98,10 +99,47 @@ $('#to-settings').addEventListener('click', async () => {
     return [dt, dd];
   }));
   $('#steps').replaceChildren();
+  await minePrefs();
   show('settings');
 });
 
 $('#to-home').addEventListener('click', home);
+
+// Theme and date format belong to Mine rather than to any one app, so the same two rows appear
+// here and in every app's settings.
+async function minePrefs() {
+  const prefs = await loadPrefs();
+  $('#mine-prefs').replaceChildren(
+    prefRow('Theme', THEMES, prefs.theme, 'theme'),
+    prefRow('Date format', DATE_FORMATS, prefs.dateFormat, 'dateFormat'),
+    row('p', 'note', 'Both apply to all of Mine. They follow the device until you choose otherwise.')
+  );
+}
+
+const row = (tag, cls, text) => {
+  const n = document.createElement(tag);
+  n.className = cls;
+  n.textContent = text;
+  return n;
+};
+
+function prefRow(label, options, current, key) {
+  const wrap = row('div', 'prefrow', '');
+  const select = document.createElement('select');
+  for (const v of options) {
+    const o = document.createElement('option');
+    o.value = v;
+    o.textContent = v;
+    o.selected = v === current;
+    select.append(o);
+  }
+  select.addEventListener('change', async () => {
+    await setPref(key, select.value);
+    if (key === 'theme') applyTheme(select.value);
+  });
+  wrap.append(row('span', '', label), select);
+  return wrap;
+}
 
 $('#forget').addEventListener('click', () => {
   if (!confirm('Remove the repo settings and token from this device? Your data in GitHub is untouched.')) return;
@@ -155,16 +193,34 @@ $('#verify').addEventListener('click', async () => {
 
 // ---- service worker ----
 
+// Ask a worker for its VERSION. An older worker that predates the version message answers
+// nothing, and the timeout reports that as null.
+function versionOf(worker) {
+  return new Promise(resolve => {
+    if (!worker) return resolve(null);
+    const ch = new MessageChannel();
+    const timer = setTimeout(() => resolve(null), 1500);
+    ch.port1.onmessage = e => { clearTimeout(timer); resolve(e.data); };
+    try { worker.postMessage('version', [ch.port2]); }
+    catch { clearTimeout(timer); resolve(null); }
+  });
+}
+
 function registerSW() {
   if (!navigator.serviceWorker) return;
   navigator.serviceWorker.register('./sw.js', { type: 'module', scope: './' }).then(reg => {
-    const offer = () => { $('#update').hidden = false; };
-    if (reg.waiting && navigator.serviceWorker.controller) offer();
+    // "A worker is waiting" is not the test: a byte-identical worker can wait, and the banner
+    // would then show on an app with no update at all and never go away. Offer it only when the
+    // version waiting to take over genuinely differs from the one running.
+    const offer = async () => {
+      if (!reg.waiting || !navigator.serviceWorker.controller) return;
+      const [waiting, active] = await Promise.all([versionOf(reg.waiting), versionOf(reg.active)]);
+      if (waiting !== active) $('#update').hidden = false;
+    };
+    offer();
     reg.addEventListener('updatefound', () => {
       const w = reg.installing;
-      w?.addEventListener('statechange', () => {
-        if (w.state === 'installed' && navigator.serviceWorker.controller) offer();
-      });
+      w?.addEventListener('statechange', () => { if (w.state === 'installed') offer(); });
     });
     $('#reload').addEventListener('click', () => {
       reg.waiting?.postMessage('skip-waiting');
@@ -177,4 +233,5 @@ function registerSW() {
 // ---- boot ----
 
 registerSW();
+applyTheme((await loadPrefs()).theme);
 if (await getConfig()) await home(); else show('setup');

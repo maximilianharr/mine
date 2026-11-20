@@ -21,8 +21,9 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 
 ```
 /index.html /manifest.json /sw.js
-/shared/  apps.js  store.js  github.js  md.js  vendor/
-/calendar/  index.html  app.js  widget.js  icon.svg  sample/
+/shared/  apps.js  store.js  github.js  md.js  prefs.js  vendor/
+/calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
+            style.css  icon.svg  sample/
 ```
 
 No build step: no bundler, no CI, no node_modules. `git push` deploys, every page opens from
@@ -100,6 +101,14 @@ Requests to `api.github.com` **bypass the worker entirely** — caching an API r
 back a stale ETag and silently break sync.
 
 A new worker waits; the UI offers "Update ready — reload" and `skipWaiting()` runs only on tap.
+
+**The offer is gated on the version, not on a worker waiting.** The worker answers a `version`
+message over a `MessageChannel` port with its `VERSION` constant, and the page compares the
+waiting worker's answer with the active one's; equal answers mean no banner. A worker that is
+byte-identical to the running one can sit in `waiting` indefinitely, and `reg.waiting` alone as
+the condition is what makes the banner appear on an app with no update and never go away. A
+worker too old to answer reports `null` after a 1.5 s timeout, which differs from a real version
+and so still offers the update.
 
 ## Token and CSP
 

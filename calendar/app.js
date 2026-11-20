@@ -1,145 +1,109 @@
-// Month view, entry popup, group filter. Phone and desktop are the same screens with
-// different cell contents: rows of text where there is room, group-coloured dots and a
-// bottom sheet where there is not.
+// The shell: the top pane, navigation, the date picker, the group filter, the sync line, and
+// which view the big calendar window holds.
 import { getConfig, getKV, setKV, queuedCount } from '../shared/store.js';
-import { pull } from '../shared/github.js';
+import { pull, drain } from '../shared/github.js';
 import {
-  loadModel, occurrences, byStart, groupColor, groupLabel, timeLabel, todayKey, localKey,
-  isAllDay, createEntry, updateEntry, deleteEntry, saveOverride, skipOccurrence
+  loadModel, todayKey, addDays, addMonths, partsOf, monthGrid, weekStartOf, isoWeek, setZone,
+  sprintRange, sprintOf
 } from './data.js';
+import {
+  S, $, el, phone, colorOf, labelOf, dayLabel, longDayLabel, defaultDay, currentSprint,
+  openPop, closePops
+} from './ui.js';
+import { renderView, wireView, openDayPop } from './views.js';
+import { renderKanban } from './kanban.js';
+import { openNew, closePopup } from './popup.js';
+import { openSettings } from './settings.js';
+import { loadPrefs, applyTheme } from '../shared/prefs.js';
 
-const $ = s => document.querySelector(s);
-const el = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  if (cls) n.className = cls;
-  if (text != null) n.textContent = text;
-  return n;
-};
-const phone = () => !matchMedia('(min-width: 600px)').matches;
-const pad = n => String(n).padStart(2, '0');
-const MONTH = { month: 'long', year: 'numeric' };
-const DAY = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
 
-let model = { groups: {}, dated: [], rules: [], overrides: new Map() };
-let view = { y: new Date().getFullYear(), m: new Date().getMonth() };
-let hiddenGroups = new Set();
-let visible = new Map();          // occurrence key -> occurrence, for what is on screen
-let editing = null;               // { occ, dayKey, scope }
-let pick = { mode: 'days', y: view.y, m: view.m, base: view.y - 8 };
-
-// ---- month arithmetic (local, at noon, so no DST hour can shift a date) ----
-
-const at = (y, m, d) => new Date(y, m, d, 12);
-
-function monthCells(y, m) {
-  const back = (at(y, m, 1).getDay() + 6) % 7;            // Monday = 0
-  const days = new Date(y, m + 1, 0).getDate();
-  const weeks = Math.ceil((back + days) / 7);
-  const out = [];
-  for (let i = 0; i < weeks * 7; i++) out.push(at(y, m, 1 - back + i));
-  return out;
-}
-
-// ---- rendering ----
-
-function renderWeekhead() {
-  $('#weekhead').replaceChildren(...['M', 'T', 'W', 'T', 'F', 'S', 'S']
-    .map((n, i) => el('span', i > 4 ? 'we' : '', n)));
-}
+// ---- rendering -----------------------------------------------------------------------------
 
 function render() {
-  $('#period-label').textContent = at(view.y, view.m, 1).toLocaleDateString(undefined, MONTH);
+  $('#period-label').textContent = periodLabel();
+  for (const b of document.querySelectorAll('[data-mode]'))
+    b.setAttribute('aria-pressed', String(b.dataset.mode === S.view.mode));
+  if (S.view.mode === 'K') renderKanban($('#view'));
+  else renderView($('#view'));
+  renderFilter();
+}
 
-  const cells = monthCells(view.y, view.m);
-  const all = occurrences(model, localKey(cells[0]), localKey(cells[cells.length - 1]));
-  const byDay = new Map();
-  visible = new Map();
-  for (const o of all) {
-    if (hiddenGroups.has(o.group || '')) continue;
-    visible.set(o.key, o);
-    if (!byDay.has(o.dayKey)) byDay.set(o.dayKey, []);
-    byDay.get(o.dayKey).push(o);
+function periodLabel() {
+  const { mode, anchor } = S.view;
+  if (mode === 'D') return longDayLabel(anchor);
+  if (mode === 'W') {
+    const a = weekStartOf(anchor, S.prefs.weekStart);
+    return `${S.prefs.showWeeks ? `W${isoWeek(a)} · ` : ''}${dayLabel(a)} – ${dayLabel(addDays(a, 6))}`;
   }
-
-  const today = todayKey();
-  $('#grid').replaceChildren(...cells.map(d => {
-    const k = localKey(d);
-    const dow = (d.getDay() + 6) % 7;
-    const cell = el('div', ['day', dow > 4 ? 'we' : '', d.getMonth() !== view.m ? 'out' : '',
-      k === today ? 'today' : ''].filter(Boolean).join(' '));
-    cell.dataset.day = k;
-    cell.append(el('span', 'num', String(d.getDate())));
-
-    const items = byDay.get(k) || [];
-    const dots = el('div', 'dots');
-    for (const o of items.slice(0, 6)) {
-      const s = el('span', `dot${o.type === 'task' && o.done ? ' done' : ''}`);
-      s.style.setProperty('--c', groupColor(model.groups, o.group));
-      dots.append(s);
-    }
-    if (items.length > 6) dots.append(el('span', 'more', `+${items.length - 6}`));
-
-    const rows = el('div', 'rows');
-    for (const o of items) rows.append(entryRow(o));
-    cell.append(dots, rows);
-    return cell;
-  }));
-
-  if (!$('#day-sheet').hidden) fillDaySheet($('#day-sheet').dataset.day);
+  if (mode === 'M') {
+    const [y, m] = partsOf(anchor);
+    return new Date(y, m - 1, 1, 12).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  }
+  if (mode === 'Y') return String(partsOf(anchor)[0]);
+  const r = sprintRange(S.view.sprint, S.model.settings);
+  return `Sprint ${r.n} · ${dayLabel(r.start)} – ${dayLabel(r.end)}`;
 }
 
-function entryRow(o) {
-  const r = el('div', `erow${o.done ? ' done' : ''}`);
-  r.dataset.key = o.key;
-  const bar = el('span', 'bar');
-  bar.style.setProperty('--c', groupColor(model.groups, o.group));
-  r.append(bar);
-  if (!o.allDay) r.append(el('span', 'when', timeLabel(o.start)));
-  r.append(el('span', 'what', o.title));
-  if (o.type === 'task') r.append(tickButton(o));
-  return r;
-}
+// ---- navigation ----------------------------------------------------------------------------
 
-function tickButton(o) {
-  const t = el('button', 'tick');
-  t.type = 'button';
-  t.dataset.tick = o.key;
-  t.setAttribute('aria-label', o.done ? `Mark "${o.title}" not done` : `Mark "${o.title}" done`);
-  t.style.setProperty('--c', groupColor(model.groups, o.group));
-  return t;
+function step(dir) {
+  const v = S.view;
+  if (v.mode === 'D') v.anchor = addDays(v.anchor, dir);
+  else if (v.mode === 'W') v.anchor = addDays(v.anchor, 7 * dir);
+  else if (v.mode === 'M') v.anchor = addMonths(v.anchor, dir);
+  else if (v.mode === 'Y') v.anchor = addMonths(v.anchor, 12 * dir);
+  else v.sprint = Math.max(1, v.sprint + dir);
+  closePops();
+  render();
 }
+$('#prev').addEventListener('click', () => step(-1));
+$('#next').addEventListener('click', () => step(1));
 
-$('#grid').addEventListener('click', e => {
-  const tick = e.target.closest('[data-tick]');
-  if (tick) return toggleDone(visible.get(tick.dataset.tick));
-  const cell = e.target.closest('[data-day]');
-  if (!cell) return;
-  if (phone()) return openDaySheet(cell.dataset.day);
-  const row = e.target.closest('[data-key]');
-  if (row) openEntry(visible.get(row.dataset.key));
-  else openNew(cell.dataset.day);
+$('#today').addEventListener('click', () => {
+  closePops();
+  S.view.anchor = todayKey();
+  S.view.sprint = currentSprint();
+  render();
 });
 
-// ---- navigation ----
+for (const b of document.querySelectorAll('[data-mode]'))
+  b.addEventListener('click', () => {
+    S.view.mode = b.dataset.mode;
+    if (b.dataset.mode === 'K')
+      S.view.sprint = sprintOf(S.view.anchor, S.model.settings) || currentSprint();
+    closePops();
+    render();
+  });
 
-const go = (y, m) => { view = { y, m }; render(); };
-$('#prev').addEventListener('click', () => go(view.m ? view.y : view.y - 1, (view.m + 11) % 12));
-$('#next').addEventListener('click', () => go(view.m === 11 ? view.y + 1 : view.y, (view.m + 1) % 12));
-const jumpToday = () => { const n = new Date(); closeAll(); go(n.getFullYear(), n.getMonth()); };
-$('#today').addEventListener('click', jumpToday);
-$('#menu-today').addEventListener('click', jumpToday);
+// Defaults to today when today is in view, otherwise to the first day on screen - in the
+// kanban, the first day of the selected sprint, in its todo column.
+$('#add').addEventListener('click', () => {
+  closePops();
+  openNew(S.view.mode === 'K'
+    ? { dayKey: defaultDay(), type: 'task', stage: 'todo', allDay: true }
+    : { dayKey: defaultDay() });
+});
 
-// ---- dropdown date picker ----
+$('#gear').addEventListener('click', openSettings);
+$('#settings-close').addEventListener('click', closePops);
+
+// ---- the dropdown date picker --------------------------------------------------------------
+// A month at a time, a 9-year grid, or - in the kanban - a list of sprints.
 
 $('#period').addEventListener('click', () => {
-  if (!$('#picker').hidden) return closeAll();
-  closeAll();
-  pick = { mode: 'days', y: view.y, m: view.m, base: view.y - 8 };
+  if (!$('#picker').hidden) return closePops();
+  closePops();
+  const [y, m] = partsOf(S.view.anchor);
+  pick = S.view.mode === 'K'
+    ? { mode: 'sprints', base: Math.max(1, S.view.sprint - 4) }
+    : { mode: 'days', y, m: m - 1, base: y - 8 };
   renderPicker();
-  openPop($('#picker'), $('#period'), 'left');
+  openPop($('#picker'), $('#period'));
 });
 
 $('#pick-title').addEventListener('click', () => {
+  if (pick.mode === 'sprints') return;
   pick.mode = pick.mode === 'days' ? 'years' : 'days';
   pick.base = pick.y - 8;
   renderPicker();
@@ -149,6 +113,7 @@ $('#pick-next').addEventListener('click', () => pagePicker(1));
 
 function pagePicker(dir) {
   if (pick.mode === 'years') pick.base += dir * 9;
+  else if (pick.mode === 'sprints') pick.base = Math.max(1, pick.base + dir * 9);
   else {
     const m = pick.m + dir;
     pick.y += Math.floor(m / 12);
@@ -159,409 +124,173 @@ function pagePicker(dir) {
 
 function renderPicker() {
   const body = $('#pick-body');
+
+  if (pick.mode === 'sprints') {
+    $('#pick-label').textContent = 'Sprints';
+    body.className = 'pick-body sprints';
+    body.replaceChildren(...Array.from({ length: 9 }, (_, i) => {
+      const r = sprintRange(pick.base + i, S.model.settings);
+      const b = el('button', `pk wide${r.n === S.view.sprint ? ' now' : ''}`,
+        `Sprint ${r.n} · ${dayLabel(r.start)} – ${dayLabel(r.end)}`);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        closePops();
+        S.view.sprint = r.n;
+        S.view.anchor = r.start;
+        render();
+      });
+      return b;
+    }));
+    return;
+  }
+
   if (pick.mode === 'years') {
     // 9 years ending with the current one; the arrows page by 9.
     $('#pick-label').textContent = `${pick.base} – ${pick.base + 8}`;
     body.className = 'pick-body years';
     body.replaceChildren(...Array.from({ length: 9 }, (_, i) => {
       const y = pick.base + i;
-      const b = el('button', `pk${y === view.y ? ' now' : ''}`, String(y));
+      const b = el('button', `pk${y === partsOf(S.view.anchor)[0] ? ' now' : ''}`, String(y));
       b.type = 'button';
       b.addEventListener('click', () => { pick = { ...pick, mode: 'days', y }; renderPicker(); });
       return b;
     }));
     return;
   }
-  $('#pick-label').textContent = at(pick.y, pick.m, 1).toLocaleDateString(undefined, MONTH);
+
+  $('#pick-label').textContent =
+    new Date(pick.y, pick.m, 1, 12).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   body.className = 'pick-body days';
-  const today = todayKey();
   body.replaceChildren(
-    ...['M', 'T', 'W', 'T', 'F', 'S', 'S'].map(n => el('span', 'wh', n)),
-    ...monthCells(pick.y, pick.m).map(d => {
-      const k = localKey(d);
-      const b = el('button', `pk${d.getMonth() !== pick.m ? ' out' : ''}${k === today ? ' now' : ''}`,
-        String(d.getDate()));
+    ...weekLetters().map(n => el('span', 'wh', n)),
+    ...monthGrid(pick.y, pick.m, S.prefs.weekStart).map(k => {
+      const [, mm, dd] = partsOf(k);
+      const b = el('button', `pk${mm !== pick.m + 1 ? ' out' : ''}${k === todayKey() ? ' now' : ''}`,
+        String(dd));
       b.type = 'button';
       b.addEventListener('click', () => {
-        closeAll();
-        go(d.getFullYear(), d.getMonth());
-        if (phone()) openDaySheet(k);
+        closePops();
+        S.view.anchor = k;
+        render();
+        // Picking a date in a view that cannot show the day's entries in place opens the preview.
+        if (S.view.mode === 'Y' || (S.view.mode === 'M' && phone())) openDayPop(k);
       });
       return b;
     }));
 }
 
-// ---- group filter ----
+const weekLetters = () => {
+  const base = weekStartOf('2026-01-05', S.prefs.weekStart);
+  return Array.from({ length: 7 }, (_, i) =>
+    new Date(`${addDays(base, i)}T12:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' }));
+};
+
+// ---- the filter ----------------------------------------------------------------------------
+// A view filter, remembered per device. Groups are named and coloured in settings, not here.
 
 function groupNames() {
-  const names = new Set(Object.keys(model.groups));
+  const names = new Set(Object.keys(S.model.groups));
   let ungrouped = false;
-  for (const e of [...model.dated, ...model.rules]) {
+  for (const e of [...S.model.dated, ...S.model.rules]) {
     if (e.data.group) names.add(e.data.group); else ungrouped = true;
   }
-  const out = [...names].sort().map(n => [n, groupLabel(model.groups, n)]);
+  const out = [...names].sort().map(n => [n, labelOf(n)]);
   if (ungrouped) out.push(['', 'no group']);
   return out;
 }
 
-// Built per host rather than cloned: cloneNode copies attributes, not the checked property.
-function renderGroups() {
-  const names = groupNames();
-  for (const host of [$('#groups-list'), $('#menu-groups')])
-    host.replaceChildren(...names.map(([n, label]) => groupRow(n, label)));
+function renderFilter() {
+  const kids = [el('div', 'pop-sub', 'Groups')];
+  for (const [name, label] of groupNames()) {
+    const lab = el('label', 'glab');
+    const box = el('input');
+    box.type = 'checkbox';
+    box.checked = !S.hidden.has(name);
+    box.addEventListener('change', async () => {
+      if (box.checked) S.hidden.delete(name); else S.hidden.add(name);
+      await setKV('calendar.hiddenGroups', [...S.hidden]);
+      render();
+    });
+    const sw = el('span', 'swatch');
+    sw.style.background = colorOf(name);
+    lab.append(box, sw, el('span', '', label || name));
+    kids.push(lab);
+  }
+
+  // Priority and assignee narrow the board, where a sprint can hold more cards than fit.
+  if (S.view.mode === 'K') {
+    kids.push(el('div', 'pop-sub', 'Priority'));
+    const chips = el('div', 'chiprow');
+    for (const [v, text] of [[1, 'P1'], [2, 'P2'], [3, 'P3'], [0, 'none']]) {
+      const b = el('button', `chip p${v}${S.kfilter.priority.has(v) ? ' on' : ''}`, text);
+      b.type = 'button';
+      b.addEventListener('click', () => {
+        if (S.kfilter.priority.has(v)) S.kfilter.priority.delete(v); else S.kfilter.priority.add(v);
+        render();
+      });
+      chips.append(b);
+    }
+    kids.push(chips, el('div', 'pop-sub', 'Assignee'));
+    const people = [...new Set([...S.model.dated, ...S.model.rules]
+      .flatMap(e => [].concat(e.data.participants ?? []).map(String)))].sort();
+    const sel = el('select');
+    for (const [v, text] of [['', 'anyone'], ...people.map(p => [p, p])]) {
+      const o = el('option', '', text);
+      o.value = v;
+      if (v === S.kfilter.assignee) o.selected = true;
+      sel.append(o);
+    }
+    sel.addEventListener('change', () => { S.kfilter.assignee = sel.value; render(); });
+    kids.push(sel);
+  }
+
+  $('#filter-body').replaceChildren(...kids);
 }
 
-function groupRow(name, label) {
-  const lab = el('label', 'glab');
-  const box = el('input');
-  box.type = 'checkbox';
-  box.checked = !hiddenGroups.has(name);
-  box.dataset.group = name;
-  box.addEventListener('change', onGroupToggle);
-  const sw = el('span', 'swatch');
-  sw.style.setProperty('--c', groupColor(model.groups, name));
-  lab.append(box, sw, el('span', '', label || name));
-  return lab;
-}
-
-async function onGroupToggle(e) {
-  const n = e.target.dataset.group;
-  if (e.target.checked) hiddenGroups.delete(n); else hiddenGroups.add(n);
-  await setKV('calendar.hiddenGroups', [...hiddenGroups]);
-  renderGroups();
-  render();
-}
-
-async function setAllGroups(hide) {
-  hiddenGroups = new Set(hide ? groupNames().map(([n]) => n) : []);
-  await setKV('calendar.hiddenGroups', [...hiddenGroups]);
-  renderGroups();
-  render();
-}
-$('#groups-all').addEventListener('click', () => setAllGroups(false));
-$('#groups-none').addEventListener('click', () => setAllGroups(true));
-
-$('#groups-btn').addEventListener('click', () => {
-  if (!$('#groups-pop').hidden) return closeAll();
-  closeAll();
-  openPop($('#groups-pop'), $('#groups-btn'), 'right');
+$('#filter-btn').addEventListener('click', () => {
+  if (!$('#filter-pop').hidden) return closePops();
+  closePops();
+  openPop($('#filter-pop'), $('#filter-btn'), 'right');
 });
 
-// ---- popovers, sheets ----
-
-function openPop(pop, anchor, align) {
-  pop.hidden = false;
-  $('#scrim').hidden = false;
-  const r = anchor.getBoundingClientRect();
-  const w = pop.offsetWidth;
-  const left = align === 'right' ? r.right - w : r.left;
-  pop.style.left = `${Math.max(8, Math.min(left, innerWidth - w - 8))}px`;
-  pop.style.top = `${r.bottom + 6}px`;
-  anchor.setAttribute('aria-expanded', 'true');
-}
-
-function openSheet(sheet) {
-  closeAll();
-  sheet.hidden = false;
-  $('#scrim').hidden = false;
-}
-
-function closeAll() {
-  for (const id of ['#picker', '#groups-pop', '#menu-sheet', '#day-sheet', '#scrim'])
-    $(id).hidden = true;
-  $('#period').setAttribute('aria-expanded', 'false');
-  $('#groups-btn').setAttribute('aria-expanded', 'false');
-}
-
-$('#scrim').addEventListener('click', closeAll);
-$('#menu-btn').addEventListener('click', () => openSheet($('#menu-sheet')));
-$('#menu-close').addEventListener('click', closeAll);
-$('#day-close').addEventListener('click', closeAll);
+$('#scrim').addEventListener('click', closePops);
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (!$('#popup').hidden) closePopup(); else closeAll();
+  if (!$('#sub').hidden) $('#sub-cancel').click();
+  else if (!$('#popup').hidden) closePopup();
+  else closePops();
 });
+matchMedia('(min-width: 600px)').addEventListener('change', () => { closePops(); render(); });
 
-// ---- day sheet (phone) ----
+// ---- sync ----------------------------------------------------------------------------------
 
-function openDaySheet(dayKey) {
-  $('#day-sheet').dataset.day = dayKey;
-  fillDaySheet(dayKey);
-  openSheet($('#day-sheet'));
-}
-
-function fillDaySheet(dayKey) {
-  $('#day-title').textContent =
-    new Date(`${dayKey}T12:00:00`).toLocaleDateString(undefined, DAY);
-  const items = [...visible.values()].filter(o => o.dayKey === dayKey).sort(byStart);
-  const list = $('#day-list');
-  if (!items.length) {
-    list.replaceChildren(el('p', 'day-empty', 'Nothing on this day.'));
-  } else {
-    list.replaceChildren(...items.map(o => {
-      const b = el('div', `dentry${o.done ? ' done' : ''}`);
-      b.dataset.key = o.key;
-      const bar = el('span', 'bar');
-      bar.style.setProperty('--c', groupColor(model.groups, o.group));
-      const mid = el('div', 'mid');
-      mid.append(el('span', 'dt', [o.allDay ? 'all-day' : timeLabel(o.start),
-        groupLabel(model.groups, o.group), o.seriesId ? 'repeats' : ''].filter(Boolean).join(' · ')));
-      mid.append(el('span', 'dn', o.title));
-      b.append(bar, mid);
-      if (o.type === 'task') b.append(tickButton(o));
-      return b;
-    }));
-  }
-}
-
-$('#day-list').addEventListener('click', e => {
-  const tick = e.target.closest('[data-tick]');
-  if (tick) return toggleDone(visible.get(tick.dataset.tick));
-  const row = e.target.closest('[data-key]');
-  if (row) openEntry(visible.get(row.dataset.key));
-});
-$('#day-add').addEventListener('click', () => openNew($('#day-sheet').dataset.day));
-
-// ---- the entry popup ----
-
-const F = {
-  title: $('#f-title'), done: $('#f-done'), allday: $('#f-allday'),
-  startDate: $('#f-start-date'), startTime: $('#f-start-time'),
-  endDate: $('#f-end-date'), endTime: $('#f-end-time'),
-  group: $('#f-group'), location: $('#f-location'), recurrence: $('#f-recurrence'),
-  alerts: $('#f-alerts'), participants: $('#f-participants'), body: $('#f-body')
-};
-// Keys the form owns. Anything else in the file - exdate, rdate, a hand-added key - survives.
-const FORM_KEYS = ['title', 'type', 'start', 'end', 'done', 'group', 'location',
-  'recurrence', 'alerts', 'participants'];
-let curType = 'event';
-
-function openNew(dayKey) {
-  closeAll();
-  openPopup({ occ: null, dayKey, scope: 'occurrence' });
-}
-
-function openEntry(occ) {
-  if (!occ) return;
-  closeAll();
-  openPopup({ occ, dayKey: occ.dayKey, scope: 'occurrence' });
-}
-
-function openPopup(state) {
-  editing = state;
-  fillForm();
-  $('#popup').hidden = false;
-  $('#f-msg').textContent = '';
-  requestAnimationFrame(() => { grow(); F.title.focus(); });
-}
-
-function closePopup() {
-  $('#popup').hidden = true;
-  editing = null;
-}
-$('#f-discard').addEventListener('click', closePopup);
-$('#popup').addEventListener('click', e => { if (e.target === $('#popup')) closePopup(); });
-
-function setType(t) {
-  curType = t;
-  for (const b of document.querySelectorAll('[data-type]'))
-    b.setAttribute('aria-pressed', String(b.dataset.type === t));
-  $('#f-done-wrap').classList.toggle('hidden', t !== 'task');
-}
-for (const b of document.querySelectorAll('[data-type]'))
-  b.addEventListener('click', () => setType(b.dataset.type));
-
-for (const b of document.querySelectorAll('[data-scope]'))
-  b.addEventListener('click', () => {
-    editing.scope = b.dataset.scope;
-    fillForm();
-    grow();
-  });
-
-F.allday.addEventListener('change', syncAllDay);
-function syncAllDay() {
-  const on = F.allday.checked;
-  F.startTime.disabled = on;
-  F.endTime.disabled = on;
-  if (on) { F.startTime.value = ''; F.endTime.value = ''; }
-}
-
-F.body.addEventListener('input', grow);
-function grow() {
-  F.body.style.height = 'auto';
-  F.body.style.height = `${F.body.scrollHeight + 2}px`;
-}
-
-function fillForm() {
-  const { occ, scope } = editing;
-  const series = occ && occ.seriesId && scope === 'series';
-  const data = !occ ? { type: 'event', start: `${editing.dayKey}T09:00:00` }
-    : series ? occ.seriesData : occ.data;
-  const body = !occ ? '' : series ? occ.seriesBody : occ.body;
-
-  $('#f-scope').hidden = !(occ && occ.seriesId);
-  for (const b of document.querySelectorAll('[data-scope]'))
-    b.setAttribute('aria-pressed', String(b.dataset.scope === scope));
-
-  F.title.value = data.title ?? '';
-  setType(data.type === 'task' ? 'task' : 'event');
-  F.done.checked = data.done === true;
-
-  const start = String(data.start ?? '');
-  const allDay = isAllDay(start);
-  F.allday.checked = allDay;
-  if (allDay) {
-    F.startDate.value = start.slice(0, 10);
-    F.endDate.value = data.end ? String(data.end).slice(0, 10) : '';
-  } else {
-    const [sd, st] = localParts(start);
-    F.startDate.value = sd;
-    F.startTime.value = st;
-    if (data.end) { const [ed, et] = localParts(String(data.end)); F.endDate.value = ed; F.endTime.value = et; }
-    else if (!occ) { F.endDate.value = sd; F.endTime.value = '10:00'; }
-    else { F.endDate.value = ''; F.endTime.value = ''; }
-  }
-  syncAllDay();
-
-  const names = new Set([...Object.keys(model.groups), data.group].filter(Boolean));
-  F.group.replaceChildren(...[['', '(no group)'], ...[...names].sort()
-    .map(n => [n, groupLabel(model.groups, n)])].map(([v, t]) => {
-      const o = el('option', '', t);
-      o.value = v;
-      return o;
-    }));
-  F.group.value = data.group ?? '';
-  F.location.value = data.location ?? '';
-  F.alerts.value = (data.alerts == null ? [] : [].concat(data.alerts)).join(', ');
-  F.participants.value = (data.participants == null ? [] : [].concat(data.participants)).join(', ');
-  F.body.value = body ?? '';
-
-  // Only the series carries the rule; an occurrence override must never rewrite it.
-  const canRule = !occ || series || !occ.seriesId;
-  $('#f-rec-wrap').classList.toggle('hidden', !canRule);
-  F.recurrence.value = canRule ? (data.recurrence ?? '') : '';
-
-  const isOcc = occ && occ.seriesId && scope === 'occurrence';
-  $('#f-skip').hidden = !isOcc;
-  $('#f-delete').hidden = !occ;
-  $('#f-delete').textContent = occ && occ.seriesId ? 'delete series' : 'delete';
-  $('#f-path').textContent = !occ ? 'New entry.'
-    : series ? occ.seriesPath
-      : isOcc ? `${occ.seriesPath} · occurrence ${occ.recId}${occ.override ? ` · override ${occ.path}` : ''}`
-        : occ.path;
-}
-
-// Local wall clock out of a stored instant, for the date and time inputs.
-function localParts(iso) {
-  const d = new Date(iso);
-  if (isNaN(d)) return [iso.slice(0, 10), iso.slice(11, 16)];
-  return [localKey(d), `${pad(d.getHours())}:${pad(d.getMinutes())}`];
-}
-// What the user typed is local wall clock; stored as an instant in the Z form.
-const toZ = (date, time) =>
-  new Date(`${date}T${time || '00:00'}`).toISOString().replace(/\.\d{3}Z$/, 'Z');
-
-const splitList = v => v.split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
-
-function collect(base) {
-  const data = { ...base };
-  for (const k of FORM_KEYS) delete data[k];
-
-  data.title = F.title.value.trim();
-  data.type = curType;
-  const allDay = F.allday.checked;
-  const sd = F.startDate.value, st = F.startTime.value || '00:00';
-  const ed = F.endDate.value, et = F.endTime.value;
-  data.start = allDay ? sd : toZ(sd, st);
-  if (allDay) { if (ed && ed !== sd) data.end = ed; }
-  else if (ed || et) data.end = toZ(ed || sd, et || st);
-  if (curType === 'task') data.done = F.done.checked;
-  if (F.group.value) data.group = F.group.value;
-  if (F.location.value.trim()) data.location = F.location.value.trim();
-  if (!$('#f-rec-wrap').classList.contains('hidden')) {
-    const r = F.recurrence.value.trim().replace(/^RRULE:/i, '');
-    if (r) data.recurrence = r;
-  }
-  const alerts = splitList(F.alerts.value).map(Number).filter(Number.isFinite);
-  if (alerts.length) data.alerts = alerts;
-  const parts = splitList(F.participants.value);
-  if (parts.length) data.participants = parts;
-  return data;
-}
-
-$('#entry-form').addEventListener('submit', async e => {
-  e.preventDefault();
-  const { occ, scope } = editing;
-  const series = occ && occ.seriesId && scope === 'series';
-  const base = !occ ? {} : series ? occ.seriesData : occ.data;
-  const data = collect(base);
-  const body = F.body.value;
-  await commit('save', async () => {
-    if (!occ) await createEntry(data, body);
-    else if (occ.seriesId && scope === 'occurrence') await saveOverride(occ, data, body);
-    else if (occ.seriesId) await updateEntry(occ.seriesPath, data, body);
-    else await updateEntry(occ.path, data, body);
-  });
-});
-
-$('#f-skip').addEventListener('click', () =>
-  commit('skip', () => skipOccurrence(editing.occ)));
-
-$('#f-delete').addEventListener('click', () => {
-  const { occ } = editing;
-  const what = occ.seriesId
-    ? `Delete the whole repeating entry "${occ.title}"? Its override files stay behind.`
-    : `Delete "${occ.title}"?`;
-  if (!confirm(what)) return;
-  commit('delete', () => deleteEntry(occ.seriesId ? occ.seriesPath : occ.path));
-});
-
-// Every write already updated the local mirror before drain() pushed it, so the view is
-// refreshed either way: offline the change is queued and still on screen.
-async function commit(what, fn) {
-  const btn = $('#f-save');
-  btn.disabled = true;
-  $('#f-msg').textContent = '';
-  try {
-    await fn();
-    closePopup();
-  } catch (err) {
-    $('#f-msg').textContent = `${what} queued but not pushed: ${err.message}`;
-    $('#f-msg').className = 'msg bad';
-  } finally {
-    btn.disabled = false;
-    model = await loadModel();
-    renderGroups();
-    render();
-    showSync();
-  }
-}
-
-async function toggleDone(o) {
-  if (!o || o.type !== 'task') return;
-  try {
-    if (o.seriesId) await saveOverride(o, { ...o.data, done: !o.done }, o.body);
-    else await updateEntry(o.path, { ...o.data, done: !o.done }, o.body, { move: false });
-  } catch (err) {
-    status(`queued, not pushed: ${err.message}`, true);
-  }
-  model = await loadModel();
-  render();
-  showSync();
-}
-
-// ---- sync ----
-
-const status = (text, bad) => {
+function status(text, bad) {
   const s = $('#sync');
   s.textContent = text;
   s.classList.toggle('bad', !!bad);
-};
+}
 
 async function showSync() {
   const n = await queuedCount();
-  if (n) status(`${n} change(s) pending`);
-  else status('in sync');
+  status(n ? `${n} change(s) pending` : 'in sync');
+}
+
+// Every write reaches the local mirror first, so the view is already right and the push can run
+// behind it. One drain at a time, and failures and conflicts are reported here rather than in
+// the popup the user has already left.
+let chain = Promise.resolve();
+function push(message) {
+  chain = chain.then(async () => {
+    status('pushing…');
+    try {
+      const r = await drain(message);
+      if (r.conflicts?.length)
+        status(`${r.conflicts.length} change(s) kept beside the remote version as .conflict files — review them`, true);
+      else await showSync();
+    } catch (err) {
+      status(`not pushed: ${err.message}`, true);
+    }
+  });
 }
 
 async function refresh() {
@@ -569,25 +298,39 @@ async function refresh() {
   status('checking…');
   try {
     const r = await pull();                    // whole repo: the mirror and the ETag are shared
-    if (!r.unchanged) { model = await loadModel(); renderGroups(); render(); }
+    if (!r.unchanged) { S.model = await loadModel(); render(); }
     status(r.empty ? 'repo is empty' : r.unchanged ? 'in sync' : `in sync — ${r.changed} file(s) updated`);
   } catch (err) {
     status(err.message, true);
   }
 }
 
-// ---- boot ----
+// ---- boot ----------------------------------------------------------------------------------
 
-renderWeekhead();
-matchMedia('(min-width: 600px)').addEventListener('change', () => { closeAll(); render(); });
+S.render = render;
+S.status = status;
+S.push = push;
+S.reload = loadModel;
+wireView();
+
+const minePrefs = await loadPrefs();
+applyTheme(minePrefs.theme);
 
 if (!await getConfig()) {
   $('#needs-setup').hidden = false;
 } else {
   $('#cal').hidden = false;
-  hiddenGroups = new Set(await getKV('calendar.hiddenGroups') || []);
-  model = await loadModel();
-  renderGroups();
+  S.prefs = {
+    ...S.prefs, ...minePrefs,
+    weekStart: (await getKV('calendar.weekStart')) ?? 1,
+    showWeeks: !!(await getKV('calendar.showWeeks')),
+    timeZone: (await getKV('calendar.timeZone')) || ''
+  };
+  setZone(S.prefs.timeZone);
+  S.hidden = new Set(await getKV('calendar.hiddenGroups') || []);
+  S.model = await loadModel();
+  S.view.anchor = todayKey();
+  S.view.sprint = currentSprint();
   render();
   await refresh();
   addEventListener('focus', refresh);
