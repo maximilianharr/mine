@@ -1,0 +1,35 @@
+<pasted_content id="19ff">
+/grill-me This calendar app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or REQUIREMENTS.md. After collecting the user input update the REQUIREMENTS.md. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+in the main calendar/kanban window:
+- Expand the the calendar month to the whole vertical length
+- reorder the header row on the calendar / kanban view:
+  - kanban/calendar icon, filter icon leftmost
+  - '<', 'date'/'sprint', '>' centered
+  - 'settings', 'home' rightmost
+  - increase the icons / text of header row to twice the size. For mobile view to fill the row horizontally.
+  - remove the '-' and '+' button. Clicking on the date zooms in ('y' > 'm' > 'w' > 'd' > 'y' > ..). Clicking on the sprint opens the list of sprints as before 
+  - for the mobile view
+    - remove the '<' and '>' icon and make the 'date' swipe-able to left right 
+In the event/task creation popup:
+- open the popup in the middle not at the bottom
+- for the icons:
+  - only keep the task/event item leftmost and cancel/delete/save icon 
+  - move all icons below the start/end time (category, all day, location, assignee, ...)
+  - for each of these icons add a row with the icon on the left and the text right of it, e.g. 'ball'+'category'
+  - when the user clicks on one then open the popup to set it and move the icons which are set to the top 
+
+In the kanban view:
+- in the stage header row: move the '<', 'stage', '>' buttons to the middle and double the size. for mobile view make sure not to exceed the horizontal space. 
+- remove the number of tickets and the kdot
+- make 'todo' font red, 'doing' yellow, 'done' green
+- for the desktop view do not show '<' and '>' for each ticket as they can be dragged and dropped here
+
+system-wide:
+- make the save button a green disk instead of green background
+```
+</pasted_content id="19ff">
+
+---
+
+bring the TEST-REQUIREMENTS.md in line. commit. Then implement the features, commit and push them. I will then test the app on the phone and provide feedback.
