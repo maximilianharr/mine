@@ -1,0 +1,57 @@
+<pasted_content id="4d07">
+/grill-me This app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or REQUIREMENTS.md. After collecting the user input update the REQUIREMENTS.md. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+In the task/event popup
+- On the top row are these item from left to right
+  - "T" for task, "E" for event > clicking either disable the other. Default is event
+  - "two arrows that form a circle" for repetition > opens a popup with repetition:
+    - "repeat" popup hast dropdown not RRULE with these: weekly, biweekly, montly, monthly on the x-th, montly on the x-th weekday, yearly
+  - a "ball" for category/group
+    - in the popup add a "+ add" to add a category
+  - a "location" button to set location
+  - a "D" button to set details
+  - a "x" button to close / discard
+  - a trashcan to delete
+  - a disk button to save
+  - all popups have a trashcan button to delete, an "x" button to discard and a disk button to save. If a popup is set the icon is enabled (brighter background color in dark mode, and darker in bright mode)
+- below the top row with icons is the title text field
+- below the title is the start/end field as before
+- below this is a item for each of the top buttons with the details, e.g. if "location" is set, then it appears at the bottom.
+  - each of these details have a "trashcan" and "pen" button to delete / edit
+- after saving an event it shall push in the background and show the calender view directly (currently processes a few seconds and does not close)
+
+In the main / mine window:
+- "update ready" shows all the time even though no update is ready
+
+In the calender view
+- on the top row on the right:
+  - a return arrow button to retun arrow button to the main/mine view which is on the left of the settings button
+  - a "+" button to add a calender event/task (use current date as default)
+- small vertical line on the left of each row with the calender week
+- When clicking on a day I want a small "+" and "x" botton on the top right to close the preview or add an entry instead of these huge "+ add entry" and "close" buttons.
+- On the top of the calender view I want a "D", "M", "Y", "K" for day, month, year, kanban calender view. 
+- On the month preview each event is not displayed by a dot in group color but by a small line on the event with the title and background color of the group.
+- The kanban view looks like this:
+  - has three categories ('todo', 'doing', 'done') > adapt the calender tasks accordingly.
+  - each kanban item is a calender task and vice versa
+  - Each row has the state as title. Todo is red, doing is yellow, done is green
+  - below the state is a preview of the kanban item:
+    - on the top row is the title on the right and on the left a "trashcan" to delete, a "pen" button to edit, and a "<" and ">" button to move the ticket to the previous/next stage (cannot be moved left from "todo" or right from "doing")
+    - below is a two-line preview of the description and on the right is a "priority" (1 red , 2 orange , 3 yellow), estimate number (in days) and sprint number. When clicking either they can be adapted. 
+    - If an item is moved to another sprint then the start/end day are those of the sprint
+  - on Desktop shows all three rows. on mobile shows 'todo' row and can be swiped left/right to other categories.
+  - on the title category row on the right is a sprint number that can be clicked to select another sprint and a filter icon to filter the tasks (category, assignee, priority)
+  - items can be dr
+  - on mobile shows the '
+- When clicking on the top right "hamburger button"/3 vertical lines I want a settings gear button with these settings
+  - top right has a "x" to close. Remove the buttons "jump to today", "back to mine", "close"
+  - groups (when clicked opens a list of groups and a "+" button on top right to add a group
+  - start week on (monday, sunday)
+  - time zone (UTC+x)
+  - date format (dd.mm.yyyy, mm/dd/yy)
+  - show calendar weeks
+  - kanban interval (x weeks)
+  - kanban first week start date (dd.mm.yyyy)
+  - dark mode toggle
+```
+</pasted_content id="4d07">
