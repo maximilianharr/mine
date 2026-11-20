@@ -1,0 +1,11 @@
+<task-notification>
+<task-id>b01yt30jw</task-id>
+<tool-use-id>toolu_01P8Uei2PBpq3nHh5R2FQ9Yo</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/6ce505f1-7588-401a-a7e4-c35831d73c9c/tasks/b01yt30jw.output</output-file>
+<status>failed</status>
+<summary>Background command "Serve the test site" failed with exit code 143</summary>
+</task-notification>
+
+---
+
+document how to test in TEST-REQUIREMENTS.md. Update the other Requirements as well if necessary. commit and push. I will then check the app and provide feedback.
