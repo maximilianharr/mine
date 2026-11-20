@@ -10,9 +10,16 @@ See [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) for the file format.
 A title, a type — **event** or **task** — a start and end, a group, a location, participants,
 alerts, and a free markdown body for the agenda, checklist or notes.
 
-A task also carries a **stage** — `todo`, `doing` or `done` — and, optionally, a priority (1, 2
-or 3) and an estimate in days. An event has none of the three. Stage is the only record of a
+A task also carries a **stage** — `todo`, `doing` or `done` — and, optionally, an **important**
+mark and an estimate in days. An event has none of the three. Stage is the only record of a
 task's progress; there is no separate done flag.
+
+**Important is a plain yes or no, not a scale.** There is no priority 1, 2 and 3 any more. Three
+tiers asked you to decide twice — once whether a task matters and again how much — and the second
+answer never changed what got done first. A task that matters carries `important: true`; a task
+that does not carries no key at all, which is the convention the estimate already follows. A file
+written before this change and carrying `priority: 1` reads as important, `priority: 2` through
+`9` read as not important, and the old key goes when the entry is next saved.
 
 A new task starts at `todo` with an estimate of **1 day**. Both are only defaults: either can be
 changed before saving, and the estimate can be cleared away again, so `estimate` stays a key an
@@ -43,10 +50,12 @@ exactly what fits at this size.
 - **Leftmost, the view switch and the filter.** One slot always holds the way to the other kind
   of view: a board icon in a calendar view, and on the board a calendar icon, which returns to
   the month view. The board is not a zoom step, which is why it has a slot of its own rather
-  than a place in the cycle the label walks. Beside it a dropdown to filter by group, each group
-  showing its colour. This is a
-  view filter and is remembered per device; groups are *named and coloured* in settings, not
-  here.
+  than a place in the cycle the label walks. Beside it the filter. **Groups are a dropdown inside
+  it, not a list**: one `groups` row saying how many are on, which opens to the same checkboxes,
+  each group showing its colour. Any subset can still be hidden — the dropdown only folds the
+  list away, so that a repo with twenty groups cannot give the filter a panel taller than the
+  screen. This is a view filter and is remembered per device; groups are *named and coloured* in
+  settings, not here.
 - **Centred, the period.** Left/right buttons, with the period label between them, to move to
   the previous/next day, week, month, year or sprint, depending on the current view. The label
   is short, because the pane has to fit a phone:
@@ -130,7 +139,12 @@ selected sprint. In the year view it is the day preview's `+`, as everywhere els
   and day grids and in the day preview, and a task seen in the month is moved through its popup
   or on the board. Clicking empty space in a cell creates an entry; clicking an entry opens it.
 - **Week** — columns are the days, rows are the 24 hours.
-- **Day** — the week view for a single day, with more detail per entry.
+- **Day** — the week view for a single day, with more detail per entry, and **with no day header
+  row**. The weekday and the date are already the period label in the top pane, and `TUE 20`
+  repeated directly beneath that label was the same fact twice in the one view where there is
+  only one day to name. So the day view is the all-day strip and the hour grid, with nothing
+  above them. The week view keeps its seven headers: those name seven different days, and the
+  pane names none of them.
 - **Kanban** — below.
 
 Groups switched off in the filter are not shown in any view.
@@ -140,7 +154,8 @@ Groups switched off in the filter are not shown in any view.
 Clicking a day opens that day's entries as a list, each one tappable. Its top right carries a
 small `+` to add an entry on that day and a small `x` to close it — not full-width buttons. It
 is reached from a day in the year grid, from a day cell in the month view on a phone, and from
-a day header in the week and day grids.
+a day header in the week grid. The day view has no header to reach it from, and needs none: it
+is already showing the one day the preview would list.
 
 ## Entry popup
 
@@ -155,8 +170,11 @@ nothing between them. **Every button in it is an icon; no button carries a lette
 - Leftmost, a ticked square for **task** and a calendar page for **event**. Choosing one
   deselects the other; the default is event. What the entry *is* comes first, because it governs
   what the rest of the popup offers.
-- Then, right-aligned: an `x` to close and discard, a trashcan to delete the entry, and a disk
-  to save it.
+- Then, right-aligned: a trashcan to delete the entry, a disk to save it, and an `x` to close and
+  discard. **The `x` is rightmost, in every popup in Mine.** The way out of an overlay sits in the
+  same corner wherever you are, so leaving one is never something to look for — and that corner
+  is worth more to the button you reach for by habit than to the one you aim at. The disk gives
+  it up and sits beside it.
 
 There is no dash between the two groups: the gap to the right-aligned trio already separates
 them, and the field icons the dash used to divide off are not in this row at all any more.
@@ -170,25 +188,29 @@ One row of icons directly under start and end. These are not fields with a form 
 small values, edited in the row itself, and they **show their value** rather than merely whether
 they have one — each as a small badge on the corner of its icon.
 
-- a sun for **all-day**. **A clickable icon, not a checkbox** — lit when on, plain when off, the
-  one icon in the popup that still lights, because it is the one with no value to show. On an
-  event it is alone on the row.
+- **`24h` for all-day** — the one control in the popup that is a word rather than a picture, and
+  deliberately so: every drawing of a whole day reads as something else. The sun it replaces was
+  taken for weather or for daylight hours, and `24h` cannot be. **A clickable control, not a
+  checkbox** — lit when on, plain when off. On an event it is alone on the row. Only the button
+  changes its name: the strip in the week and day grids still reads `all-day`, and so does this
+  document, because the word is the clearer one in prose and the button is the one place with no
+  room for it.
 - three small columns for **stage** — cycles `todo` → `doing` → `done` on each tap, its badge in
   that stage's kanban colour: red, yellow, green. There is no stage popup.
-- a flag for **priority** — cycles none → 1 → 2 → 3 → none, the badge carrying the digit on that
-  priority's chip colour.
+- a `!` for **important** — a straight toggle, lit when the task is important and plain when it
+  is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
+  not already said, which is what made the old flag need a digit and this one not.
 - an hourglass for **estimate** — the one that opens a popup, because a number has to be typed.
-  Its badge reads the day count as `2d`, exactly as a kanban card shows it. It stays on this row
-  rather than joining the field rows below, because what it carries is a badge-sized value like
-  the other three, not a form.
+  Its badge reads the day count as `2d`. It stays on this row rather than joining the field rows
+  below, because what it carries is a badge-sized value like the other three, not a form.
 
-On an event, stage, priority and estimate are not there at all, because an event has none of
+On an event, stage, important and estimate are not there at all, because an event has none of
 them. They sit here so that a task that is not on a board still carries the two fields a kanban
 card edits.
 
-All-day is deliberately **not** the save button's green: in all of Mine green is a save and red
-is a trashcan, and a green toggle beside the disk would make the popup look like it offers two
-primary actions.
+Neither lit control — `24h` or `!` — is the save button's green: in all of Mine green is a save
+and red is a trashcan, and a green toggle beside the disk would make the popup look like it
+offers two primary actions.
 
 ### The field rows
 
@@ -219,12 +241,12 @@ The six fields, in their canonical order:
   top group and shuffles nothing else, so a row never moves for a reason you did not cause.
 - **A set row is plain.** Being in the top group and showing a value is what says the field is
   set — which is what the old lit icon said, in a row that no longer exists. Nothing in the
-  popup lights except the sun.
+  popup lights except the two toggles on the row above, `24h` and `!`.
 
-Each of the six opens its own popup, and every popup has the same three buttons: a trashcan that
-clears that one field, an `x` that abandons the sub-edit, and a disk that commits the value into
-the entry form. **A sub-popup never writes to the repo**, with the single exception noted under
-Category.
+Each of the six opens its own popup, and every popup has the same three buttons in the entry
+popup's own order: a trashcan that clears that one field, a disk that commits the value into the
+entry form, and, rightmost, an `x` that abandons the sub-edit. **A sub-popup never writes to the
+repo**, with the single exception noted under Category.
 Nothing is written until the entry popup's own disk, so one entry edit is one commit, and the
 entry popup's `x` discards the staged fields along with everything else. This is also what makes
 a brand-new entry work, since it has no file for a sub-popup to write to.
@@ -258,6 +280,11 @@ it: that is a different file from the entry, and a category must not disappear b
 it was created for was discarded. A pen edits a group, a trashcan deletes it — and entries
 still naming a deleted group render grey.
 
+**This is the same popup the settings panel's *edit groups* button opens**, and the only place in
+the calendar where a group is named or coloured. Reached from an entry it also picks one; reached
+from settings it only manages them. One list, because two would have to be kept in step and
+neither would gain anything by it.
+
 ## Kanban
 
 Three columns — **todo** (red), **doing** (yellow), **done** (green) — holding one sprint's
@@ -279,21 +306,44 @@ than a pure one, which would not be readable on the light theme. There is no col
 card count: the dot said what the coloured name now says, and a count is a number nobody acts
 on. The name is **centred and drawn at twice the size**; the `+` stays at the right of the
 header, where it is the board's only way to make a task, since the top pane has none. The sprint
-selector and a filter icon (category, assignee, priority) sit in the top pane, because one board
-shows one sprint.
+selector and the filter sit in the top pane, because one board shows one sprint. On the board the
+filter holds the groups dropdown, an assignee, and a single **important only** toggle — one
+switch, now that importance is a yes or no, where four priority chips used to ask which tiers you
+meant.
 
 A card shows:
 
-- a top row with a trashcan to delete, a pen to edit, and the title. **On a phone it also carries
-  `<` `>`** to move the card to the previous or next stage — `<` disabled in todo, `>` disabled
-  in done. **On a desktop it does not**: all three columns are there and the card is dragged
-  between them, so arrows on every card are a second way to do what the drag already does, in
-  the one place they are also easiest to mistake for the header's pager;
-- below it two lines of the markdown body;
-- on the right a priority chip (1 red, 2 orange, 3 yellow), the estimate in days, and the sprint
-  number. Clicking any of the three changes it: the priority chip cycles 1 → 2 → 3, and the
-  estimate and the sprint ask for a number. Changing the sprint moves the task's start and end
-  into that sprint's range, keeping its offset within the sprint and its time of day.
+- a top row with the title, and a `!` in front of it when the task is important. **No pen and no
+  trashcan.** The pen said what clicking the card already does. The trashcan put the one
+  irreversible action on the preview, a thumb's width from the title you were aiming at. **On a
+  phone the row also carries `<` `>`** to move the card to the previous or next stage — `<`
+  disabled in todo, `>` disabled in done. **On a desktop it does not**: all three columns are
+  there and the card is dragged between them, so arrows on every card are a second way to do what
+  the drag already does, in the one place they are also easiest to mistake for the header's pager;
+- below it two lines of the markdown body, and the day the task sits on.
+
+**That is the whole card.** The estimate, the sprint number and the priority chip are gone from
+it. The estimate and the importance are set in the entry popup's toggle row, which is one tap
+further away and is where the rest of the task is edited anyway; the sprint number was identical
+on every card on the board, because a board shows one sprint. What is left is a coloured bar, a
+title and two lines — the three things worth reading at a glance across three columns.
+
+The `!` is a **marker, not a button**: it is read on the card and set in the popup. So on a
+desktop the card holds nothing to press at all, and on a phone only the two arrows.
+
+**A card is deleted from the entry popup, not from the board.** Clicking the card opens it; the
+popup's trashcan deletes the whole entry, and its skip control drops a single occurrence of a
+repeating task. Two taps rather than one, and no reachable trashcan on a surface whose whole
+purpose is to be tapped.
+
+**There is no sprint control anywhere.** A sprint is derived from the start date, so moving a
+task to another sprint *is* changing its date, and the date is the only way to do it. A control
+that rewrote the date to mean the same thing was a second truth to keep in step with the first.
+
+**Clicking a card opens it; clicking a control on a card does not.** The phone's `<` `>` move the
+card and nothing else follows — the click must not also reach the card beneath and open the entry
+popup on top of the move. This holds for every control a card may ever carry, and it is the
+reason a card may carry none that is not worth the care.
 
 On desktop all three columns are shown and a card can be dragged between them, and each header is
 its stage's name, centred, with the `+` at its right and **no `‹` `›`** — with every column on
@@ -312,30 +362,54 @@ gesture here never has to be told apart from a drag.
 the screen: a sliver of `done` beside `doing` is a layout fault, and the cause is always the
 same — a gap between columns in a strip that is shifted by whole column widths.
 
-Cards are not reordered by hand; their order comes from priority and start.
+Cards are not reordered by hand; their order comes from importance and start — the important ones
+first, each block by start date.
 
 ## Settings
 
-The gear button opens a centred panel whose top right has an `x` to close:
+The gear button opens a centred panel whose top right has an `x` to close.
 
-- **Groups** — the list of groups, each with its colour, a pen to edit and a `+` to add.
-- **Start week on** — Monday or Sunday.
-- **Time zone** — a zone name such as `Europe/Berlin`, defaulting to the device's own. This
-  zone, not the device's, decides which day a timed entry lands in, where it sits in the week and
-  day grids, and what a time you type means. A plain `UTC+1` is not offered: it is an hour wrong
-  for half the year in any zone with daylight saving. All-day entries are bare dates and are
-  never run through it at all.
-- **Date format** — `auto` (the device's locale), `dd.mm.yyyy` or `mm/dd/yy`.
-- **Show calendar weeks** — the month view's week-number gutter. The week view's label carries
-  its ISO week number either way.
-- **Kanban interval** — in weeks.
-- **Kanban first week start date**.
-- **Theme** — system, light or dark.
+**Every row is two halves: the label in the left half, its control in the right.** That one rule
+is what the panel was missing. A select, a text box, a checkbox and a date field each began
+wherever its own label happened to end, so eight tidy rows read as a ragged column — and the fix
+is alignment, not fewer settings. The controls now line up in one column down the panel.
 
-Everything here is stored on the device except the groups, the kanban interval and the kanban
-first week start date, which are data and live in the repo so they follow you and mean the same
-thing everywhere. Theme and date format apply to all of Mine, not the calendar alone, and the
-main app's settings shows the same two rows.
+Eight rows, and the labels are short enough to fit their half on one line at 320 px — which is
+why two of them are no longer named after the kanban:
+
+| row | control |
+| --- | --- |
+| Groups | an **edit groups** button |
+| Start week on | Monday or Sunday |
+| Time zone | a zone name such as `Europe/Berlin`, defaulting to the device's own |
+| Date format | `auto` (the device's locale), `dd.mm.yyyy` or `mm/dd/yy` |
+| Calendar weeks | the month view's week-number gutter |
+| Sprint length | in weeks |
+| First sprint | the date sprint 1 starts on |
+| Theme | system, light or dark |
+
+Those are labels only: the two renamed rows still read and write `kanban-interval` and
+`kanban-anchor` in the repo, because renaming a row must not rewrite a file.
+
+**Groups are behind the button, not listed in the panel.** *Edit groups* opens the category
+popup in its manage-only form — every group with its colour, a `+ add`, a pen and a trashcan. A
+list in the panel grew with the repo and pushed the eight settings that never change below the
+fold, which is the one thing a settings panel must not do.
+
+**The panel ends at its last row.** There is no paragraph under it explaining what is stored
+where. That rule is the next two paragraphs, and it belongs in this document rather than on a
+screen you opened to change the theme.
+
+A zone name, not an offset: a plain `UTC+1` is an hour wrong for half the year in any zone with
+daylight saving. This zone, not the device's, decides which day a timed entry lands in, where it
+sits in the week and day grids, and what a time you type means. All-day entries are bare dates
+and are never run through it at all. The week view's label carries its ISO week number whether
+*calendar weeks* is on or off: that row governs the month view's gutter and nothing else.
+
+Everything here is stored on the device except the groups, the sprint length and the first sprint
+date, which are data and live in the repo so they follow you and mean the same thing everywhere.
+Theme and date format apply to all of Mine, not the calendar alone, and the main app's settings
+shows the same two rows.
 
 ## On a phone
 

@@ -40,7 +40,7 @@ parser hands back the text `"None"`.
 | `end` | both | same value types as `start`; omitted when a single all-day item |
 | `group` | both | a name, resolved through `groups.md` |
 | `stage` | `task` only | `todo` / `doing` / `done`. Replaces the old `done` boolean |
-| `priority` | `task` only | `PRIORITY`, 1-9. The UI writes 1-3, and those three read back unchanged; a hand-written 4-6 reads as 2 and 7-9 as 3 |
+| `important` | `task` only | `true` when important; absent otherwise, never `false`. Ours, no RFC 5545 equivalent |
 | `estimate` | `task` only | days. Ours, no RFC 5545 equivalent |
 | `location` | both | free text |
 | `alerts` | both | minutes before start, `0` = at start. Stored and exported only; nothing fires in the background |
@@ -54,9 +54,16 @@ parser hands back the text `"None"`.
 
 No `duration` key — it is `end - start`.
 
-Type and time are independent: `type` decides whether the entry has a stage, a priority and an
-estimate, the value type of `start` decides whether it is all-day or timed. A task is usually
-all-day, but may carry a time and then renders at it.
+There is no `priority` key any more. It was RFC 5545 `PRIORITY` and the UI wrote 1, 2 or 3;
+importance is now a yes or no, so the scale had nothing left to say. **A file still carrying
+`priority` is read, not rejected**: `priority: 1` reads as important and `2` through `9` read as
+not important, so the one tier that meant *urgent* survives the change and the other two do not
+silently become it. The key is dropped when the entry is next saved — the only key in the format
+that is read but never written.
+
+Type and time are independent: `type` decides whether the entry has a stage, an important mark
+and an estimate, the value type of `start` decides whether it is all-day or timed. A task is
+usually all-day, but may carry a time and then renders at it.
 
 `stage` is a task's only progress field; there is no `done` key any more. A file written before
 the change, or by hand, is read for `done` as a fallback: `done: true` is stage `done`, anything

@@ -49,9 +49,15 @@ either appears — a trashcan is red even where it only clears one field of a fo
 been saved, because the rule is the icon, not the consequence. Both are **glyphs on no
 background**: a save is a green disk, a trashcan is a red trashcan. **Nothing in Mine is a filled
 green button.** The weight of a primary action comes from the icon being the familiar one in the
-familiar corner, not from a block of colour — and a save drawn like the rest of the row cannot be
+familiar place, not from a block of colour — and a save drawn like the rest of the row cannot be
 mistaken for a background that means something. The `x` that closes or abandons something is
 neither green nor red, and stays plain.
+
+A second convention follows from it: **the `x` is rightmost in every popup**, and the row ends
+trashcan, save, `x`. The way out of an overlay is in the same corner wherever you are, so leaving
+one is never something to look for — and that corner is worth more to the button reached for by
+habit than to the one aimed at deliberately. The save keeps its familiar place beside it, which
+is enough, because what makes it findable is the green disk and not the edge of the card.
 
 ## Using it
 

@@ -62,16 +62,24 @@ narrow phone on its own.
 
 **The entry popup's icon row, toggle row and field rows.** That the icon row holds icons alone,
 with no letter anywhere in it, and that it holds nothing but the type pair and the three on the
-right — task, event, then close, delete, save — with no field icon and no dash left in it.
+right — task, event, then delete, save, close — with no field icon and no dash left in it.
 
-That a new entry is an event and its toggle row holds the sun by itself; that choosing a task
-puts stage, priority and estimate on that same row and switching back to an event takes all
-three away again. That stage cycles through three stages in three badge colours and back, that
-priority cycles 1, 2, 3, none with the digit on its own colour, and that the estimate opens a
-popup prefilled with one day, badges `3d` once set and loses its badge once cleared. That all-day
-lights with the ordinary enabled background and never with `--good`, because green is the save
-button's. That the row sits **below** the start and end fields, not above them — resolved from
-the elements' document order, since a row that merely looks right can still be the old one.
+**That the `x` is the rightmost control in every popup**: the entry popup, each of the six field
+sub-popups, the day preview and the settings panel. Resolved from the buttons' left edges, so a
+row that reads correctly but was built in the old order cannot pass — and a check that only
+counted three buttons would have passed on the old order, which is why this one reads their
+positions. That the entry popup's and a sub-popup's trio runs trashcan, save, `x` in that order.
+
+That a new entry is an event and its toggle row holds `24h` by itself; that choosing a task puts
+stage, important and estimate on that same row and switching back to an event takes all three
+away again. That stage cycles through three stages in three badge colours and back; that
+**important is a toggle and not a cycle** — two taps return it to where it started, it carries no
+badge and no digit, and there is no third state to reach; and that the estimate opens a popup
+prefilled with one day, badges `3d` once set and loses its badge once cleared. That `24h` and `!`
+light with the ordinary enabled background and never with `--good`, because green is the save
+button's, and that nothing else in the popup lights at all. That the row sits **below** the start
+and end fields, not above them — resolved from the elements' document order, since a row that
+merely looks right can still be the old one.
 
 That the six field rows read details, category, repeat, alerts, location, participants, in that
 order on a task and on an event alike, each one carrying its icon and its name; that every field
@@ -79,10 +87,24 @@ has a row whether it is set or not; that setting one moves its row above the uns
 order inside each group stays canonical; that a set row shows the field's value and no pen; and
 that a set row carries no enabled background, because position and value are what say it is set.
 
+**The settings panel.** That its eight rows are two halves — every label's box in the left half
+of the row and every control's box in the right — so the controls' left edges all agree, which is
+the one measurement that separates the new panel from the old. That no label wraps to a second
+line at 320 px. That **groups are not listed in the panel**: it holds one *edit groups* button,
+which opens the same popup the category field opens, and that popup is where the pen, the
+trashcan and the `+ add` are. That the panel's last element is a row and **not a paragraph of
+explanation**.
+
 **The popup is centred.** At 320 px, that the entry popup, a field sub-popup, the settings panel
 and the day preview each sit clear of the bottom edge — their bounding box's bottom is above the
 viewport's, and their top below it. Nothing in the app is a bottom sheet any more, and a card
 that still stretches to the bottom edge is the old sheet in new paint.
+
+**The filter.** That the groups are behind a dropdown rather than listed: the filter popup shows
+one `groups` row, and the checkboxes — one per group, each with its colour — appear only once it
+is opened. That ticking two of them still shows two groups and hides the rest, because folding
+the list away must not have made the filter single-select. That on the board the filter adds an
+assignee and **one** important toggle, and that no `P1`, `P2` or `P3` chip is left anywhere in it.
 
 **The top pane.** That it holds no Today button, no `+`, and no `-` or `+` zoom pair — the two
 zoom buttons are gone, and a check for their absence is what keeps them gone. That **clicking the
@@ -116,6 +138,12 @@ and the day preview.
 zooms into the month view showing the month that was clicked — not the month the anchor happened
 to be in.
 
+**The day view has no day header.** That the day view renders the all-day strip and the hour grid
+and nothing above them, and that no element in it carries the weekday-and-date pair the top pane
+is already showing. That the **week** view still has its seven, and that clicking one still opens
+the day preview — the same check must come out the other way in the two views, or a rule that
+removed both would pass as one that removed one.
+
 **The kanban on a phone.** That exactly one column is visible: the next column's left edge is at
 or past the viewport's right edge. This is the check the sliver of `done` beside `doing` failed,
 and a gap reintroduced between the columns must turn it red. That the header's `‹` `›` page
@@ -125,22 +153,39 @@ header carries **no card count and no colour dot**, and that the stage name is d
 stage colour — red, yellow, green — resolved against the same table the cards use.
 
 **The kanban on a desktop.** That a column header has no `‹` `›` at all, since every column is on
-screen, and that **a card has none either** — a card's top row is a trashcan, a pen and the
-title, and the stage is changed by dragging. On a phone the card keeps its pair, so the same
-check must come out the other way at 320 px.
+screen, and that **a card has none either** — the stage is changed by dragging. On a phone the
+card keeps its pair, so the same check must come out the other way at 320 px.
 
-**A save is green and a trashcan is red**, in the entry popup, a field sub-popup, a kanban card
-and the settings panel. The check resolves `--good` and `--bad` from the page rather than naming
-colours, so retheming does not break it. Both are **glyphs**: the save's `--good` must be its
-text colour and its background must be transparent. A filled green button anywhere in Mine is a
-failure, so the check reads the background as well as the colour — that is the half of it that
+**What a card holds, and what it no longer holds.** That a card's top row is the title alone,
+with a `!` in front of it when the task is important and nothing in front of it when not; that
+the `!` is **not a button** — no element bearing it is pressable; and that the card carries **no
+pen, no trashcan, no estimate, no sprint number and no priority chip**. On a desktop the card
+holds no pressable element at all, and on a phone only the two stage arrows: the count is what
+keeps the removed controls removed, since each of them came back once as a chip.
+
+**Clicking a control on a card does not open the ticket.** That tapping the phone's `<` or `>`
+moves the card and leaves the entry popup closed, and that clicking the card's body does open it.
+This is the check for the bug where the board's own click delegation matched the card from inside
+one of its buttons, so both happened at once; it must be written so that a handler that stops at
+the button but lets the event bubble turns it red.
+
+**A save is green and a trashcan is red**, in the entry popup, a field sub-popup and the groups
+popup — no longer on a kanban card, which has no trashcan to colour. The check resolves `--good`
+and `--bad` from the page rather than naming colours, so retheming does not break it. Both are
+**glyphs**: the save's `--good` must be its text colour and its background must be transparent.
+A filled green button anywhere in Mine is a failure, so the check reads the background as well as
+the colour — that is the half of it that
 can catch a regression to the old style.
 
 **What a saved task writes.** A new task saved with nothing but a title must land as
 `stage: todo` with `estimate: 1`, and a task whose estimate was cleared must have no `estimate`
-key at all — not an empty one, and never `None`. This is the check that holds the file format
-to [calendar/TECHNICAL-REQUIREMENTS.md](calendar/TECHNICAL-REQUIREMENTS.md), and it reads the
-file back out of the local mirror rather than trusting the form.
+key at all — not an empty one, and never `None`. The same holds for importance: a task marked
+important writes `important: true`, an unmarked one writes **no `important` key**, and no file
+ever gains `important: false`. That a file carrying the old `priority: 1` reads as important and
+one carrying `priority: 3` does not, and that saving either leaves no `priority` key behind.
+This is the check that holds the file format to
+[calendar/TECHNICAL-REQUIREMENTS.md](calendar/TECHNICAL-REQUIREMENTS.md), and it reads the file
+back out of the local mirror rather than trusting the form.
 
 ## A check must be able to fail
 

@@ -13,15 +13,22 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
 
 # Weekday offsets within the month, so there is always a Saturday task, a day with more entries
 # than a phone cell shows, all-day items, and the long titles that used to blow the grid open.
+#
+# A task row may carry a sixth item: extra frontmatter lines. Three of them are there for the
+# importance checks - one written the way the app writes it, and two carrying the old `priority`
+# key, which has to read as important at 1 and not at 3.
 ROWS = [
     (1,  "09:00", "Sprint planning",                  "work",   "event"),
-    (1,  "14:00", "Review the open pull requests",    "work",   "task",  "todo"),
+    (1,  "14:00", "Review the open pull requests",    "work",   "task",  "todo",
+     ["important: true"]),
     (2,  None,    "Dentist",                          "health", "event"),
     (3,  "08:30", "Standup",                          "work",   "event"),
     (3,  "11:00", "Write the quarterly board report", "work",   "task",  "doing"),
     (3,  "17:00", "Gym",                              "health", "event"),
-    (5,  "13:00", "Deploy the release",               "work",   "task",  "todo"),
-    (6,  "10:00", "Fix the bathroom tap",             "home",   "task",  "todo"),
+    (5,  "13:00", "Deploy the release",               "work",   "task",  "todo",
+     ["priority: 1"]),
+    (6,  "10:00", "Fix the bathroom tap",             "home",   "task",  "todo",
+     ["priority: 3"]),
     (7,  None,    "Family lunch",                     "home",   "event"),
     (10, "08:30", "Standup",                          "work",   "event"),
     (12, "11:00", "Weekly shop",                      "home",   "task",  "done"),
@@ -56,6 +63,7 @@ def fixture():
         fm.append("group: " + group)
         if kind == "task":
             fm.append("stage: " + row[5])
+            fm.extend(row[6] if len(row) > 6 else [])
         files.append({
             "path": "calendar/%04d/%02d/%s-%s-%04x.md" % (
                 today.year, today.month, key, (time or "0000").replace(":", ""), i),

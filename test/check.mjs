@@ -127,7 +127,17 @@ const row = sel => `[...document.querySelectorAll('${sel} .ib')].map(b => {
     (cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? '' : '@' + cs.backgroundColor);
 })`;
 const ROW = row('#f-icons'), FLAGS = row('#f-flags');
-const glyphs = `document.querySelectorAll('#f-icons .glyph, #f-flags .glyph').length`;
+// Icons alone is a rule about the icon row. The toggle row carries two words on purpose - `24h`,
+// because every drawing of a whole day reads as something else, and `!` - so scoping this to the
+// icon row is what keeps the two rules from cancelling each other out.
+const glyphs = `document.querySelectorAll('#f-icons .glyph').length`;
+const words = sel => `[...document.querySelectorAll('${sel} .glyph')].map(g => g.textContent)`;
+// The `x` owns the rightmost place in every popup. Read from the left edges, so a row that
+// reads correctly but was built in the old order cannot pass - counting three buttons would.
+const rightmost = sel => ev(`[...document.querySelectorAll('${sel} button')]
+  .filter(b => b.getClientRects().length)
+  .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
+  .map(b => (b.getAttribute('aria-label') || '?').split(':')[0])`);
 const click = n => ev(`document.querySelectorAll('#f-icons .ib')[${n}].click()`);
 const flag = n => ev(`document.querySelectorAll('#f-flags .ib')[${n}].click()`);
 const label = g => g.split('@')[0].split('[')[0];
@@ -182,11 +192,14 @@ const GOOD = await rgb(good), BAD = await rgb(bad);
 
 await newEntry();
 const asEvent = await ev(ROW);
-eq('the icon row holds the type pair and the three on the right', asEvent.map(label),
-  ['Task', 'Event', 'Close and discard', 'Save']);
-eq('no letter anywhere in either row', await ev(glyphs), 0);
+eq('the icon row holds the type pair and the right-aligned group', asEvent.map(label),
+  ['Task', 'Event', 'Save', 'Close and discard']);
+eq('the x is its rightmost control', (await rightmost('#f-icons')).slice(-1),
+  ['Close and discard']);
+eq('no letter anywhere in the icon row', await ev(glyphs), 0);
 eq('and no dash is left in it', await ev(`document.querySelectorAll('#f-icons .vdash').length`), 0);
 eq('a new entry is an event', (await ev(FLAGS)).map(label), ['All-day']);
+eq('and its toggle row says 24h, not a sun', await ev(words('#f-flags')), ['24h']);
 
 // A save is a green disk, not a filled green button: the background is the half of this that
 // catches a regression to the old style.
@@ -237,7 +250,8 @@ await click(0);                                  // make it a task
 await sleep(250);
 const asTask = await ev(FLAGS);
 eq('a task row carries the three', asTask.map(label),
-  ['All-day', 'Stage', 'Priority', 'Estimate']);
+  ['All-day', 'Stage', 'Important', 'Estimate']);
+eq('and reads 24h and !', await ev(words('#f-flags')), ['24h', '!']);
 eq('the field rows do not reshuffle', (await ev(ROWS)).map(r => r.label),
   rows1.map(r => r.label));
 eq('a new estimate is one day', badge(asTask[3]), '1d');
@@ -248,11 +262,14 @@ for (let i = 0; i < 3; i++) { await flag(1); await sleep(180); stages.push(badge
 ok('stage cycles through three colours', new Set(stages).size === 3, stages.join(' '));
 ok('and returns to where it started', stages[2] === badge(asTask[1]), `${stages[2]} vs ${badge(asTask[1])}`);
 
-const prios = [];
-for (let i = 0; i < 4; i++) { await flag(2); await sleep(180); prios.push((await ev(FLAGS))[2]); }
-eq('priority cycles 1, 2, 3, none', prios.map(badge), ['1', '2', '3', '']);
-ok('each priority has its own colour', new Set(prios.slice(0, 3).map(g => g.split('@')[0])).size === 3,
-  prios.join(' '));
+// Important is a toggle and not a cycle: two taps come back to where they started, there is no
+// third state to reach, and it carries no badge, because a yes or no has nothing to put in one.
+const bangs = [];
+for (let i = 0; i < 2; i++) { await flag(2); await sleep(180); bangs.push((await ev(FLAGS))[2]); }
+ok('important lights when on', bangs[0].includes('@'), bangs[0]);
+ok('and not in green', !bangs[0].endsWith('@' + GOOD), `${bangs[0]} must not be the save's green`);
+ok('two taps return it to plain', !bangs[1].includes('@'), bangs[1]);
+eq('and it carries no badge either way', bangs.map(badge), ['', '']);
 
 await flag(3);                                   // the estimate opens a popup
 await sleep(300);
@@ -269,6 +286,8 @@ eq('prefilled with one day', sub.value, '1');
 eq('its trashcan is red', sub.clear, BAD);
 eq('its disk is green', sub.save, GOOD);
 eq('and a glyph, not a filled button', sub.saveBg, 'rgba(0, 0, 0, 0)');
+eq('a field popup runs trashcan, save, x', await rightmost('#sub .pop-head'),
+  ['Clear this field', 'Use this value', 'Abandon this edit']);
 
 await ev(`document.querySelector('#sub-body input').value = '3';
           document.querySelector('#sub-ok').click()`);
@@ -300,26 +319,80 @@ await ev(`document.querySelector('#popup [aria-label="Close and discard"]').clic
 await sleep(250);
 
 await open('K');
-eq('a kanban card deletes in red', await ev(
-  `getComputedStyle(document.querySelector('.kcard .ib')).color`), BAD);
+eq('a kanban card has no trashcan to colour', await ev(
+  `document.querySelectorAll('.kcard .ib.bad').length`), 0);
 await shoot('view-K');
 
+// A group's pen, trashcan and disk live in the popup behind *edit groups* now - the one place
+// in the calendar where a group is named or coloured, reached from settings in manage-only form.
 await open();
 await ev(`document.querySelector('#gear').click()`);
 await sleep(500);
-eq('settings deletes a group in red', await ev(
-  `getComputedStyle([...document.querySelectorAll('#settings-body .ib')]
+await ev(`document.querySelector('#edit-groups').click()`);
+await sleep(450);
+eq('edit groups opens the group list', await ev(
+  `!document.querySelector('#sub').hidden && document.querySelector('#sub-title').textContent`),
+  'Groups');
+eq('and its header is the x alone', await rightmost('#sub .pop-head'), ['Close']);
+eq('it deletes a group in red', await ev(
+  `getComputedStyle([...document.querySelectorAll('#sub .ib')]
      .find(b => /^Delete/.test(b.getAttribute('aria-label')))).color`), BAD);
-await ev(`document.querySelector('#settings-body .grow .ib').click()`);
+await ev(`[...document.querySelectorAll('#sub .grow .ib')]
+  .find(b => /^Edit/.test(b.getAttribute('aria-label'))).click()`);
 await sleep(400);
-eq('settings saves a group in green', await ev(
-  `getComputedStyle([...document.querySelectorAll('#settings-body .ib')]
+eq('and saves one in green', await ev(
+  `getComputedStyle([...document.querySelectorAll('#sub .ib')]
      .find(b => /^Save/.test(b.getAttribute('aria-label')))).color`), GOOD);
-eq('and that save carries no background either', await ev(
-  `getComputedStyle([...document.querySelectorAll('#settings-body .ib')]
+eq('with no background either', await ev(
+  `getComputedStyle([...document.querySelectorAll('#sub .ib')]
      .find(b => /^Save/.test(b.getAttribute('aria-label')))).backgroundColor`), 'rgba(0, 0, 0, 0)');
+await ev(`document.querySelector('#sub-close').click()`);
+await sleep(250);
+await ev(`document.querySelector('#settings-close').click()`);
+await sleep(250);
 
-// ---- 4. the top pane ---------------------------------------------------------------------------
+// ---- 4. the filter and the top pane ------------------------------------------------------------
+
+// Groups are folded into a dropdown. Folding the list away must not have made the filter
+// single-select, which is the whole risk in turning a list of checkboxes into one control.
+await viewport(900);
+await open();
+await ev(`document.querySelector('#filter-btn').click()`);
+await sleep(350);
+const folded = await ev(`({
+  drop: !!document.querySelector('#filter-body .gdrop'),
+  shown: document.querySelectorAll('#filter-body .glab').length
+})`);
+ok('the filter holds a groups dropdown', folded.drop, 'no groups dropdown in the filter');
+eq('and no checkbox until it is opened', folded.shown, 0);
+await ev(`document.querySelector('#filter-body .gdrop').click()`);
+await sleep(300);
+const unfolded = await ev(`({
+  shown: document.querySelectorAll('#filter-body .glab').length,
+  swatches: document.querySelectorAll('#filter-body .glab .swatch').length
+})`);
+ok('opening it reveals a checkbox per group', unfolded.shown >= 3, `${unfolded.shown} checkboxes`);
+eq('each showing its colour', unfolded.swatches, unfolded.shown);
+await ev(`document.querySelectorAll('#filter-body .glab input')[0].click()`);
+await sleep(500);
+const ticks = await ev(`[...document.querySelectorAll('#filter-body .glab input')].map(i => i.checked)`);
+eq('unticking one leaves the rest on', [ticks[0], ticks.slice(1).every(Boolean)], [false, true]);
+await ev(`document.querySelectorAll('#filter-body .glab input')[0].click()`);
+await sleep(500);
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(250);
+
+await open('K');
+await ev(`document.querySelector('#filter-btn').click()`);
+await sleep(350);
+const boardFilter = await ev(`({
+  chips: [...document.querySelectorAll('#filter-body .chip')].map(c => c.textContent),
+  selects: document.querySelectorAll('#filter-body select').length
+})`);
+eq('the board filter has one important toggle, not four chips', boardFilter.chips, ['!']);
+ok('and still an assignee', boardFilter.selects >= 1, 'no assignee select on the board filter');
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(250);
 
 await viewport(900);
 await open();
@@ -463,6 +536,23 @@ await open('W');
 ok('one-tap done stays in the week grid',
   await ev(`document.querySelectorAll('.tick').length`) > 0, 'no tick left in the week grid');
 
+// The day view has no day header: the weekday and the date are the period label already. The
+// week view's seven are a different thing - they name seven days the pane names none of - so
+// the same check has to come out the other way in the two views.
+eq('the week view keeps its seven day headers',
+  await ev(`document.querySelectorAll('.tg-head .tgd').length`), 7);
+await ev(`document.querySelector('.tg-head .tgd').click()`);
+await sleep(400);
+eq('and one of them still opens the day preview',
+  await ev(`!document.querySelector('#day-pop').hidden`), true);
+await ev(`document.querySelector('#day-close').click()`);
+await sleep(250);
+await open('D');
+eq('the day view has none', await ev(`document.querySelectorAll('.tg-head .tgd').length`), 0);
+ok('and still shows its hours and its all-day strip',
+  await ev(`!!document.querySelector('.tg-allday') && document.querySelectorAll('.hr').length === 24`),
+  'the day grid lost more than its header');
+
 // The month fills the window: the grid's bottom reaches the calendar window's, rather than
 // stopping at the height its cells happen to need - and the rows got taller, not fuller.
 await viewport(900);
@@ -490,6 +580,46 @@ const narrowCell = await ev(`({
 })`);
 eq('and a phone cell at two', narrowCell.lines, 2);
 ok('with the rest behind a +N', narrowCell.more > 0, 'no +N anywhere, so nothing was capped');
+
+// Every settings row is two halves, so the controls' left edges agree - the one measurement
+// that separates the new panel from the old, where each control began wherever its label ended.
+await viewport(900);
+await open();
+await ev(`document.querySelector('#gear').click()`);
+await sleep(500);
+const panel = await ev(`(() => {
+  const rows = [...document.querySelectorAll('#settings-body .srow')];
+  const lefts = rows.map(r => Math.round(
+    r.querySelector('.slab').nextElementSibling.getBoundingClientRect().left));
+  const body = document.querySelector('#settings-body');
+  return { rows: rows.length,
+    labels: rows.map(r => r.querySelector('.slab').textContent),
+    spread: Math.max(...lefts) - Math.min(...lefts),
+    notes: body.querySelectorAll('.note').length,
+    groups: body.querySelectorAll('.grow').length,
+    last: body.lastElementChild.className };
+})()`);
+eq('the panel holds eight rows', panel.rows, 8);
+eq('with the short labels', panel.labels,
+  ['Groups', 'Start week on', 'Time zone', 'Date format', 'Calendar weeks',
+    'Sprint length', 'First sprint', 'Theme']);
+ok('the controls line up in one column', panel.spread <= 1, `${panel.spread}px apart`);
+eq('no group is listed in the panel itself', panel.groups, 0);
+eq('and no paragraph explains what is stored where', panel.notes, 0);
+eq('the last element is a row', panel.last, 'srow');
+await ev(`document.querySelector('#settings-close').click()`);
+await sleep(250);
+
+await viewport(320);
+await open();
+await ev(`document.querySelector('#gear').click()`);
+await sleep(500);
+const labelHeights = await ev(`[...document.querySelectorAll('#settings-body .slab')]
+  .map(l => Math.round(l.getBoundingClientRect().height))`);
+ok('no label wraps to a second line at 320px', new Set(labelHeights).size === 1,
+  labelHeights.join(' '));
+await ev(`document.querySelector('#settings-close').click()`);
+await sleep(250);
 
 // Nothing is a bottom sheet any more: at 320 px every overlay sits clear of the bottom edge.
 await ev(`document.querySelector('.day .num').click()`);     // a phone cell opens the preview
@@ -598,6 +728,42 @@ ok('a phone card keeps its move arrows',
   await ev(`document.querySelectorAll('.kcard [aria-label$="stage"]').length`) > 0,
   'no arrows on a phone card');
 
+// What a card holds, and what it no longer holds. The button count is what keeps the removed
+// controls removed: every one of them was a chip once, and a chip is easy to put back.
+const card = await ev(`(() => {
+  const c = document.querySelector('.kcard');
+  return { chips: c.querySelectorAll('.chip').length,
+    controls: c.querySelectorAll('[aria-label^="Edit"], [aria-label^="Delete"], [aria-label^="Skip"]').length,
+    buttons: c.querySelectorAll('button').length,
+    bangs: document.querySelectorAll('.kcard .kbang').length,
+    pressableBang: document.querySelectorAll('.kcard button .kbang, .kcard .kbang button').length,
+    text: c.textContent };
+})()`);
+eq('a card carries no chip', card.chips, 0);
+eq('no pen and no trashcan', card.controls, 0);
+eq('and on a phone two buttons, the stage arrows', card.buttons, 2);
+ok('no estimate and no sprint number on it', !/\bS\d|\b\d+d\b/.test(card.text), card.text);
+ok('an important task carries a !', card.bangs > 0, 'no ! on any card');
+eq('and the ! is not a button', card.pressableBang, 0);
+
+// The board's click delegation used to match the card from inside one of its own buttons, so a
+// move opened the ticket on top of itself. A handler that stops at the button but still lets
+// the event bubble must turn this red.
+const todoBefore = await ev(`document.querySelectorAll('.kcol[data-stage="todo"] .kcard').length`);
+await ev(`document.querySelector('.kcol[data-stage="todo"] .kcard [aria-label="Next stage"]').click()`);
+await sleep(1100);
+const afterMove = await ev(`({ popup: !document.querySelector('#popup').hidden,
+  todo: document.querySelectorAll('.kcol[data-stage="todo"] .kcard').length })`);
+eq('the arrow moves the card out of todo', afterMove.todo, todoBefore - 1);
+eq('and does not open the ticket', afterMove.popup, false);
+
+await ev(`document.querySelector('.kcard .ktitle').click()`);
+await sleep(500);
+eq('clicking the card itself does open it',
+  await ev(`!document.querySelector('#popup').hidden`), true);
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(250);
+
 // On a desktop the card is dragged between the columns, so neither the card nor the header
 // carries arrows: every column is already on screen.
 await viewport(900);
@@ -610,7 +776,7 @@ eq('and a desktop card has no move arrows',
 
 await viewport(900);
 
-const save = async (title, clearEstimate) => {
+const save = async (title, clearEstimate, important) => {
   await open();
   await newEntry();
   await click(0);
@@ -621,6 +787,7 @@ const save = async (title, clearEstimate) => {
     await ev(`document.querySelector('#sub-clear').click()`);
     await sleep(300);
   }
+  if (important) { await flag(2); await sleep(250); }
   await ev(`(() => { const t = document.querySelector('#f-title');
     t.value = ${JSON.stringify(title)};
     t.dispatchEvent(new Event('input', { bubbles: true })); })()`);
@@ -645,6 +812,33 @@ ok('a saved task is todo', /\nstage: todo\n/.test(withEstimate), withEstimate.sp
 ok('and carries one day', /\nestimate: 1\n/.test(withEstimate), withEstimate.split('---')[1]);
 const without = await save('Check a cleared estimate', true);
 ok('a cleared estimate writes no key', !/estimate:/.test(without), without.split('---')[1]);
+
+// Importance has the same shape of rule as the estimate: only `true` is ever written, and an
+// ordinary task carries no key at all rather than `important: false`.
+ok('an ordinary task writes no important key', !/important:/.test(withEstimate),
+  withEstimate.split('---')[1]);
+const marked = await save('Check an important task', false, true);
+ok('an important task writes important: true', /\nimportant: true\n/.test(marked),
+  marked.split('---')[1]);
+ok('and never a priority', !/priority:/.test(marked), marked.split('---')[1]);
+
+// The old key is read, not rejected: `priority: 1` is important and `2` to `9` are not. Read
+// through the popup rather than off a card, so the check does not depend on which sprint today
+// happens to fall in.
+await viewport(900);
+await open();
+const importantIn = async title => {
+  await ev(`[...document.querySelectorAll('.eline')]
+    .find(l => l.textContent.includes(${'$'}{JSON.stringify(title)})).click()`);
+  await sleep(500);
+  const g = (await ev(FLAGS))[2] || '';
+  await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+  await sleep(250);
+  return g.includes('@');
+};
+eq('priority: 1 reads as important', await importantIn('Deploy the release'), true);
+eq('priority: 3 does not', await importantIn('Fix the bathroom tap'), false);
+eq('and important: true does', await importantIn('Review the open pull requests'), true);
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 ws.close();
