@@ -1,0 +1,28 @@
+.
+
+---
+
+<pasted_content id="a234">
+/grill-me This calendar app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or REQUIREMENTS.md. After collecting the user input update the REQUIREMENTS.md. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+In the mobile calendar/kanban view:
+- split the header row into two rows:
+  - the first row has (kanban/calender, filter, settings, home) buttons equally distributed horizontally
+  - second row has ('<', date/sprint, '>', downwards arrow for date/sprint picker) filling the space horizontally. arrow buttons equal in size, date larger to be readable
+In the mobile kanban view:
+- increase the size of the stage switch buttons '<', '>' as well horizontally and make them visible with slightly brighter background. Shall be easier to tap with finger on a phone
+
+In calender/kanban create task/event popup:
+- When selecting a category do not show the exit/delete buttons for a category or '+add category button', these shall be added/deleted in settings only
+- when opening an existing task/event, then show a nice preview, but not the edit popup (e.g. text, but not text edit field). Instead of the 'save' button add a pen icon to open the edit popup. In the view window show the full details text etc. Also 'task'/'event' buttons are disable in edit view.
+- When the user changes an existing task/event and discards then changes then quickly prompt if discard is wanted and show 'don't ask again' toggle to not ask again in the future
+```
+</pasted_content id="a234">
+
+---
+
+I want a minimal renderer globally at root level installed that I can use in the preview for the calender but future apps shall be able to use it as well
+
+---
+
+Great work. Now commit the changes. Then implement the features, commit and push. I will then test on my phone/laptop and provide feedback.
