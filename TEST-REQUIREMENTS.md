@@ -60,9 +60,27 @@ cell that holds text needs `min-width: 0` or it does not shrink. The other offen
 period label in the top pane, which is long enough in the week and sprint views to overflow a
 narrow phone on its own.
 
-**The entry popup's icon row, toggle row and field rows.** That the icon row holds icons alone,
-with no letter anywhere in it, and that it holds nothing but the type pair and the three on the
-right — task, event, then delete, save, close — with no field icon and no dash left in it.
+**An existing entry opens read-only.** That clicking one — in a grid, in the day preview and as a
+card on the board alike — opens a popup containing **no input, select or textarea at all**, and
+that its top row runs trashcan, pen, `x` with no disk in it. That the type is shown as something
+not pressable. That **only the fields that are set appear**: an entry with a title and a date
+renders no location row and no alerts row, which is the check that stops the preview quietly
+becoming the form again. That the pen opens the edit popup, and that a `+` or a click on empty
+space opens the edit popup directly with no preview in between.
+
+**The shared renderer, where the preview uses it.** That a details body holding `## Agenda`, a
+`- ` bullet, a `- [x]` and a `- [ ]`, `**bold**` and a link renders as a heading element, a list
+with a ticked and an unticked box, a bold element and an anchor whose href is the link's — and
+that a `javascript:` URL in the same body produces no anchor at all. That a body containing
+`<script>alert(1)</script>` puts that text on the screen and adds **no script element to the
+document**: the renderer builds nodes and never markup, and this is the check that keeps it so.
+That a ticked checkbox in the preview is not pressable.
+
+**The entry popup's icon row, toggle row and field rows.** That the edit popup's icon row holds
+icons alone, with no letter anywhere in it, and that it holds nothing but the type pair and the
+three on the right — task, event, then delete, save, close — with no field icon and no dash left
+in it. That **the type pair is disabled on an entry that already exists** and enabled on a new
+one, resolved from the buttons' disabled state and not from how they look.
 
 **That the `x` is the rightmost control in every popup**: the entry popup, each of the six field
 sub-popups, the day preview and the settings panel. Resolved from the buttons' left edges, so a
@@ -87,12 +105,21 @@ has a row whether it is set or not; that setting one moves its row above the uns
 order inside each group stays canonical; that a set row shows the field's value and no pen; and
 that a set row carries no enabled background, because position and value are what say it is set.
 
-**The settings panel.** That its eight rows are two halves — every label's box in the left half
+**Discarding asks once, and only when there is something to lose.** That the `x` on a popup
+nothing has been typed into closes it with no prompt; that changing a field and then pressing the
+`x`, clicking the backdrop or pressing Escape each raise the same prompt; and that **keep
+editing** leaves the popup open *with the change still in it*, which is the half of a discard
+dialog that usually goes wrong. That ticking **don't ask again** and reopening a popup makes the
+next `x` discard without asking, and that the settings panel's `Confirm discard` row turns the
+prompt back on. That a field sub-popup's `x` never prompts.
+
+**The settings panel.** That its nine rows are two halves — every label's box in the left half
 of the row and every control's box in the right — so the controls' left edges all agree, which is
 the one measurement that separates the new panel from the old. That no label wraps to a second
 line at 320 px. That **groups are not listed in the panel**: it holds one *edit groups* button,
-which opens the same popup the category field opens, and that popup is where the pen, the
-trashcan and the `+ add` are. That the panel's last element is a row and **not a paragraph of
+which opens the same list the category field opens, and that **only this way in carries the pen,
+the trashcan and the `+ add`** — reached from an entry the same list has none of the three and no
+`no category` row either, which is the check that keeps the two forms apart. That the panel's last element is a row and **not a paragraph of
 explanation**.
 
 **The popup is centred.** At 320 px, that the entry popup, a field sub-popup, the settings panel
@@ -116,12 +143,16 @@ the month view, and that the home icon leaves for the Mine tile screen. That the
 `NOV/26`, `W47/NOV`, `FR 20/NOV`, `2026` and `7` in the five views, and that the week label keeps
 its ISO number with *show calendar weeks* off.
 
-**The pane's order and its phone layout.** That the controls run board, filter, then the centred
-period group, then settings and home — read from their left edges, so a reordering that looks
-right but wires the wrong button cannot pass. That at 320 px the pane is **one line**: every
-control's bounding box shares the same row, none wraps to a second, and none is dropped. That
-the `‹` `›` are not rendered at that width, and that a horizontal swipe on the label steps the
-period while the same swipe on the grid below it changes nothing.
+**The pane's order and its phone layout.** That on a desktop the controls run board, filter, then
+the centred period group, then settings and home — read from their left edges, so a reordering
+that looks right but wires the wrong button cannot pass. That at 320 px the pane is **two rows**:
+board, filter, settings and home share the first with their bounding boxes on one line and none
+dropped, and `‹`, the label, the caret and `›` share the second. That the four on the first row
+are of equal width, and that the label on the second is **wider than either arrow** — which is
+the whole reason the second row exists, so a layout that splits the pane but leaves the label
+narrow has not done the job. That **no horizontal swipe does anything**: the same gesture on the
+label, on a grid and on the board leaves the period, the sprint and the layout exactly as they
+were.
 
 **The month fills the window.** That the month grid's bottom edge reaches the bottom of the
 calendar window — within a pixel or two of the sync line above the viewport's end — rather than
@@ -147,8 +178,11 @@ removed both would pass as one that removed one.
 **The kanban on a phone.** That exactly one column is visible: the next column's left edge is at
 or past the viewport's right edge. This is the check the sliver of `done` beside `doing` failed,
 and a gap reintroduced between the columns must turn it red. That the header's `‹` `›` page
-between the columns and are disabled at todo and at done, that a sideways touch gesture on the
-board changes nothing, and that a column header's `+` opens a new task in that stage. That the
+between the columns and are disabled at todo and at done; that the two of them **fill the header's
+width** up to the `+`, are of equal width, and leave the stage name centred between them; that an
+enabled one has a background and a disabled one has none, so the pair cannot be made large by
+making the disabled one look live; that a sideways touch gesture on the board changes nothing; and
+that a column header's `+` opens a new task in that stage. That the
 header carries **no card count and no colour dot**, and that the stage name is drawn in its own
 stage colour — red, yellow, green — resolved against the same table the cards use.
 
@@ -164,7 +198,8 @@ holds no pressable element at all, and on a phone only the two stage arrows: the
 keeps the removed controls removed, since each of them came back once as a chip.
 
 **Clicking a control on a card does not open the ticket.** That tapping the phone's `<` or `>`
-moves the card and leaves the entry popup closed, and that clicking the card's body does open it.
+moves the card and leaves the entry popup closed, and that clicking the card's body does open it —
+the view popup, with no input element in it.
 This is the check for the bug where the board's own click delegation matched the card from inside
 one of its buttons, so both happened at once; it must be written so that a handler that stops at
 the button but lets the event bubble turns it red.

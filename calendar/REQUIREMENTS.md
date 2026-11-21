@@ -38,14 +38,25 @@ two ways out at the right.
 ```
 [board]    [filter]     [‹] [NOV/26 ▾] [›]     [⚙] [⌂]     a calendar view
 [calendar] [filter]     [‹] [7 ▾]      [›]     [⚙] [⌂]     the kanban
-[board]    [filter]       [NOV/26 ▾]           [⚙] [⌂]     either one, on a phone
 ```
 
 Everything in the pane is drawn at **twice the size** it was: this is the row reached for on
-every visit, and it was the smallest thing on the screen. On a phone the controls **share the
-row width equally and the pane stays on one line**, down to a 320 px viewport — it neither wraps
-onto a second line nor drops a control, because five controls spread across the full width is
-exactly what fits at this size.
+every visit, and it was the smallest thing on the screen.
+
+**On a phone the pane is two rows**, each one filling the width:
+
+```
+[board]  [filter]  [⚙]   [⌂]       the four that go somewhere
+[‹]     [ NOV/26 ▾ ]     [›]       the period, and the way to another
+```
+
+Five controls across one line left the period label — the one thing in the pane you read rather
+than aim at — no wider than the buttons beside it, and the arrows that step it had to be dropped
+to make even that fit. A second row buys back both. **The four controls that go somewhere share
+the first row equally**; the period takes the second, where **the two arrows are equal in size
+and the label between them is larger**, because the label carries a date to be read and an arrow
+carries only a direction. The pane still fits a 320 px viewport, and neither row drops a control
+or lets one wrap away.
 
 - **Leftmost, the view switch and the filter.** One slot always holds the way to the other kind
   of view: a board icon in a calendar view, and on the board a calendar icon, which returns to
@@ -91,10 +102,12 @@ exactly what fits at this size.
   today reads `current · 19 Jan – 1 Feb` on a brighter background in dark mode, a darker one in
   light.
 
-  **On a phone there are no `‹` `›`.** The label is swiped instead: a swipe left steps forward, a
-  swipe right back — through periods in a calendar view, through sprints on the board. **The
-  swipe lives on the label alone.** Nowhere else in the app does a sideways gesture do anything,
-  so it never has to be told apart from a card drag on the board or from a scroll in a grid.
+  **On a phone the `‹` `›` are on the second row**, and **there is no swipe anywhere in the
+  calendar**. The label was swiped only because the arrows were not there to press; now that they
+  have a row of their own they are, and a gesture doing what a visible button does is the same
+  second mechanism this document refuses a card on a desktop. So no sideways gesture does
+  anything, in any view, and nothing ever has to be told apart from a card drag on the board or
+  from a scroll in a grid.
 - **Rightmost, the two ways out.** A gear button that opens settings, and a home icon back to the
   Mine tile screen. A house rather than an arrow, because a third arrow beside the two that step
   through periods reads as another way to move inside the calendar.
@@ -164,12 +177,54 @@ does every other overlay in the calendar: a field's own popup, the settings pane
 preview. Nothing rises from the bottom edge any more. A centred card is reached with either
 thumb and does not pretend to be a drawer that can be dragged.
 
-A row of icon buttons at the top, and it now holds the type pair and the three on the right and
+**An entry that already exists opens read-only.** Clicking an entry — in any grid, in the day
+preview, or as a card on the board — opens a **view popup** that shows it, and a pen in that
+popup's top row opens the **edit popup**. Most openings are to read: what day is this on, what is
+on the agenda, who is coming. A form answers those questions in input boxes, which are harder to
+read than text, and it leaves every value one slip away from being changed by a tap meant to
+scroll. A new entry has nothing to read, so the `+` and a click on empty space open the edit
+popup directly.
+
+### The view popup
+
+A top row, and then the entry. The row carries **the type as a marker, not a choice** — a ticked
+square for a task, a calendar page for an event, shown and not pressable — and then,
+right-aligned, a trashcan to delete the entry, a **pen** to edit it, and an `x` to close:
+
+```
+[☑]                          [trash] [pen] [x]
+```
+
+The trashcan stays here rather than moving behind the pen. Deleting is not an edit of a field, and
+the board's rule that a card is deleted from its popup in two taps depends on the trashcan being
+on the first of them.
+
+Below the row: the title, when it is, and then **only the fields that are set**, in the canonical
+order the edit popup's rows use. An entry with a title and a date shows a title and a date.
+Nothing here is a row waiting to be filled — that is what the pen is for — so an unset field has
+nothing to say and is left out, which also means the set-first ordering below is simply the
+canonical order here.
+
+**The details body is shown in full and rendered**, not clipped to two lines and not as raw
+markdown, by [Mine's shared renderer](../REQUIREMENTS.md#markdown-bodies). Two lines on a card and
+the whole text here are the difference between a glance and having opened the thing.
+
+**A repeating entry says so**, and carries its `skip this one`: skipping drops a single
+occurrence, which is an action on the entry like deleting it, not a change to a field. The scope
+pair is not here — it governs what an edit writes, and in a popup that writes nothing it would
+read as a choice about what you are looking at.
+
+### The edit popup
+
+A row of icon buttons at the top, and it holds the type pair and the three on the right and
 nothing between them. **Every button in it is an icon; no button carries a letter.**
 
 - Leftmost, a ticked square for **task** and a calendar page for **event**. Choosing one
   deselects the other; the default is event. What the entry *is* comes first, because it governs
-  what the rest of the popup offers.
+  what the rest of the popup offers. **On an entry that already exists the pair is disabled** —
+  it shows which of the two this is and refuses to change it. A task turned into an event drops
+  its stage, its importance and its estimate, and a popup opened to fix a typo is not where that
+  belongs one tap away. The type is settled when the entry is made.
 - Then, right-aligned: a trashcan to delete the entry, a disk to save it, and an `x` to close and
   discard. **The `x` is rightmost, in every popup in Mine.** The way out of an overlay sits in the
   same corner wherever you are, so leaving one is never something to look for — and that corner
@@ -246,13 +301,34 @@ The six fields, in their canonical order:
 Each of the six opens its own popup, and every popup has the same three buttons in the entry
 popup's own order: a trashcan that clears that one field, a disk that commits the value into the
 entry form, and, rightmost, an `x` that abandons the sub-edit. **A sub-popup never writes to the
-repo**, with the single exception noted under Category.
+repo**, now with no exception at all: a group is added in settings, not from an entry.
 Nothing is written until the entry popup's own disk, so one entry edit is one commit, and the
 entry popup's `x` discards the staged fields along with everything else. This is also what makes
 a brand-new entry work, since it has no file for a sub-popup to write to.
 
 Saving **closes the popup and returns to the calendar immediately**; the push to GitHub runs in
-the background and is reported in the sync line, not in the popup.
+the background and is reported in the sync line, not in the popup. **Both ways out land on the
+calendar**, the disk and the `x` alike, even when the edit was reached by the pen from a view
+popup. Stepping back to the preview would leave a popup open over a change already committed, and
+the cell or the card behind it shows the result anyway.
+
+### Discarding an edit
+
+**Leaving a popup that holds unsaved changes asks first.** The `x`, a click on the backdrop and
+Escape are one way out and ask one question: a small centred prompt offering **discard** or
+**keep editing**. A popup that has not been touched closes without a word — the question is
+about losing work, and there is none to lose. A half-written new entry counts as work: it is as
+easy to lose as an edit of a saved one, and one rule covering both is shorter than two with an
+exception between them.
+
+The prompt carries a **don't ask again** toggle. Ticking it silences the prompt on that device
+for good, so the `x` goes straight back to discarding. That is a preference about this screen's
+behaviour rather than data, so it is stored on the device like the rest of them — and it has a
+row in the settings panel, because nothing in Mine may be switched off from a place that cannot
+switch it back on.
+
+**A field's own popup is not guarded.** Its `x` abandons one staged field, not an entry, and
+nothing it was holding had reached the repo in the first place.
 
 ### Repetition
 
@@ -273,17 +349,30 @@ silently rewritten.
 
 ### Category
 
-The groups, each with its colour, and a `+ add` button. Adding a group asks for a label and a
-colour; its stored name is derived from the label and never shown, which is why relabelling or
-recolouring later touches no entry. Adding one writes `groups.md` immediately rather than staging
-it: that is a different file from the entry, and a category must not disappear because the entry
-it was created for was discarded. A pen edits a group, a trashcan deletes it — and entries
-still naming a deleted group render grey.
+**One list, two forms.** It is the same list of groups wherever it is opened, each with its
+colour — but what it lets you do depends on where you came from, and the two sets of controls
+never appear together.
 
-**This is the same popup the settings panel's *edit groups* button opens**, and the only place in
-the calendar where a group is named or coloured. Reached from an entry it also picks one; reached
-from settings it only manages them. One list, because two would have to be kept in step and
-neither would gain anything by it.
+- **Reached from an entry it only picks.** The groups and nothing else: no pen, no trashcan, no
+  `+ add category`. Naming, recolouring and deleting a group are settings, and an entry popup is
+  not where a list the whole repo shares should be rewritten — least of all by a trashcan a
+  thumb's width from the group being aimed at. The way to clear the field is the popup's own
+  trashcan, as in the other five, so there is no `no category` row in the list either: that was a
+  second way to do what the trio at the top already does, and the trio is the one that sits in
+  the same place in every field's popup.
+- **Reached from the settings panel's *edit groups* it only manages.** Every group with its
+  colour, a pen, a trashcan and a `+ add`, and no way to pick one, because nothing is being
+  filled in. Adding a group asks for a label and a colour; its stored name is derived from the
+  label and never shown, which is why relabelling or recolouring later touches no entry. Entries
+  still naming a deleted group render grey.
+
+This is **the only place in the calendar where a group is named or coloured**. One list, because
+two would have to be kept in step and neither would gain anything by it.
+
+Because adding a group now sits behind the gear, **nothing in a field's popup reaches the repo at
+all** and the rule above has no exception left to carve out. `groups.md` is written the moment the
+settings list commits a change — a different file from any entry, and nothing an entry popup is
+holding unsaved.
 
 ## Kanban
 
@@ -331,9 +420,9 @@ title and two lines — the three things worth reading at a glance across three 
 The `!` is a **marker, not a button**: it is read on the card and set in the popup. So on a
 desktop the card holds nothing to press at all, and on a phone only the two arrows.
 
-**A card is deleted from the entry popup, not from the board.** Clicking the card opens it; the
-popup's trashcan deletes the whole entry, and its skip control drops a single occurrence of a
-repeating task. Two taps rather than one, and no reachable trashcan on a surface whose whole
+**A card is deleted from the entry popup, not from the board.** Clicking the card opens its view
+popup; that popup's trashcan deletes the whole entry, and its skip control drops a single
+occurrence of a repeating task. Two taps rather than one, and no reachable trashcan on a surface whose whole
 purpose is to be tapped.
 
 **There is no sprint control anywhere.** A sprint is derived from the start date, so moving a
@@ -348,15 +437,28 @@ reason a card may carry none that is not worth the care.
 On desktop all three columns are shown and a card can be dragged between them, and each header is
 its stage's name, centred, with the `+` at its right and **no `‹` `›`** — with every column on
 screen there is nothing for a per-column pager to page. On a phone one column fills the screen
-and its header pages between the three: `[‹] doing [›]`, **centred as a group and drawn at twice
-the size**, the two buttons flanking the stage name on a background of their own — because the
-`<` `>` on a card mean something else entirely, they move that card. The group is sized so that
-it never exceeds the width of a 320 px screen. The header pair is disabled at todo and at done
+and its header pages between the three: `[‹] doing [›]`, the two buttons flanking the stage name
+on a background of their own — because the `<` `>` on a card mean something else entirely, they
+move that card.
+
+**The pager fills the header.** The two arrows are equal, flexible halves taking the whole width
+left of the `+`, the stage name centred between them, and each sits on a background **slightly
+brighter than the header's own**, so the target is visible and not merely large:
+
+```
+[     ‹     ]   doing   [     ›     ]  [+]
+```
+
+This is the control pressed most often on a phone board, because it is the only way to see
+another stage — and a small square in the middle of an otherwise empty row asked a thumb to aim
+at the narrowest part of it. Filling the row needs no width re-tuned per screen and cannot
+outgrow a 320 px one. **A disabled arrow keeps no background at all**, flat against the header at
+todo and at done, which is what tells it from the one that still works; the pair is disabled
 rather than wrapping.
 
-**There is no swipe on the board.** A sideways gesture on a column or a card does nothing. The
-only swipe in the calendar is on the period label in the top pane, which steps the sprint — so a
-gesture here never has to be told apart from a drag.
+**There is no swipe on the board**, and none anywhere else in the calendar either. A sideways
+gesture on a column or on a card does nothing; the sprint is stepped by the `‹` `›` in the top
+pane's second row — so no gesture here ever has to be told apart from a drag.
 
 **Exactly one column is visible at a time.** No part of the next column may show at the edge of
 the screen: a sliver of `done` beside `doing` is a layout fault, and the cause is always the
@@ -371,10 +473,10 @@ The gear button opens a centred panel whose top right has an `x` to close.
 
 **Every row is two halves: the label in the left half, its control in the right.** That one rule
 is what the panel was missing. A select, a text box, a checkbox and a date field each began
-wherever its own label happened to end, so eight tidy rows read as a ragged column — and the fix
+wherever its own label happened to end, so nine tidy rows read as a ragged column — and the fix
 is alignment, not fewer settings. The controls now line up in one column down the panel.
 
-Eight rows, and the labels are short enough to fit their half on one line at 320 px — which is
+Nine rows, and the labels are short enough to fit their half on one line at 320 px — which is
 why two of them are no longer named after the kanban:
 
 | row | control |
@@ -384,6 +486,7 @@ why two of them are no longer named after the kanban:
 | Time zone | a zone name such as `Europe/Berlin`, defaulting to the device's own |
 | Date format | `auto` (the device's locale), `dd.mm.yyyy` or `mm/dd/yy` |
 | Calendar weeks | the month view's week-number gutter |
+| Confirm discard | whether leaving an edited popup asks before discarding |
 | Sprint length | in weeks |
 | First sprint | the date sprint 1 starts on |
 | Theme | system, light or dark |
@@ -393,7 +496,7 @@ Those are labels only: the two renamed rows still read and write `kanban-interva
 
 **Groups are behind the button, not listed in the panel.** *Edit groups* opens the category
 popup in its manage-only form — every group with its colour, a `+ add`, a pen and a trashcan. A
-list in the panel grew with the repo and pushed the eight settings that never change below the
+list in the panel grew with the repo and pushed the nine settings that never change below the
 fold, which is the one thing a settings panel must not do.
 
 **The panel ends at its last row.** There is no paragraph under it explaining what is stored
@@ -415,23 +518,24 @@ shows the same two rows.
 
 The views above describe the desktop. The same screens adapt:
 
-- The top pane holds five controls — `[board] [filter] [NOV/26 ▾] [⚙] [⌂]` — at twice their old
-  size, sharing the row width equally on **one line at every phone width**, 320 px included.
-  There are no `‹` `›`: the label is swiped left and right instead, and the caret `▾` on it still
-  opens the picker.
+- The top pane is **two rows**: `[board] [filter] [⚙] [⌂]` sharing the first equally, and
+  `[‹] [NOV/26 ▾] [›]` filling the second, at twice their old size and at every phone width, 320
+  px included. The two arrows are equal, the label between them is larger than either, and the
+  caret `▾` on it still opens the picker. Nothing is swiped.
 - A month cell shows at most two entry lines, then `+N`; a line carries the title alone, with no
   time prefix and no done-rectangle, clipped at the cell's edge. A year cell stays a coloured
   day.
 - Tapping a day in the month or year view opens that day's entries as a centred card, each one
   tappable, with the small `+` and `x` in its top right — so nothing is ever smaller than a
   finger. Tapping a month's name in the year view zooms into that month instead.
-- The kanban shows one column at a time, paged by the centred, double-size `‹` `›` in its header,
-  and its cards keep their own `<` `>` because there is nothing to drag a card onto.
+- The kanban shows one column at a time, paged by the `‹` `›` in its header, which **fill the
+  header's width** either side of the stage name on a background brighter than it, and its cards
+  keep their own `<` `>` because there is nothing to drag a card onto.
 
 **Every view fits a 320 CSS px viewport**, with the week gutter on and whatever the entries happen
-to be — the double-size top pane and the double-size kanban header included. **Nothing in the app
-moves sideways**: no view scrolls or extends horizontally, in any view, at any width. The period
-label's swipe is no exception, because it moves the period, not the layout. A view that demands
+to be — the two-row top pane and the double-size kanban header included. **Nothing in the app
+moves sideways**: no view scrolls or extends horizontally, in any view, at any width, and no
+gesture moves anything sideways either, there being none left. A view that demands
 more width than
 the screen has is a defect even when it looks right on a desktop, and a cell insisting on room
 for a time, a title and an icon at once is the usual cause — seven of them across a phone is

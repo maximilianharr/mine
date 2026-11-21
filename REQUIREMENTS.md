@@ -59,6 +59,34 @@ one is never something to look for — and that corner is worth more to the butt
 habit than to the one aimed at deliberately. The save keeps its familiar place beside it, which
 is enough, because what makes it findable is the green disk and not the edge of the card.
 
+## Markdown bodies
+
+Every app keeps its text as markdown, so every app has to show it. **One renderer, in `shared/`,
+used by all of them** — the calendar's details body today, a zettelkasten note and a diary entry
+next. Two renderers would drift, and a note that looked right in one app and wrong in the next
+would be the plainest possible sign that these files are not as portable as the whole idea claims.
+
+It is **deliberately small**, and covers what a personal note actually holds: paragraphs, `#` to
+`###` headings, bullet and numbered lists, `- [ ]` and `- [x]` checkboxes, **bold**, *italic*,
+`code`, and links. No tables, no blockquotes, no fenced code blocks and no images — each of them
+is more code to own for something an agenda or a diary page rarely carries, and the app that first
+genuinely needs one can add it then.
+
+A checkbox is **rendered, not operated**: `- [x]` draws a ticked box, and ticking it is an edit of
+the text like any other. A body is read far more often than its checklist is advanced, and a
+tappable box would have to write a file from a screen whose whole point is that it writes nothing.
+
+**It builds nodes, never HTML.** The renderer makes DOM elements and sets text, so nothing in a
+body can turn into markup: a body carrying a `<script>` tag shows that tag as text. This is the
+threat the CSP exists for — injected script on our own origin — and a data file in your own repo
+is the likeliest thing to carry a stray angle bracket. A link is rendered only for `http`, `https`
+and `mailto`; anything else stays text, so a `javascript:` URL is never something to press. Links
+open in a new tab, because leaving the app would lose the view you were in.
+
+It is hand-written rather than vendored. It is small enough to be, and the dependency table in
+[TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) asks of everything in it what would be
+wrong with hand-rolling it — for this, nothing.
+
 ## Using it
 
 - Changes appear instantly and are queued for GitHub in the background.

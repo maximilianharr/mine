@@ -21,7 +21,7 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 
 ```
 /index.html /manifest.json /sw.js
-/shared/  apps.js  store.js  github.js  md.js  prefs.js  vendor/
+/shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
 /test/    run.sh  serve.py  check.mjs
@@ -36,6 +36,14 @@ it lie to you — are in [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md).
 
 `shared/apps.js` exports the app list and is imported by both the tile screen and `sw.js`, so
 adding an app means editing one array. An app may export `summary()` from `widget.js`.
+
+`shared/md.js` and `shared/markdown.js` are two different jobs and stay two files. `md.js` is the
+file envelope — it parses and serialises frontmatter and is imported by the paths that read and
+write the repo. `markdown.js` renders a body for the screen and is imported only by UI, so nothing
+on the file-IO path pulls a renderer in. It **returns a DOM node and never a string of HTML**, which
+is what makes a body carrying a `<script>` tag harmless without a sanitiser to get right; what it
+covers and why it is hand-rolled rather than vendored is in
+[REQUIREMENTS.md](REQUIREMENTS.md#markdown-bodies).
 
 ## Bootstrap — 1 request
 
