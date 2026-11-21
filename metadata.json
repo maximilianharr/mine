@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "01M7YVHXVWGE4KY9QAMTJZ7C5A",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "calendar/app.js",
+    "calendar/index.html",
+    "calendar/kanban.js",
+    "calendar/popup.js",
+    "calendar/settings.js",
+    "calendar/style.css",
+    "calendar/ui.js",
+    "test/check.mjs",
+    "test/serve.py"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 138,
+    "cache_creation_tokens": 130511,
+    "cache_read_tokens": 16728911,
+    "output_tokens": 76651,
+    "api_call_count": 69
+  },
+  "redaction": {
+    "replacements": 33,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 33,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  }
+}

@@ -1,0 +1,80 @@
+<task-notification>
+<task-id>bly8eotrg</task-id>
+<tool-use-id>toolu_01K5b9U2mhcohbpEu63ydmKi</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/bly8eotrg.output</output-file>
+<status>completed</status>
+<summary>Background command "Run checks and show failures only" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>buawgz5cv</task-id>
+<tool-use-id>toolu_016GfaD4ug6ijbP2wtmsEYz8</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/buawgz5cv.output</output-file>
+<status>completed</status>
+<summary>Background command "Re-run the browser checks" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b8rqo52bm</task-id>
+<tool-use-id>toolu_01DeMrxgtEWstoQAS6v97Ef5</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/b8rqo52bm.output</output-file>
+<status>completed</status>
+<summary>Monitor "calendar test results landing" stream ended</summary>
+<event>all checks passed
+rm: cannot remove '/tmp/tmp.HSELNWmaRd': Directory not empty
+---exit 0---</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b2oh4ihlk</task-id>
+<tool-use-id>toolu_01YP838kgfXP1299k7DJbuay</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/b2oh4ihlk.output</output-file>
+<status>failed</status>
+<summary>Monitor "calendar test run finishing" script failed (exit 144)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b9pfb7q47</task-id>
+<tool-use-id>toolu_01BrJKw2kufTjG4NrwUkkwH9</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/b9pfb7q47.output</output-file>
+<status>failed</status>
+<summary>Monitor "second calendar test run finishing" script failed (exit 144)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b11posokw</task-id>
+<tool-use-id>toolu_01Jj2i4Ykv84rC9NzXHTVBje</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/b11posokw.output</output-file>
+<status>failed</status>
+<summary>Background command "Re-run checks after fixes" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>betbdxj33</task-id>
+<tool-use-id>toolu_013aSyLKHZN5Qnsyos18z62W</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/betbdxj33.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite once more" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b65q5baku</task-id>
+<tool-use-id>toolu_0143735QuuGSMZhqBFSTnU2S</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/b6f0e706-cf37-4643-88bd-f8ab5347716d/tasks/b65q5baku.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the suite with the new fixture" completed (exit code 0)</summary>
+</task-notification>
