@@ -11,7 +11,7 @@ import {
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
-import { closePopup } from './popup.js';
+import { closePopup, closeView } from './popup.js';
 import { openSettings } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 
@@ -118,26 +118,14 @@ $('#caret').addEventListener('click', openPicker);
 
 // The label zooms; on the board it opens the sprint list instead, because the board has no zoom.
 $('#period').addEventListener('click', () => {
-  if (swiped) return void (swiped = false);     // the swipe below is not a click
   if (S.view.mode === 'K') openPicker();
   else zoomIn();
 });
 
-// On a phone the pane has no `‹` `›` and the label is swiped instead. The gesture lives on the
-// label alone, so it never has to be told apart from a card drag or a scroll in a grid.
-let from = null, swiped = false;
-$('#period').addEventListener('touchstart', e => {
-  from = e.changedTouches[0].clientX;
-  swiped = false;
-}, { passive: true });
-$('#period').addEventListener('touchend', e => {
-  if (from === null) return;
-  const dx = e.changedTouches[0].clientX - from;
-  from = null;
-  if (Math.abs(dx) < 40) return;
-  swiped = true;
-  step(dx < 0 ? 1 : -1);
-}, { passive: true });
+// There is no swipe. The label was swiped only because a phone's pane had no `‹` `›` to press;
+// they are on its second row now, and a gesture doing what a visible button does is a second
+// mechanism for one action. So no sideways gesture does anything, in any view, and nothing has
+// to be told apart from a card drag on the board or a scroll in a grid.
 
 $('#pick-title').addEventListener('click', () => {
   if (pick.mode === 'sprints') return;
@@ -311,8 +299,10 @@ $('#filter-btn').addEventListener('click', () => {
 $('#scrim').addEventListener('click', closePops);
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (!$('#sub').hidden) $('#sub-cancel').click();
+  if (!$('#ask').hidden) $('#ask-keep').click();
+  else if (!$('#sub').hidden) $('#sub-cancel').click();
   else if (!$('#popup').hidden) closePopup();
+  else if (!$('#viewpop').hidden) closeView();
   else closePops();
 });
 matchMedia('(min-width: 600px)').addEventListener('change', () => { closePops(); render(); });
@@ -379,6 +369,7 @@ if (!await getConfig()) {
     ...S.prefs, ...minePrefs,
     weekStart: (await getKV('calendar.weekStart')) ?? 1,
     showWeeks: !!(await getKV('calendar.showWeeks')),
+    confirmDiscard: (await getKV('calendar.confirmDiscard')) ?? true,
     timeZone: (await getKV('calendar.timeZone')) || ''
   };
   setZone(S.prefs.timeZone);

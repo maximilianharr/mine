@@ -9,7 +9,7 @@
 // line up in one column. That alignment is the whole of what the panel was missing: a select, a
 // text box, a checkbox and a date field each started wherever its own label happened to end.
 // The groups are behind a button rather than listed, because a list grew with the repo and
-// pushed the eight settings that never change below the fold.
+// pushed the nine settings that never change below the fold.
 import { setKV } from '../shared/store.js';
 import { saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
@@ -23,7 +23,7 @@ export function openSettings() {
   $('#scrim').hidden = false;
 }
 
-// Eight rows and nothing after them: there is no paragraph explaining what is stored where,
+// Nine rows and nothing after them: there is no paragraph explaining what is stored where,
 // because that belongs in REQUIREMENTS.md and not on a panel opened to change the theme.
 function build() {
   $('#settings-body').replaceChildren(
@@ -34,6 +34,9 @@ function build() {
     row('Date format', choose(DATE_FORMATS.map(f => [f, f]), S.prefs.dateFormat,
       v => mine('dateFormat', v))),
     row('Calendar weeks', toggle(S.prefs.showWeeks, v => local('showWeeks', v))),
+    // The way back on. A prompt silenced from inside itself needs a row that can restore it,
+    // because nothing in Mine may be switched off from a place that cannot switch it back on.
+    row('Confirm discard', toggle(S.prefs.confirmDiscard, v => local('confirmDiscard', v))),
     row('Sprint length', numberField(S.model.settings.interval, 1,
       v => sprints({ interval: v })), 'weeks'),
     row('First sprint', dateField(S.model.settings.anchor, v => sprints({ anchor: v }))),

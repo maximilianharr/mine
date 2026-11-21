@@ -105,6 +105,13 @@ has a row whether it is set or not; that setting one moves its row above the uns
 order inside each group stays canonical; that a set row shows the field's value and no pen; and
 that a set row carries no enabled background, because position and value are what say it is set.
 
+**A repeating entry, which the fixture now carries.** Nothing in it repeated before, so the
+scope pair, the skip and the override paths had no entry to run against at all. That the preview
+says the entry repeats and carries `skip this one`, and that the **scope pair is not on it**.
+That switching scope and then leaving **asks nothing**: switching rebuilds the draft from the
+other file, so it has to rebuild the baseline a discard is measured against too — a baseline left
+behind reads as undefined, which makes every way out of the popup ask about changes nobody made.
+
 **Discarding asks once, and only when there is something to lose.** That the `x` on a popup
 nothing has been typed into closes it with no prompt; that changing a field and then pressing the
 `x`, clicking the backdrop or pressing Escape each raise the same prompt; and that **keep

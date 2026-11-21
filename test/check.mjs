@@ -138,6 +138,26 @@ const rightmost = sel => ev(`[...document.querySelectorAll('${sel} button')]
   .filter(b => b.getClientRects().length)
   .sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left)
   .map(b => (b.getAttribute('aria-label') || '?').split(':')[0])`);
+// An entry that already exists opens read-only, so reaching its form is two taps: the entry,
+// then the pen in the view popup's top row.
+const openView = async sel => {
+  await ev(`document.querySelector('${sel}').click()`);
+  await sleep(400);
+};
+const pen = async () => {
+  await ev(`document.querySelector('#view-card [aria-label="Edit"]').click()`);
+  await sleep(400);
+};
+const openExisting = async sel => { await openView(sel); await pen(); };
+const closeForm = async () => {
+  await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+  await sleep(300);
+  // A form left dirty asks before discarding; these checks mean to throw the edit away.
+  if (!await ev(`document.querySelector('#ask').hidden`)) {
+    await ev(`document.querySelector('#ask-discard').click()`);
+    await sleep(300);
+  }
+};
 const click = n => ev(`document.querySelectorAll('#f-icons .ib')[${n}].click()`);
 const flag = n => ev(`document.querySelectorAll('#f-flags .ib')[${n}].click()`);
 const label = g => g.split('@')[0].split('[')[0];
@@ -306,17 +326,35 @@ eq('an event drops all three', (await ev(FLAGS)).map(label), ['All-day']);
 
 // ---- 3. a trashcan is red wherever it appears --------------------------------------------------
 
-await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
-await sleep(250);
-await ev(`document.querySelector('.eline').click()`);
-await sleep(400);
+await closeForm();
+
+// An entry that already exists opens read-only: a popup with no input in it, whose top row runs
+// trashcan, pen, x. The trashcan stays on the preview, which is what the board's two-tap delete
+// rule depends on.
+await openView('.eline');
+eq('an existing entry opens read-only', await ev(
+  `document.querySelectorAll('#view-card input, #view-card select, #view-card textarea').length`), 0);
+const vrow = await rightmost('#view-card .iconbar');
+eq('its row ends pen, x', vrow.slice(-2), ['Edit', 'Close']);
+ok('and starts with the trashcan', /^Delete/.test(vrow[0] || ''), vrow.join(', '));
+eq('no disk on the preview', vrow.filter(l => l === 'Save').length, 0);
+eq('the preview trashcan is red', await ev(
+  `getComputedStyle([...document.querySelectorAll('#view-card .ib')]
+     .find(b => /^Delete/.test(b.getAttribute('aria-label')))).color`), BAD);
+eq('the type is shown and not pressable', await ev(
+  `document.querySelectorAll('#view-card .iconbar span.ib').length`), 1);
+
+await pen();
+eq('the pen opens the edit popup', await ev(`!document.querySelector('#popup').hidden`), true);
+eq('whose type pair is disabled', await ev(
+  `[...document.querySelectorAll('#f-icons .ib')].slice(0, 2).map(b => b.disabled)`),
+  [true, true]);
 eq('the delete trashcan is red', await ev(
   `getComputedStyle([...document.querySelectorAll('#f-icons .ib')]
      .find(b => /Delete/.test(b.getAttribute('aria-label')))).color`), BAD);
 eq('a field row still carries no button', await ev(
   `document.querySelectorAll('#f-rows .ib').length`), 0);
-await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
-await sleep(250);
+await closeForm();
 
 await open('K');
 eq('a kanban card has no trashcan to colour', await ev(
@@ -350,6 +388,35 @@ await ev(`document.querySelector('#sub-close').click()`);
 await sleep(250);
 await ev(`document.querySelector('#settings-close').click()`);
 await sleep(250);
+
+// The same list reached from an entry only picks. Naming, recolouring and deleting a group are
+// settings, and clearing the field is the popup's own trashcan - so there is no `no category`
+// row either, that being a second way to do what the trio at the top already does.
+await open();
+await newEntry();
+await openRow('Category');
+await sleep(450);
+const pick = await ev(`({
+  rows: document.querySelectorAll('#sub .glist .gpick').length,
+  pens: [...document.querySelectorAll('#sub .ib')]
+    .filter(b => /^Edit /.test(b.getAttribute('aria-label') || '')).length,
+  trashes: [...document.querySelectorAll('#sub .glist .ib')]
+    .filter(b => /^Delete /.test(b.getAttribute('aria-label') || '')).length,
+  add: [...document.querySelectorAll('#sub .link')]
+    .filter(b => /add/i.test(b.textContent)).length,
+  none: [...document.querySelectorAll('#sub .gpick')]
+    .filter(b => /no category/i.test(b.textContent)).length
+})`);
+ok('picking a category lists the groups', pick.rows > 0, 'no group to pick');
+eq('with no pen', pick.pens, 0);
+eq('and no trashcan', pick.trashes, 0);
+eq('and no + add', pick.add, 0);
+eq('and no no-category row', pick.none, 0);
+eq('its header still runs trashcan, save, x', await rightmost('#sub .pop-head'),
+  ['Clear this field', 'Use this value', 'Abandon this edit']);
+await ev(`document.querySelector('#sub-cancel').click()`);
+await sleep(250);
+await closeForm();
 
 // ---- 4. the filter and the top pane ------------------------------------------------------------
 
@@ -484,13 +551,39 @@ eq('the pane reads view, filter, period, settings, home', (await ev(pane)).order
 
 await viewport(320);
 await open();
-const narrow = await ev(pane);
-eq('on a phone the arrows are not there', narrow.order,
-  ['#board', '#filter-btn', '#period', '#caret', '#gear', '#home']);
-ok('and the pane stays on one line', narrow.spread <= 4, `${narrow.spread}px apart vertically`);
+// Two rows on a phone: the four that go somewhere share the first, the period takes the second.
+// Rows are clustered by vertical centre rather than compared exactly, so a one-pixel difference
+// between two controls of unequal height cannot read as a third row.
+const narrow = await ev(`(() => {
+  const on = ['#board', '#filter-btn', '#prev', '#period', '#caret', '#next', '#gear', '#home']
+    .map(id => [id, document.querySelector(id)])
+    .filter(([, n]) => n && n.getClientRects().length)
+    .map(([id, n]) => { const r = n.getBoundingClientRect();
+      return { id, left: r.left, w: r.width, mid: r.top + r.height / 2 }; })
+    .sort((a, b) => a.mid - b.mid);
+  const rows = [];
+  for (const o of on) if (!rows.length || o.mid - rows[rows.length - 1] > 6) rows.push(o.mid);
+  const of = i => on.filter(o => Math.abs(o.mid - rows[i]) <= 6).sort((a, b) => a.left - b.left);
+  const w = sel => Math.round((of(1).find(o => o.id === sel) || { w: 0 }).w);
+  return { rows: rows.length,
+    first: of(0).map(o => o.id), second: of(1).map(o => o.id),
+    firstW: of(0).map(o => Math.round(o.w)),
+    label: w('#period'), prev: w('#prev'), next: w('#next') };
+})()`);
+eq('on a phone the pane is two rows', narrow.rows, 2);
+eq('the first holds the four that go somewhere', narrow.first,
+  ['#board', '#filter-btn', '#gear', '#home']);
+ok('sharing the row equally', Math.max(...narrow.firstW) - Math.min(...narrow.firstW) <= 2,
+  narrow.firstW.join('px, ') + 'px');
+eq('and the second the period, its arrows back', narrow.second,
+  ['#prev', '#period', '#caret', '#next']);
+eq('whose two arrows are equal in size', narrow.prev, narrow.next);
+ok('and whose label is larger than either', narrow.label > narrow.prev,
+  `label ${narrow.label}px, arrow ${narrow.prev}px`);
 
-// The swipe lives on the label alone: the same gesture on the grid below it changes nothing.
-// The label is read before the gesture: touchend steps the period synchronously, so reading it
+// There is no swipe left anywhere: the label was swiped only because a phone's pane had no
+// `‹` `›` to press, and a gesture doing what a visible button does is a second mechanism for
+// one action. The label is read before the gesture, because a step is synchronous - reading it
 // afterwards would compare the new label with itself and pass whatever happened.
 const swipeOn = sel => ev(`(() => {
   const n = document.querySelector('${sel}');
@@ -503,16 +596,21 @@ const swipeOn = sel => ev(`(() => {
     { bubbles: true, touches: [], changedTouches: [t(40)] }));
   return before;
 })()`);
-const wasLabel = await swipeOn('#period');
-await sleep(400);
-ok('a swipe on the label steps the period', (await periodLabel()) !== wasLabel,
-  `still ${wasLabel}`);
-const held = await swipeOn('.grid');
-await sleep(400);
-eq('and the same swipe on the grid does not', await periodLabel(), held);
+for (const sel of ['#period', '.grid']) {
+  const was = await swipeOn(sel);
+  await sleep(400);
+  eq(`a swipe on ${sel} changes nothing`, await periodLabel(), was);
+}
 
-// A clipped label is worse than a smaller one: at twice the size, the five labels still have to
-// fit the pane whole at 320 px, or the date - the one thing the pane is for - is unreadable.
+// And the arrows that replaced it do step the period.
+const beforeStep = await periodLabel();
+await ev(`document.querySelector('#next').click()`);
+await sleep(400);
+ok('the phone pane\'s › steps the period', (await periodLabel()) !== beforeStep,
+  `still ${beforeStep}`);
+
+// A clipped label is worse than a smaller one: on its own row at twice the size, the label still
+// has to fit whole at 320 px, or the date - the one thing the pane is for - is unreadable.
 for (const mode of ['M', 'W', 'D', 'Y', 'K']) {
   await open(mode);
   const cut = await ev(`(() => { const n = document.querySelector('#period-label');
@@ -520,7 +618,7 @@ for (const mode of ['M', 'W', 'D', 'Y', 'K']) {
   ok(`the ${mode} label fits the phone pane`, cut <= 1, `clipped by ${cut}px`);
 }
 
-// The swipe above left another month on screen: the checks below want the fixture's own.
+// The step above left another month on screen: the checks below want the fixture's own.
 await viewport(900);
 await open();
 
@@ -599,10 +697,10 @@ const panel = await ev(`(() => {
     groups: body.querySelectorAll('.grow').length,
     last: body.lastElementChild.className };
 })()`);
-eq('the panel holds eight rows', panel.rows, 8);
+eq('the panel holds nine rows', panel.rows, 9);
 eq('with the short labels', panel.labels,
   ['Groups', 'Start week on', 'Time zone', 'Date format', 'Calendar weeks',
-    'Sprint length', 'First sprint', 'Theme']);
+    'Confirm discard', 'Sprint length', 'First sprint', 'Theme']);
 ok('the controls line up in one column', panel.spread <= 1, `${panel.spread}px apart`);
 eq('no group is listed in the panel itself', panel.groups, 0);
 eq('and no paragraph explains what is stored where', panel.notes, 0);
@@ -627,7 +725,8 @@ await sleep(400);
 ok('the day preview is centred', centred(await box('#day-pop')), JSON.stringify(await box('#day-pop')));
 await ev(`document.querySelector('#day-add').click()`);
 await sleep(450);
-ok('the entry popup is centred', centred(await box('.card')), JSON.stringify(await box('.card')));
+ok('the entry popup is centred', centred(await box('#popup .card')),
+  JSON.stringify(await box('#popup .card')));
 await openRow('Location');
 await sleep(350);
 ok("a field's popup is centred", centred(await box('#sub')), JSON.stringify(await box('#sub')));
@@ -684,6 +783,25 @@ const atTodo = await ev(shown);
 eq('exactly one column is visible', atTodo.count, 1);
 eq('and it is todo', atTodo.stage, 'todo');
 eq('the pager is disabled at todo', await ev(`document.querySelector('.knav').disabled`), true);
+
+// The pager fills the header: it is the only way to see another stage on a phone, and a small
+// square in the middle of an otherwise empty row asked a thumb to aim at its narrowest part.
+const pager = await ev(`(() => {
+  const head = document.querySelector('.kcol[data-stage="todo"] .khead');
+  const navs = [...head.querySelectorAll('.knav')];
+  const boxes = navs.map(n => n.getBoundingClientRect());
+  const hr = head.getBoundingClientRect();
+  const add = head.querySelector('.kadd').getBoundingClientRect();
+  return { w: boxes.map(b => Math.round(b.width)),
+    left: Math.round(Math.min(...boxes.map(b => b.left)) - hr.left),
+    gap: Math.round(add.left - Math.max(...boxes.map(b => b.right))),
+    bg: navs.map(n => getComputedStyle(n).backgroundColor) };
+})()`);
+eq('its two arrows are equal in width', pager.w[0], pager.w[1]);
+ok('and fill the header up to the +', pager.left <= 2 && pager.gap <= 10,
+  `${pager.left}px in from the left, ${pager.gap}px short of the +`);
+eq('the disabled one carries no background', pager.bg[0], 'rgba(0, 0, 0, 0)');
+ok('and the one that works does', pager.bg[1] !== 'rgba(0, 0, 0, 0)', pager.bg[1]);
 
 await page('Next');
 await sleep(400);
@@ -752,7 +870,8 @@ eq('and the ! is not a button', card.pressableBang, 0);
 const todoBefore = await ev(`document.querySelectorAll('.kcol[data-stage="todo"] .kcard').length`);
 await ev(`document.querySelector('.kcol[data-stage="todo"] .kcard [aria-label="Next stage"]').click()`);
 await sleep(1100);
-const afterMove = await ev(`({ popup: !document.querySelector('#popup').hidden,
+const afterMove = await ev(`({
+  popup: !document.querySelector('#popup').hidden || !document.querySelector('#viewpop').hidden,
   todo: document.querySelectorAll('.kcol[data-stage="todo"] .kcard').length })`);
 eq('the arrow moves the card out of todo', afterMove.todo, todoBefore - 1);
 eq('and does not open the ticket', afterMove.popup, false);
@@ -760,8 +879,10 @@ eq('and does not open the ticket', afterMove.popup, false);
 await ev(`document.querySelector('.kcard .ktitle').click()`);
 await sleep(500);
 eq('clicking the card itself does open it',
-  await ev(`!document.querySelector('#popup').hidden`), true);
-await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+  await ev(`!document.querySelector('#viewpop').hidden`), true);
+eq('as the preview, with no input in it', await ev(
+  `document.querySelectorAll('#view-card input, #view-card textarea').length`), 0);
+await ev(`document.querySelector('#view-card [aria-label="Close"]').click()`);
 await sleep(250);
 
 // On a desktop the card is dragged between the columns, so neither the card nor the header
@@ -831,14 +952,179 @@ const importantIn = async title => {
   await ev(`[...document.querySelectorAll('.eline')]
     .find(l => l.textContent.includes(${JSON.stringify(title)})).click()`);
   await sleep(500);
+  await pen();
   const g = (await ev(FLAGS))[2] || '';
-  await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
-  await sleep(250);
+  await closeForm();
   return g.includes('@');
 };
 eq('priority: 1 reads as important', await importantIn('Deploy the release'), true);
 eq('priority: 3 does not', await importantIn('Fix the bathroom tap'), false);
 eq('and important: true does', await importantIn('Review the open pull requests'), true);
+
+// ---- 8. the shared renderer, and discarding an edit ---------------------------------------------
+
+// The renderer builds nodes and never markup, so a body carrying a script tag shows that tag as
+// text and adds nothing to the document. That is the check that keeps it so.
+await viewport(900);
+await open();
+await newEntry();
+await openRow('Details');
+await sleep(400);
+const BODY = ['## Agenda', '- rollout dates', '- [x] token scope', '- [ ] dns cutover',
+  '**blocker** here and `code`', '[spec](https://example.com/spec)',
+  '[bad](javascript:alert(1))', '<script>alert(1)</script>'].join('\n');
+await ev(`(() => { const t = document.querySelector('#sub-body textarea');
+  t.value = ${JSON.stringify(BODY)};
+  t.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+await sleep(150);
+await ev(`document.querySelector('#sub-ok').click()`);
+await sleep(300);
+await ev(`(() => { const t = document.querySelector('#f-title');
+  t.value = 'Rendered body';
+  t.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+await sleep(150);
+await ev(`document.querySelector('#entry-form').requestSubmit()`);
+await sleep(1400);
+
+// Found by title rather than by position: it is the fixture's newest entry, not its first.
+await ev(`[...document.querySelectorAll('.eline')]
+  .find(l => l.textContent.includes('Rendered body')).click()`);
+await sleep(500);
+const md = await ev(`(() => {
+  const b = document.querySelector('#view-card .vbody');
+  const boxes = [...b.querySelectorAll('input[type=checkbox]')];
+  return { heads: [...b.querySelectorAll('.md-h')].map(h => h.textContent),
+    items: b.querySelectorAll('li').length,
+    boxes: boxes.map(i => i.checked), pressable: boxes.filter(i => !i.disabled).length,
+    strong: [...b.querySelectorAll('strong')].map(n => n.textContent),
+    code: [...b.querySelectorAll('code')].map(n => n.textContent),
+    links: [...b.querySelectorAll('a')].map(a => a.getAttribute('href')),
+    scripts: b.querySelectorAll('script').length,
+    text: b.textContent };
+})()`);
+eq('a body renders its heading', md.heads, ['Agenda']);
+ok('and its list items', md.items >= 3, `${md.items} items`);
+eq('a checklist renders ticked and unticked', md.boxes, [true, false]);
+eq('and neither box is pressable', md.pressable, 0);
+eq('bold renders bold', md.strong, ['blocker']);
+eq('and inline code renders code', md.code, ['code']);
+eq('a safe link becomes one, and a javascript: URL does not', md.links,
+  ['https://example.com/spec']);
+ok('the unsafe one stays text', md.text.includes('javascript:alert(1)'), md.text);
+eq('and no script element is added', md.scripts, 0);
+ok('a script tag shows as text', md.text.includes('<script>alert(1)</script>'), md.text);
+await ev(`document.querySelector('#view-card [aria-label="Close"]').click()`);
+await sleep(250);
+
+// A repeating entry's scope pair rebuilds the draft from the other file, which must rebuild the
+// baseline a discard is measured against too: switching scope and leaving changed nothing, so
+// nothing may be asked. This is the check for a baseline left behind as undefined, which reads
+// as dirty for the rest of the popup's life.
+await open();
+await ev(`[...document.querySelectorAll('.eline')]
+  .find(l => /water the plants/i.test(l.textContent)).click()`);
+await sleep(500);
+await pen();
+eq('a repeating entry offers the scope pair', await ev(
+  `!document.querySelector('#f-scope').hidden`), true);
+await ev(`document.querySelector('[data-scope="series"]').click()`);
+await sleep(400);
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(350);
+eq('switching scope alone asks nothing', await ev(
+  `[document.querySelector('#ask').hidden, document.querySelector('#popup').hidden]`),
+  [true, true]);
+
+// And the skip that used to sit in the form is on the preview now, where dropping one
+// occurrence reads as an action on the entry rather than an edit of a field.
+await ev(`[...document.querySelectorAll('.eline')]
+  .find(l => /water the plants/i.test(l.textContent)).click()`);
+await sleep(500);
+const rep = await ev(`({
+  note: /repeating/i.test(document.querySelector('#view-card').textContent),
+  skip: [...document.querySelectorAll('#view-card button')]
+    .filter(b => /skip this one/i.test(b.textContent)).length,
+  scope: document.querySelectorAll('#view-card [data-scope]').length })`);
+eq('the preview says it repeats', rep.note, true);
+eq('and carries the skip', rep.skip, 1);
+eq('but not the scope pair', rep.scope, 0);
+await ev(`document.querySelector('#view-card [aria-label="Close"]').click()`);
+await sleep(250);
+
+// Leaving a popup that holds unsaved changes asks first - and only then. The x, the backdrop and
+// Escape are one way out and ask one question.
+await open();
+await newEntry();
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(300);
+eq('an untouched popup closes with no prompt', await ev(
+  `[document.querySelector('#ask').hidden, document.querySelector('#popup').hidden]`),
+  [true, true]);
+
+const dirty = async () => {
+  await open();
+  await newEntry();
+  await ev(`(() => { const t = document.querySelector('#f-title');
+    t.value = 'Half written';
+    t.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await sleep(200);
+};
+await dirty();
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(350);
+eq('a changed one asks before discarding', await ev(
+  `!document.querySelector('#ask').hidden`), true);
+await ev(`document.querySelector('#ask-keep').click()`);
+await sleep(300);
+eq('keep editing leaves the popup open', await ev(
+  `[document.querySelector('#ask').hidden, document.querySelector('#popup').hidden]`),
+  [true, false]);
+eq('with the change still in it', await ev(`document.querySelector('#f-title').value`),
+  'Half written');
+
+// The backdrop and Escape take the same way out, so they ask the same question.
+await ev(`document.querySelector('#popup').click()`);
+await sleep(350);
+eq('the backdrop asks too', await ev(`!document.querySelector('#ask').hidden`), true);
+await ev(`document.querySelector('#ask-keep').click()`);
+await sleep(250);
+await ev(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+await sleep(350);
+eq('and so does Escape', await ev(`!document.querySelector('#ask').hidden`), true);
+
+// Ticking it silences the prompt on this device, and the settings panel's row is what puts it
+// back - nothing in Mine may be switched off from a place that cannot switch it back on.
+await ev(`document.querySelector('#ask-never').click()`);
+await sleep(100);
+await ev(`document.querySelector('#ask-discard').click()`);
+await sleep(400);
+await dirty();
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(350);
+eq('don\'t ask again stops the prompt', await ev(
+  `[document.querySelector('#ask').hidden, document.querySelector('#popup').hidden]`),
+  [true, true]);
+
+await ev(`document.querySelector('#gear').click()`);
+await sleep(500);
+eq('and the panel has a row to put it back', await ev(`(() => {
+  const r = [...document.querySelectorAll('#settings-body .srow')]
+    .find(r => /confirm discard/i.test(r.querySelector('.slab').textContent));
+  return r ? r.querySelector('input[type=checkbox]').checked : 'no row';
+})()`), false);
+await ev(`[...document.querySelectorAll('#settings-body .srow')]
+  .find(r => /confirm discard/i.test(r.querySelector('.slab').textContent))
+  .querySelector('input[type=checkbox]').click()`);
+await sleep(500);
+await ev(`document.querySelector('#settings-close').click()`);
+await sleep(250);
+await dirty();
+await ev(`document.querySelector('#popup [aria-label="Close and discard"]').click()`);
+await sleep(350);
+eq('and turning it back on restores it', await ev(
+  `!document.querySelector('#ask').hidden`), true);
+await ev(`document.querySelector('#ask-discard').click()`);
+await sleep(300);
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 ws.close();

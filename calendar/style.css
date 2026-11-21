@@ -210,8 +210,11 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   overflow: hidden; text-overflow: ellipsis;
 }
 /* The header's pagers are bigger and sit on a background of their own, so they cannot be read
-   as a card's move buttons, which do something else entirely. */
-.knav { flex: none; width: 2.4rem; height: 2.4rem; background: var(--bg); }
+   as a card's move buttons, which do something else entirely. The background itself is set in
+   the phone block below - `.ib` resets it further down this sheet at the same specificity, so a
+   rule here loses on order, which is why the pager had none at all. A disabled arrow keeps none
+   either way, and that is what tells it from the one that still works. */
+.knav { flex: none; width: 2.4rem; height: 2.4rem; }
 .knav[disabled] { background: none; }
 .knav svg { width: 1.5rem; height: 1.5rem; }
 .kadd { justify-self: end; width: 2rem; height: 2rem; }
@@ -332,23 +335,40 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
     left: 50% !important; top: 50% !important; transform: translate(-50%, -50%);
     width: min(22rem, calc(100vw - 1.5rem)); max-height: 80dvh; overflow-y: auto;
   }
-  /* No `‹` `›` on a phone: the label is swiped instead. The five that are left share the row
-     width equally and the pane stays on one line, down to a 320 px viewport.
-
-     The sizes here follow the viewport rather than being fixed, because five controls at twice
-     the size and a nine-character day label do not both fit 320 px - and a clipped date is
-     worse than a smaller one, the date being the one thing the pane is for. They reach the
-     desktop's size on a wide phone and shrink from there. */
-  .topbar { display: flex; gap: .15rem; padding-inline: .35rem; }
-  .tb-side { flex: 1.25; }
+  /* Two rows on a phone, each filling the width. Five controls across one line left the period
+     label - the one thing in the pane you read rather than aim at - no wider than the buttons
+     beside it, and the arrows that step it had to be dropped to make even that fit. A second
+     row buys back both: the four that go somewhere share the first, the period takes the
+     second. Wrapping does it, so the pane keeps one DOM order at every width - `order` puts
+     the two side groups first and gives the middle a row of its own. */
+  .topbar { display: flex; flex-wrap: wrap; gap: .15rem .1rem; padding-inline: .35rem; }
+  .tb-side { flex: 1 1 0; order: 1; }
+  .tb-side.end { order: 2; }
   .tb-side .nav { flex: 1; min-width: 0; padding: .3rem .1rem; }
-  .tb-mid { flex: 2.5; justify-content: center; }
-  .tb-mid .nav:not(.caret) { display: none; }
+  /* The second row. The arrows take one share each and the label three, so the two are equal
+     in size and the label between them is larger - the label carries a date to be read and an
+     arrow carries only a direction. */
+  .tb-mid { flex: 0 0 100%; order: 3; gap: .15rem; }
+  .tb-mid .nav:not(.caret) { flex: 1 1 0; min-width: 0; }
   .nav { min-width: 2.2rem; }
   .nav.ic svg { width: clamp(1.3rem, 5.2vw, 1.9rem); height: clamp(1.3rem, 5.2vw, 1.9rem); }
   #gear { font-size: clamp(1.2rem, 4.8vw, 1.7rem); }
-  .period { flex: 1; padding: .4rem .1rem; font-size: clamp(1.05rem, 5.4vw, 1.6rem); }
+  .period { flex: 3 1 0; padding: .3rem .1rem; font-size: clamp(1.25rem, 7vw, 2rem); }
   .caret { min-width: 1.4rem; padding: .3rem .05rem; font-size: .85rem; }
+
+  /* The board's pager fills the header: it is the only way to see another stage, and a small
+     square in the middle of an otherwise empty row asked a thumb to aim at the narrowest part
+     of it. The left track that balances the `+` on a desktop is dropped to make the room. */
+  .khead { grid-template-columns: 1fr auto; }
+  .kpad { display: none; }
+  .kmid { gap: .3rem; }
+  /* Mixed from the foreground rather than taken from a token, because it has to read as
+     brighter than the column's own `--soft` in the dark theme as well as the light one. */
+  .knav {
+    flex: 1 1 0; width: auto; height: 2.8rem;
+    background: color-mix(in srgb, var(--fg) 14%, var(--soft));
+  }
+  .knav svg { width: 1.7rem; height: 1.7rem; }
 }
 
 /* ---- the entry popup ---- */
@@ -489,3 +509,46 @@ select {
   .card { max-height: 88dvh; }
   .panel { max-height: 88dvh; }
 }
+
+/* ---- the view popup ---- */
+/* An entry that already exists opens here: the same centred card as the form, with text where
+   the form has inputs. */
+.vtitle { margin: .6rem 0 .2rem; font-size: 1.25rem; line-height: 1.25; }
+.vwhen { margin: 0 0 .2rem; font-size: .8rem; color: var(--muted); text-transform: capitalize; }
+.vrep { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .5rem; }
+.vrows { margin-top: .6rem; }
+/* A field row without the pen: the preview reaches nothing, so it is a row of text. */
+.vrow {
+  display: flex; align-items: center; gap: .6rem; width: 100%;
+  padding: .55rem .3rem; font-size: .9rem; border-top: 1px solid var(--line);
+}
+.vrow svg { flex: none; width: 1.15rem; height: 1.15rem; }
+.vbody { margin-top: .7rem; padding-top: .6rem; border-top: 1px solid var(--line); }
+
+/* ---- a rendered markdown body ---- */
+/* `#` is an h3: a body must not out-shout the title it belongs to. A paragraph keeps its own
+   newlines, because a body typed as lines is read as lines. */
+.md-h { margin: .8rem 0 .3rem; font-size: 1rem; line-height: 1.3; }
+.md-h:first-child { margin-top: 0; }
+.md-p { margin: .4rem 0; font-size: .9rem; line-height: 1.5; white-space: pre-wrap; }
+.md-list { margin: .4rem 0; padding-left: 1.3rem; font-size: .9rem; line-height: 1.5; }
+.md-list li { margin: .15rem 0; }
+/* Rendered, not operated: ticking a box is an edit of the text like any other. */
+.md-task { list-style: none; margin-left: -1.3rem; }
+.md-task input { width: auto; margin: 0 .45rem 0 0; vertical-align: -.1em; }
+.md-code {
+  padding: .05rem .25rem; font: .85em ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--soft); border-radius: .25rem;
+}
+.md-a { color: var(--today); }
+
+/* ---- the discard prompt ---- */
+/* Above the popup it is asking about, because it is asking about the popup. */
+.ask { z-index: 16; }
+.ask .card { width: min(20rem, calc(100% - 1.5rem)); padding: 1rem; }
+.ask-q { margin: 0 0 .6rem; font-size: .95rem; font-weight: 600; }
+.ask-never { display: flex; align-items: center; gap: .45rem; margin: 0; font-size: .8rem; }
+.ask-never input { width: auto; margin: 0; }
+.askrow { display: flex; gap: .5rem; margin-top: .9rem; }
+.askrow button { flex: 1; margin: 0; padding: .6rem .4rem; font-size: .85rem; }
+.askrow .ghost { color: var(--fg); background: none; border: 1px solid var(--line); }

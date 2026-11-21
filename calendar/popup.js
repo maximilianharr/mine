@@ -1,16 +1,22 @@
-// The entry popup. A row of icon buttons at the top, the title, the stage and the dates, then
-// one row per field that is set.
+// Two popups for one entry. An entry that already exists opens **read-only** - a view popup
+// showing it, with a pen into the edit popup - because most openings are to read, and a form
+// answers those questions in input boxes that are harder to read and one slip away from being
+// changed by a tap meant to scroll. A new entry has nothing to read and opens the edit popup
+// directly.
 //
-// Each field button opens a sub-popup, and a sub-popup only ever writes into the draft held
-// here - nothing reaches the repo until the entry popup's own disk, so one entry edit is one
-// commit and the popup's x discards the staged fields with everything else. It is also what
-// makes a brand-new entry work, since it has no file for a sub-popup to write to. The one
-// exception is adding a category, which is a different file: see below.
+// The edit popup is a row of icon buttons, the title, the dates, the toggle row, then one row
+// per field. Each field row opens a sub-popup, and a sub-popup only ever writes into the draft
+// held here - nothing reaches the repo until the edit popup's own disk, so one entry edit is one
+// commit and its x discards the staged fields with everything else. It is also what makes a
+// brand-new entry work, since it has no file for a sub-popup to write to. Adding a category used
+// to be the one exception; it lives in settings now, so there is none.
 import {
-  isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, STAGES, createEntry, updateEntry,
-  deleteEntry, saveOverride, skipOccurrence, createGroup, saveGroups
+  isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, timeLabel, STAGES, createEntry,
+  updateEntry, deleteEntry, saveOverride, skipOccurrence, createGroup, saveGroups
 } from './data.js';
-import { S, $, el, icon, iconBtn, labelOf, inkOn, STAGE_COLOR } from './ui.js';
+import { setKV } from '../shared/store.js';
+import { render } from '../shared/markdown.js';
+import { S, $, el, icon, iconBtn, labelOf, longDayLabel, inkOn, STAGE_COLOR } from './ui.js';
 
 const pad = n => String(n).padStart(2, '0');
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
@@ -61,16 +67,106 @@ export function openNew(seed = {}) {
   open(null, 'occurrence', seed);
 }
 
+// An entry that already exists opens read-only. Every way in lands here: a grid, the day
+// preview and a card on the board alike.
 export function openEntry(occ) {
-  if (occ) open(occ, 'occurrence', {});
+  if (!occ) return;
+  $('#view-card').replaceChildren(...viewCard(occ));
+  $('#viewpop').hidden = false;
 }
 
+export function closeView() {
+  $('#viewpop').hidden = true;
+}
+$('#viewpop').addEventListener('click', e => { if (e.target === $('#viewpop')) closeView(); });
+
 function open(occ, scope, seed) {
+  closeView();
   D = draft(occ, scope, seed);
+  D.clean = snapshot(D);
   $('#popup').hidden = false;
   $('#f-msg').textContent = '';
   fillForm();
   requestAnimationFrame(() => $('#f-title').focus());
+}
+
+// ---- the view popup ------------------------------------------------------------------------
+
+// The row carries the type as a marker, not a choice, and then the trashcan, the pen and the x.
+// The trashcan stays here rather than moving behind the pen: deleting is not an edit of a field,
+// and the board's rule that a card is deleted from its popup in two taps depends on it.
+function viewCard(o) {
+  const mark = el('span', 'ib on');
+  mark.title = o.type === 'task' ? 'Task' : 'Event';
+  mark.setAttribute('role', 'img');
+  mark.setAttribute('aria-label', mark.title);
+  mark.append(icon(o.type === 'task' ? 'check' : 'cal'));
+
+  const trash = iconBtn('trash', o.seriesId ? 'Delete the whole repeating entry' : 'Delete', 'bad');
+  trash.addEventListener('click', () => removeEntry(o));
+  const pen = iconBtn('pen', 'Edit');
+  pen.addEventListener('click', () => open(o, 'occurrence', {}));
+  const x = iconBtn('x', 'Close');
+  x.addEventListener('click', closeView);
+
+  const bar = el('div', 'iconbar');
+  bar.append(mark, el('span', 'spacer'), trash, pen, x);
+  const out = [bar, el('h2', 'vtitle', o.title || 'Untitled'), el('p', 'vwhen', whenLine(o))];
+
+  // A repeating entry says so, and carries its skip: dropping one occurrence is an action on
+  // the entry like deleting it. The scope pair is not here - it governs what an edit writes.
+  if (o.seriesId) {
+    const note = el('div', 'vrep');
+    const skip = el('button', 'link', 'skip this one');
+    skip.type = 'button';
+    skip.addEventListener('click', () =>
+      run(`skip ${o.title} on ${o.dayKey}`, () => skipOccurrence(o)));
+    note.append(el('span', 'scope-note', 'Part of a repeating entry.'), skip);
+    out.push(note);
+  }
+
+  // Only the fields that are set, in the canonical order. Nothing here is a row waiting to be
+  // filled - that is what the pen is for - so an unset field has nothing to say.
+  const rows = el('div', 'vrows');
+  for (const f of FIELDS) {
+    if (f.k === 'body') continue;              // the body is rendered below, not summarised
+    const v = viewValue(o, f.k);
+    if (!f.set(v)) continue;
+    const r = el('div', 'vrow');
+    r.append(icon(f.ic), el('span', 'flab', f.label), el('span', 'fval', f.sum(v)));
+    rows.append(r);
+  }
+  if (rows.children.length) out.push(rows);
+
+  // In full and rendered, not clipped to two lines and not as raw markdown: two lines on a card
+  // and the whole text here are the difference between a glance and having opened the thing.
+  if (o.body.trim()) {
+    const body = el('div', 'vbody');
+    body.append(render(o.body));
+    out.push(body);
+  }
+  return out;
+}
+
+// Read from the file's own data, the way the draft does, so an override shows the override.
+const viewValue = (o, k) => {
+  if (k === 'alerts') return list(o.data.alerts).map(Number).filter(Number.isFinite);
+  if (k === 'participants') return list(o.data.participants).map(String);
+  return String(o.data[k] ?? '');
+};
+
+// The day, the time, and - on a task - the three values the toggle row edits, which a preview
+// hiding them would make you open the form to read.
+function whenLine(o) {
+  const parts = [longDayLabel(o.dayKey), o.allDay ? 'all-day'
+    : o.end && !isAllDay(o.end) ? `${timeLabel(o.start)}–${timeLabel(o.end)}`
+      : timeLabel(o.start)];
+  if (o.type === 'task') {
+    parts.push(o.stage);
+    if (o.important) parts.push('important');
+    if (o.estimate) parts.push(`${o.estimate}d`);
+  }
+  return parts.join(' · ');
 }
 
 function draft(occ, scope, seed) {
@@ -108,10 +204,47 @@ function draft(occ, scope, seed) {
 
 const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
 
+// What a discard would lose: the draft's own editable parts. A popup that was opened and not
+// touched has nothing to lose, so it closes without a word.
+const snapshot = d => JSON.stringify([d.type, d.stage, d.important, d.estimate, d.title,
+  d.allDay, d.startDate, d.startTime, d.endDate, d.endTime, d.v]);
+
+// Leaving a popup that holds unsaved changes asks first - the x, the backdrop and Escape are one
+// way out and ask one question. A half-written new entry counts as work: it is as easy to lose
+// as an edit of a saved one.
 export function closePopup() {
+  if (D && S.prefs.confirmDiscard && snapshot(D) !== D.clean) {
+    $('#ask-never').checked = false;
+    $('#ask').hidden = false;
+    return;
+  }
+  discard();
+}
+
+function discard() {
   closeSub();
+  $('#ask').hidden = true;
   $('#popup').hidden = true;
   D = null;
+}
+
+$('#ask-keep').addEventListener('click', () => { $('#ask').hidden = true; });
+$('#ask').addEventListener('click', e => { if (e.target === $('#ask')) $('#ask').hidden = true; });
+$('#ask-discard').addEventListener('click', async () => {
+  // Ticking it silences the prompt on this device for good; the settings panel's row is what
+  // puts it back, because nothing in Mine may be switched off from a place that cannot switch
+  // it back on.
+  if ($('#ask-never').checked) {
+    S.prefs.confirmDiscard = false;
+    await setKV('calendar.confirmDiscard', false);
+  }
+  discard();
+});
+
+// A save or a delete has nothing left to discard, and neither has a closed view popup.
+function closeAll() {
+  discard();
+  closeView();
 }
 
 // ---- drawing -------------------------------------------------------------------------------
@@ -135,7 +268,6 @@ function fillForm() {
   fieldRows();
 
   const isOcc = D.occ && D.occ.seriesId && D.scope === 'occurrence';
-  $('#f-skip').hidden = !isOcc;
   $('#f-path').textContent = !D.occ ? 'New entry.'
     : D.scope === 'series' && D.occ.seriesId ? D.occ.seriesPath
       : isOcc ? `${D.occ.seriesPath} · occurrence ${D.occ.recId}${D.occ.override ? ` · override ${D.occ.path}` : ''}`
@@ -153,6 +285,10 @@ function iconRow() {
   for (const [t, ic, label] of [['task', 'check', 'Task'], ['event', 'cal', 'Event']]) {
     const b = iconBtn(ic, label, D.type === t ? 'on' : '');
     b.setAttribute('aria-pressed', String(D.type === t));
+    // Disabled on an entry that already exists: a task turned into an event drops its stage,
+    // its importance and its estimate, and a popup opened to fix a typo is not where that
+    // belongs one tap away. The type is settled when the entry is made.
+    b.disabled = !!D.occ;
     b.addEventListener('click', () => { D.type = t; fillForm(); });
     kids.push(b);
   }
@@ -161,7 +297,7 @@ function iconRow() {
   if (D.occ) {
     const t = iconBtn('trash', D.occ.seriesId ? 'Delete the whole repeating entry' : 'Delete',
       'bad');
-    t.addEventListener('click', removeEntry);
+    t.addEventListener('click', () => removeEntry(D.occ));
     kids.push(t);
   }
   const disk = iconBtn('disk', 'Save', 'save');
@@ -361,15 +497,17 @@ function bodyEditor(cur) {
            read: () => t.value };
 }
 
-// The groups, each with its colour, a pen, a trashcan and a + to add one. Everything here writes
-// groups.md straight away rather than staging it: that is a different file from the entry, and a
-// category must not vanish because the entry it was made for was discarded. A group's stored name
-// is derived from its label and never shown, which is why relabelling or recolouring touches no
-// entry; entries naming a deleted one render grey.
+// One list, two forms, and the two sets of controls never appear together. From the category
+// field it **only picks**: no pen, no trashcan, no `+ add` - naming, recolouring and deleting a
+// group are settings, and an entry popup is not where a list the whole repo shares should be
+// rewritten, least of all by a trashcan a thumb's width from the group being aimed at. From the
+// settings panel's `edit groups` it **only manages**, with no way to pick, because nothing is
+// being filled in.
 //
-// One list, reached from two places. From the category field it also picks, and `chosen` holds
-// the pick; from the settings panel's `edit groups` it only manages, and `chosen` stays null,
-// which is what takes the picking out.
+// `chosen` is what tells them apart: a string when picking, null when managing. Managing writes
+// groups.md straight away - a group's stored name is derived from its label and never shown,
+// which is why relabelling or recolouring touches no entry, and entries naming a deleted one
+// render grey.
 let editing = null;      // the group whose row is in edit mode; '' is the new one
 
 export function openGroups() {
@@ -413,6 +551,7 @@ function groupList(initial) {
       b.addEventListener('click', () => { chosen = name; draw(); });
       r.append(b);
     }
+    if (chosen !== null) return r;             // picking: the groups and nothing else
     const pen = iconBtn('pen', `Edit ${text}`);
     pen.addEventListener('click', () => { editing = name; draw(); });
     const del = iconBtn('trash', `Delete ${text}`, 'bad');
@@ -452,18 +591,17 @@ function groupList(initial) {
     const kids = [];
     for (const [name, g] of Object.entries(S.model.groups))
       kids.push(name === editing ? groupForm(name, g) : groupRow(name, g));
-    if (chosen !== null) {
-      const none = el('button', `gpick${chosen === '' ? ' on' : ''}`, 'no category');
-      none.type = 'button';
-      none.addEventListener('click', () => { chosen = ''; draw(); });
-      kids.push(none);
-    }
-    if (editing === '') kids.push(groupForm('', { color: '#2980b9', label: '' }));
-    else {
-      const add = el('button', 'link', '+ add category');
-      add.type = 'button';
-      add.addEventListener('click', () => { editing = ''; draw(); });
-      kids.push(add);
+    // Picking stops here. There is no `no category` row either: clearing the field is the
+    // popup's own trashcan, as in the other five, and the trio at the top is the one control
+    // that sits in the same place in every field's popup.
+    if (chosen === null) {
+      if (editing === '') kids.push(groupForm('', { color: '#2980b9', label: '' }));
+      else {
+        const add = el('button', 'link', '+ add category');
+        add.type = 'button';
+        add.addEventListener('click', () => { editing = ''; draw(); });
+        kids.push(add);
+      }
     }
     wrap.replaceChildren(...kids);
   };
@@ -599,8 +737,15 @@ for (const [id, k] of [['#f-start-date', 'startDate'], ['#f-start-time', 'startT
   ['#f-end-date', 'endDate'], ['#f-end-time', 'endTime']])
   $(id).addEventListener('input', e => { D[k] = e.target.value; });
 
+// Switching scope rebuilds the draft from the other file, so the baseline a discard is measured
+// against has to be rebuilt with it. Leaving `clean` behind would read as undefined, and every
+// way out of the popup would ask about changes nobody had made.
 for (const b of document.querySelectorAll('[data-scope]'))
-  b.addEventListener('click', () => { D = draft(D.occ, b.dataset.scope, {}); fillForm(); });
+  b.addEventListener('click', () => {
+    D = draft(D.occ, b.dataset.scope, {});
+    D.clean = snapshot(D);
+    fillForm();
+  });
 
 $('#popup').addEventListener('click', e => { if (e.target === $('#popup')) closePopup(); });
 
@@ -645,11 +790,7 @@ $('#entry-form').addEventListener('submit', async e => {
   });
 });
 
-$('#f-skip').addEventListener('click', () =>
-  run(`skip ${D.occ.title} on ${D.occ.dayKey}`, () => skipOccurrence(D.occ)));
-
-function removeEntry() {
-  const occ = D.occ;
+function removeEntry(occ) {
   const what = occ.seriesId
     ? `Delete the whole repeating entry "${occ.title}"? Its override files stay behind.`
     : `Delete "${occ.title}"?`;
@@ -661,11 +802,16 @@ async function run(what, fn) {
   try {
     await fn();
   } catch (err) {
-    $('#f-msg').textContent = `not saved: ${err.message}`;
-    $('#f-msg').className = 'msg bad';
+    // The view popup has no message line, so a delete or a skip that fails is reported in the
+    // sync line instead of nowhere.
+    if ($('#popup').hidden) S.status(`not saved: ${err.message}`, true);
+    else {
+      $('#f-msg').textContent = `not saved: ${err.message}`;
+      $('#f-msg').className = 'msg bad';
+    }
     return;
   }
-  closePopup();
+  closeAll();
   S.model = await S.reload();
   S.render();
   S.push(`calendar: ${what}`);

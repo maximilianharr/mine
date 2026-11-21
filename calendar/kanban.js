@@ -52,7 +52,8 @@ function columnHead(stage, sprintStart) {
   const add = iconBtn('plus', `Add a task to ${stage}`, 'kadd');
   add.addEventListener('click', () =>
     openNew({ dayKey: sprintStart, type: 'task', stage, allDay: true }));
-  head.append(el('span', ''), mid, add);
+  // On a phone the pager fills the header, so the left track that balances the `+` is dropped.
+  head.append(el('span', 'kpad'), mid, add);
   return head;
 }
 

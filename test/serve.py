@@ -27,6 +27,8 @@ ROWS = [
     (3,  "17:00", "Gym",                              "health", "event"),
     (5,  "13:00", "Deploy the release",               "work",   "task",  "todo",
      ["priority: 1"]),
+    (3,  None,    "Water the plants",                 "home",   "task",  "todo",
+     ['recurrence: "FREQ=WEEKLY"']),
     (6,  "10:00", "Fix the bathroom tap",             "home",   "task",  "todo",
      ["priority: 3"]),
     (7,  None,    "Family lunch",                     "home",   "event"),
@@ -64,7 +66,7 @@ def fixture():
         fm.append("group: " + group)
         if kind == "task":
             fm.append("stage: " + row[5])
-            fm.extend(row[6] if len(row) > 6 else [])
+        fm.extend(row[6] if len(row) > 6 else [])
         files.append({
             "path": "calendar/%04d/%02d/%s-%s-%04x.md" % (
                 today.year, today.month, key, (time or "0000").replace(":", ""), i),

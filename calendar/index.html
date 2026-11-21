@@ -70,6 +70,24 @@
   <div id="day-list" class="day-list"></div>
 </div>
 
+<!-- An entry that exists opens read-only: a pen in its top row opens the edit popup below.
+     Built entirely in app code. -->
+<div class="modal" id="viewpop" hidden>
+  <div class="card" id="view-card"></div>
+</div>
+
+<!-- Leaving a popup that holds unsaved changes asks first, once, unless told not to. -->
+<div class="modal ask" id="ask" hidden>
+  <div class="card">
+    <p class="ask-q">Discard the changes?</p>
+    <label class="ask-never"><input type="checkbox" id="ask-never"> don't ask again</label>
+    <div class="askrow">
+      <button type="button" class="ghost" id="ask-keep">keep editing</button>
+      <button type="button" class="danger" id="ask-discard">discard</button>
+    </div>
+  </div>
+</div>
+
 <!-- the entry popup. The icon row and the detail rows are built in app code. -->
 <div class="modal" id="popup" hidden>
   <form class="card" id="entry-form" autocomplete="off">
@@ -83,7 +101,6 @@
         <button type="button" class="seg" data-scope="occurrence">This occurrence</button>
         <button type="button" class="seg" data-scope="series">Whole series</button>
       </div>
-      <button type="button" class="link" id="f-skip" hidden>skip this one</button>
     </div>
 
     <div class="row2">

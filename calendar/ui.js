@@ -22,7 +22,8 @@ export const S = {
   model: { groups: {}, dated: [], rules: [], overrides: new Map(),
            settings: { anchor: DEFAULT_ANCHOR, interval: 2 } },
   view: { mode: 'M', anchor: todayKey(), sprint: 1, col: 0 },
-  prefs: { weekStart: 1, showWeeks: false, timeZone: '', theme: 'system', dateFormat: 'auto' },
+  prefs: { weekStart: 1, showWeeks: false, confirmDiscard: true, timeZone: '',
+           theme: 'system', dateFormat: 'auto' },
   hidden: new Set(),                 // group names switched off in the filter
   kfilter: { importantOnly: false, assignee: '' },   // kanban only
   visible: new Map(),                // occurrence key -> occurrence, for what is on screen
