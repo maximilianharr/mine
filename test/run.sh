@@ -1,5 +1,6 @@
 #!/bin/bash
-# Starts the fixture server and a headless Chromium, runs the browser checks, tears both down.
+# Runs the model checks in node, then starts the fixture server and a headless Chromium for the
+# browser checks and tears both down.
 #
 #   test/run.sh              the checks
 #   test/run.sh --shot DIR   the checks, and a screenshot of each view into DIR
@@ -18,6 +19,8 @@ cleanup() {
 trap cleanup EXIT
 
 command -v chromium >/dev/null || { echo "chromium not on PATH"; exit 2; }
+
+node "$HERE/unit.mjs" || exit 1
 
 python3 "$HERE/serve.py" $PORT >/dev/null 2>&1 &
 SERVER=$!

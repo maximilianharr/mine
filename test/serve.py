@@ -14,9 +14,8 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
 # Weekday offsets within the month, so there is always a Saturday task, a day with more entries
 # than a phone cell shows, all-day items, and the long titles that used to blow the grid open.
 #
-# A task row may carry a sixth item: extra frontmatter lines. Three of them are there for the
-# importance checks - one written the way the app writes it, and two carrying the old `priority`
-# key, which has to read as important at 1 and not at 3.
+# A task row may carry a sixth item: extra frontmatter lines - `important: true` for the
+# importance checks, a recurrence rule for the repeating ones.
 ROWS = [
     (1,  "09:00", "Sprint planning",                  "work",   "event"),
     (1,  "14:00", "Review the open pull requests",    "work",   "task",  "todo",
@@ -25,12 +24,10 @@ ROWS = [
     (3,  "08:30", "Standup",                          "work",   "event"),
     (3,  "11:00", "Write the quarterly board report", "work",   "task",  "doing"),
     (3,  "17:00", "Gym",                              "health", "event"),
-    (5,  "13:00", "Deploy the release",               "work",   "task",  "todo",
-     ["priority: 1"]),
+    (5,  "13:00", "Deploy the release",               "work",   "task",  "todo"),
     (3,  None,    "Water the plants",                 "home",   "task",  "todo",
      ['recurrence: "FREQ=WEEKLY"']),
-    (6,  "10:00", "Fix the bathroom tap",             "home",   "task",  "todo",
-     ["priority: 3"]),
+    (6,  "10:00", "Fix the bathroom tap",             "home",   "task",  "todo"),
     (7,  None,    "Family lunch",                     "home",   "event"),
     (10, "08:30", "Standup",                          "work",   "event"),
     (12, "11:00", "Weekly shop",                      "home",   "task",  "done"),

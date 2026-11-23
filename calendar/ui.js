@@ -5,7 +5,7 @@
 // background push without importing app.js back.
 import {
   todayKey, DEFAULT_ANCHOR, groupColor, groupLabel, monthGrid, weekStartOf, addDays, partsOf,
-  sprintRange, sprintOf
+  dowOf, sprintRange, sprintOf
 } from './data.js';
 import { formatDate, weekdayName } from '../shared/prefs.js';
 
@@ -67,12 +67,17 @@ export function viewRange() {
   return [r.start, r.end];
 }
 
-// Where a new entry lands: today when today is in view, otherwise the first day on screen.
-export function defaultDay() {
-  const [from, to] = viewRange();
-  const t = todayKey();
-  return t >= from && t <= to ? t : from;
-}
+export const isWeekend = key => dowOf(key) % 6 === 0;
+
+// Locale narrow weekday names with a weekend flag, rotated to the configured first day of the
+// week. 2026-01-05 is a Monday. The grids tint the weekend; the picker takes the names alone.
+export const weekLetters = () => {
+  const base = weekStartOf('2026-01-05', S.prefs.weekStart);
+  return Array.from({ length: 7 }, (_, i) => {
+    const k = addDays(base, i);
+    return [weekdayName(k, 'narrow'), isWeekend(k)];
+  });
+};
 
 export const currentSprint = () => sprintOf(todayKey(), S.model.settings) || 1;
 
@@ -137,7 +142,12 @@ export function iconBtn(name, label, cls = '') {
   return b;
 }
 
-// ---- popovers ------------------------------------------------------------------------------
+// ---- overlays ------------------------------------------------------------------------------
+// Two mechanisms and no third. `openPop` positions a dropdown under the button that opened it,
+// which only the date picker and the filter do. Everything else - the day preview, a field's own
+// popup, the settings panel - is centred by the stylesheet and only has to be unhidden.
+
+export const openCentred = pop => { pop.hidden = false; $('#scrim').hidden = false; };
 
 export function openPop(pop, anchor, align = 'left') {
   pop.hidden = false;
@@ -150,7 +160,7 @@ export function openPop(pop, anchor, align = 'left') {
   anchor.setAttribute?.('aria-expanded', 'true');
 }
 
-const POPS = ['#picker', '#filter-pop', '#day-pop', '#settings-sheet'];
+const POPS = ['#picker', '#filter-pop', '#day-pop', '#settings-panel'];
 
 export function closePops() {
   for (const id of [...POPS, '#scrim']) $(id).hidden = true;

@@ -1,5 +1,5 @@
 // Module service worker: the registration succeeding is the whole test.
-import { APPS } from './apps.js';
+import { APPS } from '../shared/apps.js';
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(self.clients.claim()));
 self.addEventListener('fetch', e => {

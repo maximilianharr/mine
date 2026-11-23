@@ -13,12 +13,12 @@ import { RRule } from '../shared/vendor/rrule.mjs';
 import { allFiles, getFile } from '../shared/store.js';
 import { write, remove } from '../shared/github.js';
 
-export const ROOT = 'calendar';
+const ROOT = 'calendar';
 const UNKNOWN_COLOR = '#9aa5b1';          // group not in groups.md renders grey
 export const STAGES = ['todo', 'doing', 'done'];
 export const DEFAULT_ANCHOR = '2024-01-01';   // a Monday. Every device agrees until settings.md exists.
 
-const pad = n => String(n).padStart(2, '0');
+export const pad = n => String(n).padStart(2, '0');
 
 // ---- the configured zone -----------------------------------------------------------------
 // Which day a timed entry lands in, and what a typed time means, follow this zone rather than
@@ -145,22 +145,16 @@ const instant = d => d.toISOString().replace(/\.\d{3}Z$/, 'Z');
 // value, in the same value type as the series start.
 const occIdOf = (d, allDay) => allDay ? utcKey(d) : instant(d);
 
-const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
+export const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
 
 // ---- task fields -------------------------------------------------------------------------
 
-// `stage` is a task's only progress field. A file written before the change, or by hand, is
-// read for `done` as a fallback; a write never emits `done`.
-export const stageOf = data =>
-  STAGES.includes(data.stage) ? data.stage : data.done === true ? 'done' : 'todo';
+// `stage` is a task's only progress field; an unreadable or absent one is `todo`.
+export const stageOf = data => STAGES.includes(data.stage) ? data.stage : 'todo';
 
-// Importance is a yes or no. `important: true` is what the app writes; a file carrying the old
-// RFC 5545 `priority` is still read, 1 as important and 2-9 as not, so the one tier that meant
-// urgent survives the change and the other two do not silently become it.
-export const importantOf = data => {
-  if (data.important != null) return data.important === true || data.important === 'true';
-  return Number(data.priority) === 1;
-};
+// Importance is a yes or no. Only `true` is ever written; a task that is not important carries
+// no key at all. The quoted form is read too, because a file may be written by hand.
+export const importantOf = data => data.important === true || data.important === 'true';
 
 const estimateOf = v => {
   const n = Number(v);
@@ -456,11 +450,10 @@ export async function saveOverride(occ, data, body) {
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
 // Setting a field on one occurrence of a series is an override; on a plain entry it is an edit.
-// A null in the patch clears the key. `done` is dropped on the way out: a write never emits it.
+// A null in the patch clears the key.
 export async function patchOccurrence(occ, patch) {
   const data = { ...occ.data, ...patch };
   for (const k of Object.keys(patch)) if (patch[k] == null) delete data[k];
-  delete data.done;
   if (occ.seriesId) return saveOverride(occ, data, occ.body);
   return updateEntry(occ.path, data, occ.body, { move: patch.start !== undefined });
 }

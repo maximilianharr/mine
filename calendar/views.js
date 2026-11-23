@@ -2,17 +2,15 @@
 // day of the week, with Saturday and Sunday tinted wherever they land - a Saturday task has to
 // be visible.
 import {
-  occurrences, timeLabel, todayKey, isoWeek, monthGrid, addDays, dowOf, partsOf, weekStartOf,
-  isAllDay, patchOccurrence, byStart
+  occurrences, timeLabel, todayKey, isoWeek, monthGrid, addDays, partsOf, weekStartOf,
+  isAllDay, patchOccurrence, byStart, pad
 } from './data.js';
 import {
-  S, $, el, phone, colorOf, labelOf, inkOn, longDayLabel, viewRange, openPop, closePops
+  S, $, el, phone, colorOf, labelOf, inkOn, longDayLabel, viewRange, isWeekend, weekLetters,
+  openCentred, closePops
 } from './ui.js';
 import { openEntry, openNew } from './popup.js';
 import { weekdayName } from '../shared/prefs.js';
-
-const pad = n => String(n).padStart(2, '0');
-const isWeekend = key => dowOf(key) % 6 === 0;
 
 // What the range holds, honouring the group filter, recorded for click handling.
 export function collect(from, to) {
@@ -46,19 +44,10 @@ export function renderView(host) {
   if (!$('#day-pop').hidden) fillDayPop($('#day-pop').dataset.day);
 }
 
-export const weekKeys = () => {
+const weekKeys = () => {
   const a = weekStartOf(S.view.anchor, S.prefs.weekStart);
   return Array.from({ length: 7 }, (_, i) => addDays(a, i));
 };
-
-// Locale narrow weekday names, rotated to the configured first day. 2026-01-05 is a Monday.
-function weekLetters() {
-  const base = weekStartOf('2026-01-05', S.prefs.weekStart);
-  return Array.from({ length: 7 }, (_, i) => {
-    const k = addDays(base, i);
-    return [weekdayName(k, 'narrow'), isWeekend(k)];
-  });
-}
 
 // ---- month ---------------------------------------------------------------------------------
 
@@ -245,10 +234,10 @@ export function openDayPop(key) {
   closePops();
   $('#day-pop').dataset.day = key;
   fillDayPop(key);
-  openPop($('#day-pop'), document.querySelector(`[data-day="${key}"]`) || $('#period'));
+  openCentred($('#day-pop'));
 }
 
-export function fillDayPop(key) {
+function fillDayPop(key) {
   $('#day-title').textContent = longDayLabel(key);
   const items = [...S.visible.values()].filter(o => o.dayKey === key).sort(byStart);
   const list = $('#day-list');
@@ -311,7 +300,7 @@ function openMonth(month) {
 
 // The change is in the local mirror before the push is attempted, so the view is right either
 // way: offline it stays on screen and the queue carries it.
-export async function tickTask(o) {
+async function tickTask(o) {
   if (!o || o.type !== 'task') return;
   const stage = o.stage === 'done' ? 'todo' : 'done';
   await patchOccurrence(o, { stage });

@@ -24,7 +24,7 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 /shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
-/test/    run.sh  serve.py  check.mjs
+/test/    run.sh  unit.mjs  serve.py  check.mjs
 ```
 
 No build step: no bundler, no CI, no node_modules. `git push` deploys, every page opens from
@@ -35,7 +35,11 @@ DevTools protocol with nothing installed, and what it covers — and the two mis
 it lie to you — are in [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md).
 
 `shared/apps.js` exports the app list and is imported by both the tile screen and `sw.js`, so
-adding an app means editing one array. An app may export `summary()` from `widget.js`.
+adding an app means editing one array, and its `files` are what the worker precaches. The list is
+written by hand on purpose: `install` uses `cache.addAll`, which rejects as a whole if any URL
+404s, so a wrong entry fails loudly at install. A *missing* one fails silently, which is how
+`shared/markdown.js` stayed out of the shell while `popup.js` imported it — an app installed and
+taken offline before an entry was ever opened could not draw a details body.
 
 `shared/md.js` and `shared/markdown.js` are two different jobs and stay two files. `md.js` is the
 file envelope — it parses and serialises frontmatter and is imported by the paths that read and
@@ -45,27 +49,14 @@ is what makes a body carrying a `<script>` tag harmless without a sanitiser to g
 covers and why it is hand-rolled rather than vendored is in
 [REQUIREMENTS.md](REQUIREMENTS.md#markdown-bodies).
 
-## Bootstrap — 1 request
+## Fetching the repo
 
-One GraphQL query returns an app folder's tree **with contents and blob SHAs**, nested to the
-depth of the layout:
-
-```graphql
-repository(owner:$o, name:$r) { object(expression:"main:calendar") {
-  ... on Tree { entries { name type object {
-    ... on Tree { entries { name type object {
-      ... on Tree { entries { name type object {
-        ... on Blob { oid text isTruncated } } } } } } } } } } }
-```
-
-- `rateLimit.cost` is **1** however many files return — `entries` is not a paginated connection.
-  A 16 MB / 145 file response came back in 6 s without error.
-- `Blob.oid` is byte-identical to the REST tree SHA, so this single request also supplies the
-  SHAs that pulls diff against and writes send as their base.
-- Check `isTruncated`: GraphQL truncates very large blobs and returns `text: null` for binary.
-  Fall back to a REST blob fetch for that path.
-- An **empty repo** returns `object: null` rather than an error, and `defaultBranchRef: null`.
-  Treat it as an empty mirror, not a failure.
+There is one read path, `pull`, and it is also the first mirror: with no stored ETag it fetches
+the tree and every blob in it. A GraphQL query returning a folder's contents and blob SHAs in a
+single request was built and measured — cost 1, 145 files in 6 s — and then never wired in,
+because `pull` already handled the first run and the empty repo. It was deleted rather than left
+as a second way to do the same thing; against a mirror measured in single-digit MB, fetched once
+per device, the request count it saved was not worth a path nothing exercised.
 
 **Do not use the tarball.** `GET /tarball/{ref}` 302-redirects to `codeload.github.com`, which
 answers `access-control-allow-origin: https://render.githubusercontent.com` — one specific
@@ -81,7 +72,7 @@ way, and everything after drains normally once a history exists.
 ## Pull
 
 1. `GET /repos/{o}/{r}/commits/{branch}` with `If-None-Match`. A 304 means nothing changed and
-   costs no rate-limit quota.
+   costs no rate-limit quota, and no ETag at all means a first mirror.
 2. On 200: fetch the tree, diff blob SHAs, fetch only changed files, drop deleted paths.
 
 Run on app open and on window focus. Background Sync does not exist in Safari, so all syncing is
@@ -155,8 +146,7 @@ through the parser instead.
 
 ## Platform findings
 
-Verified in both installed home-screen apps (iPhone/Safari, Pixel/Chrome); screenshots in
-`spike/res/`.
+Verified in both installed home-screen apps (iPhone/Safari, Pixel/Chrome) on 2026-11-19.
 
 | | Result |
 | --- | --- |

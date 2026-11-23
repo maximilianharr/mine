@@ -328,6 +328,14 @@ eq('an event drops all three', (await ev(FLAGS)).map(label), ['All-day']);
 
 await closeForm();
 
+// Every icon comes from the one table in ui.js: the shell's buttons are empty in the markup and
+// are filled by icon() at boot. An empty one is what a missed id or a renamed table entry leaves
+// behind, and it would otherwise still pass the position and colour checks below.
+const bare = await ev(`[...document.querySelectorAll(
+  '#filter-btn, #board, #home, #day-add, #day-close, #sub-clear, #sub-ok, #sub-cancel, #sub-close, #settings-close')]
+  .filter(b => !b.querySelector('svg')).map(b => b.id)`);
+eq('every shell button got its icon from the table', bare, []);
+
 // An entry that already exists opens read-only: a popup with no input in it, whose top row runs
 // trashcan, pen, x. The trashcan stays on the preview, which is what the board's two-tap delete
 // rule depends on.
@@ -736,8 +744,8 @@ await ev(`document.querySelector('#popup [aria-label="Close and discard"]').clic
 await sleep(250);
 await ev(`document.querySelector('#gear').click()`);
 await sleep(500);
-ok('the settings panel is centred', centred(await box('#settings-sheet')),
-  JSON.stringify(await box('#settings-sheet')));
+ok('the settings panel is centred', centred(await box('#settings-panel')),
+  JSON.stringify(await box('#settings-panel')));
 await ev(`document.querySelector('#settings-close').click()`);
 await sleep(250);
 
@@ -747,6 +755,10 @@ await ev(`document.querySelector('.yday:not(.out)').click()`);
 await sleep(400);
 eq('a year day still opens the day preview',
   await ev(`!document.querySelector('#day-pop').hidden`), true);
+// Centred on a desktop as well as on a phone: it is not anchored to the cell that opened it.
+ok('and is centred there too, not beside the cell', centred(await box('#day-pop')),
+  JSON.stringify(await box('#day-pop')));
+await shoot('day-preview');
 await ev(`document.querySelector('#day-close').click()`);
 await sleep(250);
 await ev(`document.querySelectorAll('.ycap')[4].click()`);
@@ -941,11 +953,8 @@ ok('an ordinary task writes no important key', !/important:/.test(withEstimate),
 const marked = await save('Check an important task', false, true);
 ok('an important task writes important: true', /\nimportant: true\n/.test(marked),
   marked.split('---')[1]);
-ok('and never a priority', !/priority:/.test(marked), marked.split('---')[1]);
-
-// The old key is read, not rejected: `priority: 1` is important and `2` to `9` are not. Read
-// through the popup rather than off a card, so the check does not depend on which sprint today
-// happens to fall in.
+// `important: true` in a file reaches the toggle row lit. Read through the popup rather than
+// off a card, so the check does not depend on which sprint today happens to fall in.
 await viewport(900);
 await open();
 const importantIn = async title => {
@@ -957,9 +966,9 @@ const importantIn = async title => {
   await closeForm();
   return g.includes('@');
 };
-eq('priority: 1 reads as important', await importantIn('Deploy the release'), true);
-eq('priority: 3 does not', await importantIn('Fix the bathroom tap'), false);
-eq('and important: true does', await importantIn('Review the open pull requests'), true);
+eq('important: true in a file reads as important',
+  await importantIn('Review the open pull requests'), true);
+eq('and a task without the key does not', await importantIn('Deploy the release'), false);
 
 // ---- 8. the shared renderer, and discarding an edit ---------------------------------------------
 

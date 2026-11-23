@@ -3,8 +3,9 @@
 What has to be checked before a change ships, and how. [REQUIREMENTS.md](REQUIREMENTS.md) says
 what the apps do; this says how we find out whether they still do it.
 
-There is no CI and no test framework. `test/run.sh` drives a real browser against the real app
-and prints one line per check, so running it is the whole of it:
+There is no CI and no test framework. `test/run.sh` runs the model checks in node and then
+drives a real browser against the real app, printing one line per check, so running it is the
+whole of it:
 
 ```
 test/run.sh                 the checks
@@ -14,16 +15,27 @@ test/run.sh --shot DIR      the checks, and a screenshot of each view into DIR
 It needs `chromium` and node 20 or newer on the PATH, installs nothing, and writes nothing into
 the repo. A failing check prints what it got and what it wanted, and the script exits non-zero.
 
-## Why a browser and not unit tests
+## Why mostly a browser
 
 Almost everything that has actually broken here is a layout or a wiring fault — a grid track
 that will not shrink, a button that stops being wired when its markup moves, a key written into
-the frontmatter that should have been left out. None of those show up in a function test. The
-model arithmetic that *is* worth testing in isolation (dates, sprints, recurrence expansion) is
-pure and lives in `calendar/data.js`, whose `buildModel` takes files rather than reading them,
-so it can be exercised from node against the same markdown the browser mirrors.
+the frontmatter that should have been left out. None of those show up in a function test, which
+is why the bulk of the checks drive the real app.
+
+The exception is the model arithmetic — dates, ISO weeks, sprints, recurrence expansion, the
+zone conversion, and what a write actually serialises. It is pure: `calendar/data.js` imports
+nothing that needs a DOM, and `buildModel` takes files rather than reading them. A date bug there
+surfaces in the browser as a cell in the wrong place, a minute into the run, which is the worst
+possible instrument for it. So `test/unit.mjs` calls those functions directly and runs first.
 
 ## How the harness works
+
+`test/unit.mjs` is plain node — no framework, no dependencies, same one-line-per-check output.
+It imports `calendar/data.js` and asserts against values: that `addMonths('2026-01-31', 1)` is
+the 28th, that `isoWeek('2027-01-01')` is 53, that an occurrence overridden in the date tree
+reads as `done` while its neighbours read as `todo`, that a wall-clock time inside the hour a
+zone skips in spring resolves to something stable rather than drifting an hour on every save,
+and that an empty field is omitted from the frontmatter rather than written as `None`.
 
 `test/serve.py` serves the working tree, plus one synthetic route, `/__fixture.json`: a month of
 entries generated for *the month the checks run in*. A fixture pinned to a fixed date would
@@ -132,7 +144,9 @@ explanation**.
 **The popup is centred.** At 320 px, that the entry popup, a field sub-popup, the settings panel
 and the day preview each sit clear of the bottom edge — their bounding box's bottom is above the
 viewport's, and their top below it. Nothing in the app is a bottom sheet any more, and a card
-that still stretches to the bottom edge is the old sheet in new paint.
+that still stretches to the bottom edge is the old sheet in new paint. **And the day preview is
+centred on a desktop too**, measured at 900 px, because it is no longer anchored to the cell that
+opened it — the check that catches a third overlay mechanism growing back.
 
 **The filter.** That the groups are behind a dropdown rather than listed: the filter popup shows
 one `groups` row, and the checkboxes — one per group, each with its colour — appear only once it
@@ -223,8 +237,9 @@ can catch a regression to the old style.
 `stage: todo` with `estimate: 1`, and a task whose estimate was cleared must have no `estimate`
 key at all — not an empty one, and never `None`. The same holds for importance: a task marked
 important writes `important: true`, an unmarked one writes **no `important` key**, and no file
-ever gains `important: false`. That a file carrying the old `priority: 1` reads as important and
-one carrying `priority: 3` does not, and that saving either leaves no `priority` key behind.
+ever gains `important: false`. That a file carrying `important: true` reaches the toggle row lit
+and one without the key does not. There is no `priority` and no `done` to read any more, and
+`unit.mjs` asserts that neither is honoured — put either reader back and those two checks go red.
 This is the check that holds the file format to
 [calendar/TECHNICAL-REQUIREMENTS.md](calendar/TECHNICAL-REQUIREMENTS.md), and it reads the file
 back out of the local mirror rather than trusting the form.

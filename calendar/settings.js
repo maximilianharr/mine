@@ -14,13 +14,12 @@ import { setKV } from '../shared/store.js';
 import { saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
-import { S, $, el, closePops } from './ui.js';
+import { S, $, el, closePops, openCentred } from './ui.js';
 
 export function openSettings() {
   closePops();
   build();
-  $('#settings-sheet').hidden = false;
-  $('#scrim').hidden = false;
+  openCentred($('#settings-panel'));
 }
 
 // Nine rows and nothing after them: there is no paragraph explaining what is stored where,

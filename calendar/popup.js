@@ -11,21 +11,18 @@
 // brand-new entry work, since it has no file for a sub-popup to write to. Adding a category used
 // to be the one exception; it lives in settings now, so there is none.
 import {
-  isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, timeLabel, STAGES, createEntry,
-  updateEntry, deleteEntry, saveOverride, skipOccurrence, createGroup, saveGroups
+  isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, timeLabel, STAGES, pad, list,
+  createEntry, updateEntry, deleteEntry, saveOverride, skipOccurrence, createGroup, saveGroups
 } from './data.js';
 import { setKV } from '../shared/store.js';
 import { render } from '../shared/markdown.js';
 import { S, $, el, icon, iconBtn, labelOf, longDayLabel, inkOn, STAGE_COLOR } from './ui.js';
 
-const pad = n => String(n).padStart(2, '0');
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
 
-// Keys the form owns. Anything else in the file - exdate, rdate, status, a hand-added key -
-// survives a save untouched. `done` is in the list and never written back out again.
-// `priority` is in the list and never written back out again, the same way `done` is: the UI
-// writes `important` now, and a file that still carries the old key loses it on this save.
-const FORM_KEYS = ['title', 'type', 'start', 'end', 'done', 'stage', 'priority', 'important',
+// Keys the form owns: cleared from the file's data before collect() writes them back, so
+// anything else - exdate, rdate, status, a hand-added key - survives a save untouched.
+const FORM_KEYS = ['title', 'type', 'start', 'end', 'stage', 'important',
   'estimate', 'group', 'location', 'recurrence', 'alerts', 'participants'];
 
 let D = null;      // the draft
@@ -202,8 +199,6 @@ function draft(occ, scope, seed) {
   };
 }
 
-const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
-
 // What a discard would lose: the draft's own editable parts. A popup that was opened and not
 // touched has nothing to lose, so it closes without a word.
 const snapshot = d => JSON.stringify([d.type, d.stage, d.important, d.estimate, d.title,
@@ -266,12 +261,6 @@ function fillForm() {
   $('#f-end-time').disabled = D.allDay;
 
   fieldRows();
-
-  const isOcc = D.occ && D.occ.seriesId && D.scope === 'occurrence';
-  $('#f-path').textContent = !D.occ ? 'New entry.'
-    : D.scope === 'series' && D.occ.seriesId ? D.occ.seriesPath
-      : isOcc ? `${D.occ.seriesPath} · occurrence ${D.occ.recId}${D.occ.override ? ` · override ${D.occ.path}` : ''}`
-        : D.occ.path;
 }
 
 // A ticked square and a calendar page choose the type, and that is all the row holds besides the

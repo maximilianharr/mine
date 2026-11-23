@@ -7,7 +7,8 @@ import {
   sprintRange, sprintOf
 } from './data.js';
 import {
-  S, $, el, phone, colorOf, labelOf, dayLabel, icon, currentSprint, openPop, closePops
+  S, $, el, phone, colorOf, labelOf, dayLabel, icon, weekLetters, currentSprint, openPop,
+  closePops
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
@@ -95,7 +96,11 @@ $('#next').addEventListener('click', () => step(1));
 // dropdown, and an entry is created where it will live - a cell, the day preview, or a kanban
 // column header.
 
-$('#home').append(icon('house'));
+for (const [id, name] of [['#home', 'house'], ['#filter-btn', 'filter'], ['#day-add', 'plus'],
+  ['#day-close', 'x'], ['#sub-clear', 'trash'], ['#sub-ok', 'disk'], ['#sub-cancel', 'x'],
+  ['#sub-close', 'x'], ['#settings-close', 'x']])
+  $(id).append(icon(name));
+
 $('#gear').addEventListener('click', openSettings);
 $('#settings-close').addEventListener('click', closePops);
 
@@ -190,7 +195,7 @@ function renderPicker() {
     new Date(pick.y, pick.m, 1, 12).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   body.className = 'pick-body days';
   body.replaceChildren(
-    ...weekLetters().map(n => el('span', 'wh', n)),
+    ...weekLetters().map(([n]) => el('span', 'wh', n)),
     ...monthGrid(pick.y, pick.m, S.prefs.weekStart).map(k => {
       const [, mm, dd] = partsOf(k);
       const b = el('button', `pk${mm !== pick.m + 1 ? ' out' : ''}${k === todayKey() ? ' now' : ''}`,
@@ -206,12 +211,6 @@ function renderPicker() {
       return b;
     }));
 }
-
-const weekLetters = () => {
-  const base = weekStartOf('2026-01-05', S.prefs.weekStart);
-  return Array.from({ length: 7 }, (_, i) =>
-    new Date(`${addDays(base, i)}T12:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' }));
-};
 
 // ---- the filter ----------------------------------------------------------------------------
 // A view filter, remembered per device. Groups are named and coloured in settings, not here.

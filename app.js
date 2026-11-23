@@ -1,7 +1,7 @@
 import { APPS } from './shared/apps.js';
 import { getConfig, setConfig, persist, queuedCount } from './shared/store.js';
 import { THEMES, DATE_FORMATS, loadPrefs, setPref, applyTheme } from './shared/prefs.js';
-import { testConnection, bootstrap, pull, write, drain } from './shared/github.js';
+import { testConnection, pull, write, drain } from './shared/github.js';
 import { serialize } from './shared/md.js';
 
 const $ = s => document.querySelector(s);
@@ -173,10 +173,6 @@ $('#verify').addEventListener('click', async () => {
     await run('Read repo', async () => {
       const i = await testConnection(await getConfig());
       return `${i.name}, ${i.private ? 'private' : 'PUBLIC'}`;
-    });
-    await run('Bootstrap over GraphQL', async () => {
-      const b = await bootstrap('');
-      return b.empty ? 'repo is empty, nothing to mirror yet' : `${b.files.length} markdown file(s)`;
     });
     await run('Write README.md, one commit', async () => {
       await write('README.md', serialize(

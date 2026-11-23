@@ -39,7 +39,7 @@ parser hands back the text `"None"`.
 | `start` | both | `DTSTART`. A bare date (`2026-04-18`) is all-day; a timestamp (`2026-04-18T14:00:00Z`) is an instant |
 | `end` | both | same value types as `start`; omitted when a single all-day item |
 | `group` | both | a name, resolved through `groups.md` |
-| `stage` | `task` only | `todo` / `doing` / `done`. Replaces the old `done` boolean |
+| `stage` | `task` only | `todo` / `doing` / `done` |
 | `important` | `task` only | `true` when important; absent otherwise, never `false`. Ours, no RFC 5545 equivalent |
 | `estimate` | `task` only | days. Ours, no RFC 5545 equivalent |
 | `location` | both | free text |
@@ -54,20 +54,16 @@ parser hands back the text `"None"`.
 
 No `duration` key — it is `end - start`.
 
-There is no `priority` key any more. It was RFC 5545 `PRIORITY` and the UI wrote 1, 2 or 3;
-importance is now a yes or no, so the scale had nothing left to say. **A file still carrying
-`priority` is read, not rejected**: `priority: 1` reads as important and `2` through `9` read as
-not important, so the one tier that meant *urgent* survives the change and the other two do not
-silently become it. The key is dropped when the entry is next saved — the only key in the format
-that is read but never written.
+There is no `priority` key. It was RFC 5545 `PRIORITY` and a scale of 1 to 3; importance is a
+yes or no, so the scale had nothing to say. A file carrying one is not read for it, and the key
+goes the next time the entry is saved, along with anything else the form does not own.
 
 Type and time are independent: `type` decides whether the entry has a stage, an important mark
 and an estimate, the value type of `start` decides whether it is all-day or timed. A task is
 usually all-day, but may carry a time and then renders at it.
 
-`stage` is a task's only progress field; there is no `done` key any more. A file written before
-the change, or by hand, is read for `done` as a fallback: `done: true` is stage `done`, anything
-else is `todo`. Nothing rewrites such a file until it is edited, and a write never emits `done`.
+`stage` is a task's only progress field; there is no `done` key. A `stage` that is absent or is
+not one of the three reads as `todo`.
 
 `status` is deliberately *not* the stage field. It already means cancellation on an override,
 and one key cannot carry both without an override's cancellation reading as a kanban column.
@@ -206,14 +202,19 @@ back and making an import cycle.
 `FIELDS` in `popup.js` is built while the module is still evaluating, so anything it calls must
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.
 
+**There are two overlay mechanisms and no third.** `openPop` positions a dropdown under the
+button that opened it, which only the date picker and the filter do; everything else carries
+`.centred` and is only unhidden, by `openCentred`. A third mechanism is how the day preview came
+to be anchored by script and then dragged back to the middle with `left: 50% !important` — one
+rule undoing another, in two files.
+
+Every icon comes from the one table in `ui.js`. The buttons in `index.html` are empty and are
+filled by `icon()` at boot, so an icon cannot drift between a hand-written path in the markup and
+the table the views draw from.
+
 ## Service worker version
 
 The update banner compares versions rather than merely noticing a waiting worker. The worker
 answers a `version` message with its `VERSION` constant; the UI shows "Update ready" only when a
 waiting worker's version differs from the active one's. `reg.waiting` alone is not the condition
 — a byte-identical worker can wait, and then the banner never goes away.
-
-## Widget
-
-`widget.js` exports `summary()`, returning today's entries and the next upcoming one for the main
-app's tile screen.

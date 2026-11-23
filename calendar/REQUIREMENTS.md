@@ -14,12 +14,10 @@ A task also carries a **stage** — `todo`, `doing` or `done` — and, optionall
 mark and an estimate in days. An event has none of the three. Stage is the only record of a
 task's progress; there is no separate done flag.
 
-**Important is a plain yes or no, not a scale.** There is no priority 1, 2 and 3 any more. Three
-tiers asked you to decide twice — once whether a task matters and again how much — and the second
+**Important is a plain yes or no, not a scale.** There is no priority 1, 2 and 3. Three tiers
+asked you to decide twice — once whether a task matters and again how much — and the second
 answer never changed what got done first. A task that matters carries `important: true`; a task
-that does not carries no key at all, which is the convention the estimate already follows. A file
-written before this change and carrying `priority: 1` reads as important, `priority: 2` through
-`9` read as not important, and the old key goes when the entry is next saved.
+that does not carries no key at all, which is the convention the estimate already follows.
 
 A new task starts at `todo` with an estimate of **1 day**. Both are only defaults: either can be
 changed before saving, and the estimate can be cleared away again, so `estimate` stays a key an

@@ -4,7 +4,7 @@ import { parse, serialize } from './md.js';
 
 const API = 'https://api.github.com';
 
-export class SyncError extends Error {
+class SyncError extends Error {
   constructor(message, status) { super(message); this.status = status; }
 }
 
@@ -52,53 +52,8 @@ export async function testConnection(config) {
   return { name: repo.full_name, private: repo.private, empty: repo.size === 0 };
 }
 
-export async function graphql(query, variables, config) {
-  const c = config || await auth();
-  const r = await fetch(API + '/graphql', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${c.token}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ query, variables })
-  });
-  const d = await ok(r, 'GraphQL');
-  if (d.errors) throw new SyncError('GraphQL: ' + d.errors.map(e => e.message).join('; '));
-  return d.data;
-}
-
-// ---- bootstrap: one request for a whole folder, contents and SHAs together ----
-
-function treeFields(depth) {
-  let inner = 'object { ... on Blob { oid text isTruncated } }';
-  for (let i = 0; i < depth; i++)
-    inner = `object { ... on Blob { oid text isTruncated } ... on Tree { entries { name type ${inner} } } }`;
-  return inner;
-}
-
-export async function bootstrap(prefix = '', { depth = 4, config } = {}) {
-  const c = config || await auth();
-  const data = await graphql(
-    `query($o:String!,$r:String!,$e:String!){repository(owner:$o,name:$r){
-       object(expression:$e){... on Tree{entries{name type ${treeFields(depth)}}}}}}`,
-    { o: c.owner, r: c.repo, e: `${c.branch}:${prefix}` }, c);
-  const root = data.repository?.object;
-  if (!root) return { files: [], empty: true };   // empty repo, or folder absent
-  const files = [];
-  collect(root.entries, prefix, files);
-  for (const f of files) await putFile(f);
-  return { files, empty: false };
-}
-
-function collect(entries, base, out) {
-  for (const e of entries || []) {
-    const path = base ? `${base}/${e.name}` : e.name;
-    if (e.type === 'tree') collect(e.object?.entries, path, out);
-    else if (e.name.endsWith('.md')) {
-      // isTruncated means text is unusable; fetch that one path over REST instead.
-      out.push({ path, oid: e.object.oid, text: e.object.text, truncated: !!e.object.isTruncated });
-    }
-  }
-}
-
 // ---- pull: 304-guarded, fetches only what changed ----
+// Also the first mirror: with no stored ETag it fetches the tree and every blob in it.
 
 export async function pull(prefix = '') {
   const c = await auth();
