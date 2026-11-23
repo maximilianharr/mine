@@ -9,17 +9,23 @@ import { S, el, phone, colorOf, iconBtn, dayLabel, STAGE_COLOR } from './ui.js';
 import { collect } from './views.js';
 import { openNew } from './popup.js';
 
+// Stacked, the three stages sit one under the other, each full width, and the board is read by
+// scrolling down - which is the right way round for a stage holding fifteen cards beside one
+// holding none. Horizontal is the default and is the board as it was.
+const vertical = () => S.prefs.boardOrientation === 'vert';
+
 export function renderKanban(host) {
   const range = sprintRange(S.view.sprint, S.model.settings);
   const tasks = collect(range.start, range.end).filter(o => o.type === 'task' && passes(o));
+  const vert = vertical();
 
-  const board = el('div', 'kb');
+  const board = el('div', `kb${vert ? ' vert' : ''}`);
   board.style.setProperty('--col', String(S.view.col));
   for (const stage of STAGES) {
     const cards = tasks.filter(o => o.stage === stage).sort(byImportance);
     const col = el('div', 'kcol');
     col.dataset.stage = stage;
-    const head = columnHead(stage, range.start);
+    const head = columnHead(stage, range.start, vert);
     const body = el('div', 'kcards');
     if (!cards.length) body.append(el('p', 'day-empty', 'Nothing here.'));
     for (const o of cards) body.append(card(o));
@@ -27,7 +33,8 @@ export function renderKanban(host) {
     board.append(col);
   }
 
-  host.className = `view vK${phone() ? ' one' : ''}`;
+  // `one` is the strip shifted by whole column widths, which only horizontal on a phone is.
+  host.className = `view vK${phone() && !vert ? ' one' : ''}`;
   host.replaceChildren(board);
   wire(board);
 }
@@ -36,18 +43,20 @@ export function renderKanban(host) {
 // that stage - the pane has no `+`, so this is the board's only way to make one. There is no
 // colour dot and no card count: the dot said what the coloured name says, and a count is a
 // number nobody acts on. On a phone the header is also how you page between the three columns.
-function columnHead(stage, sprintStart) {
+function columnHead(stage, sprintStart, vert) {
   const head = el('div', 'khead');
   const mid = el('div', 'kmid');
 
   // `‹` `›` flank the name and are drawn apart from the card buttons, which mean something
   // else entirely: they move a card. Disabled at either end rather than wrapping. On a desktop
-  // every column is on screen, so there is nothing for them to page.
-  if (phone()) mid.append(pager(-1));
+  // every column is on screen, so there is nothing for them to page - and stacked, all three
+  // stages are on screen at any width, so there is nothing either.
+  const pages = phone() && !vert;
+  if (pages) mid.append(pager(-1));
   const name = el('span', 'kname', stage);
   name.style.color = STAGE_COLOR[stage];
   mid.append(name);
-  if (phone()) mid.append(pager(1));
+  if (pages) mid.append(pager(1));
 
   const add = iconBtn('plus', `Add a task to ${stage}`, 'kadd');
   add.addEventListener('click', () =>
@@ -141,8 +150,8 @@ async function act(what, fn) {
 }
 
 // ---- dragging ------------------------------------------------------------------------------
-// Desktop only. There is no swipe: on a phone one column fills the screen and the header's
-// `<` `>` page between them, so a sideways gesture never has to be told apart from a drag.
+// Desktop only, in both orientations: a stacked stage is as good a drop target as a column.
+// There is no swipe anywhere, so a sideways gesture never has to be told apart from a drag.
 
 function wire(board) {
   board.addEventListener('dragstart', e => {

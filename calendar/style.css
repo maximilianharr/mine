@@ -27,6 +27,10 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .tb-side { display: flex; align-items: center; gap: .3rem; min-width: 0; }
 .tb-side.end { justify-content: flex-end; }
 .tb-mid { display: flex; align-items: center; gap: .1rem; min-width: 0; }
+/* The period label is a button with nothing drawn on it, so hover and press are what say it is
+   one - the same affordance the year view's month caption uses. */
+.period:hover { background: var(--soft); }
+.period:active { background: var(--line); }
 .nav {
   display: inline-flex; align-items: center; justify-content: center;
   width: auto; min-width: 2.6rem; min-height: 2.6rem; margin: 0; padding: .3rem .45rem;
@@ -34,18 +38,17 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   color: var(--fg); background: var(--soft); border: 0; border-radius: .5rem;
 }
 .nav.ic svg { width: 1.8rem; height: 1.8rem; display: block; }
-#gear { font-size: 1.6rem; }
+
 /* A week or sprint label is long - "Sprint 7 - 02.11.2026 - 15.11.2026" is wider than a narrow
    phone on its own - so the label shrinks and ellipsises rather than pushing the page sideways.
    The dropdown still shows the period in full. */
 .period {
   display: inline-flex; align-items: center; justify-content: center; min-width: 0;
   width: auto; margin: 0; padding: .4rem .4rem; font-size: 1.5rem; font-weight: 600;
-  color: var(--fg); background: none; border: 0; white-space: nowrap; cursor: pointer;
+  color: var(--fg); background: none; border: 0; border-radius: .5rem;
+  white-space: nowrap; cursor: pointer;
 }
 #period-label { overflow: hidden; text-overflow: ellipsis; }
-/* The caret is a button of its own, because the label itself zooms now. */
-.caret { min-width: 1.9rem; padding: .3rem .2rem; font-size: 1rem; opacity: .7; }
 
 .view { flex: 1; min-height: 0; }
 .sync { padding: .4rem .7rem; margin: 0; font-size: .75rem; }
@@ -110,9 +113,12 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .tick.on { background: currentColor; opacity: 1; }
 
 /* ---- year ---- */
+/* At most six months to a row, so a year reads as two even rows rather than as ten and then
+   two - and the five gaps have to come out of the share, or six tracks plus five gaps are wider
+   than the container and auto-fill settles for five. */
 .year {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(10.5rem, 1fr));
-  gap: .7rem; padding: .5rem;
+  display: grid; gap: .7rem; padding: .5rem;
+  grid-template-columns: repeat(auto-fill, minmax(max(10.5rem, (100% - 5 * .7rem) / 6), 1fr));
 }
 /* A caption that is a button: clicking it zooms into that month. The whole label is the
    target, because a day in a year grid is not finger-sized. */
@@ -178,13 +184,21 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .tev .tick { position: absolute; top: .22rem; right: .22rem; }
 
 /* ---- kanban ---- */
-.kb { display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; padding: .5rem; }
+/* The board is capped and centred where the calendar window is as wide as the browser: a card
+   is read at the width a sentence is read at, and a third of a wide monitor is mostly empty
+   card. The cap is here rather than on #cal, which would narrow the pane with it. */
+.kb {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: .5rem; padding: .5rem;
+  max-width: 78rem; margin-inline: auto;
+}
+/* Stacked: the three stages one under the other, each full width, read by scrolling down. */
+.kb.vert { grid-template-columns: 1fr; }
 .view.vK.one { overflow: hidden; }
 /* Exactly one column is visible. The strip is shifted by whole multiples of its own width, so
    it must carry neither gap nor padding - either one leaves a sliver of the next column at the
    edge of the screen. The spacing lives inside each column instead. */
 .one .kb {
-  grid-template-columns: repeat(3, 100%); gap: 0; padding: 0;
+  grid-template-columns: repeat(3, 100%); gap: 0; padding: 0; max-width: none;
   transform: translateX(calc(var(--col) * -100%)); transition: transform .18s ease-out;
 }
 .one .kcol { margin: .5rem; }
@@ -236,7 +250,16 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
   border: 1px solid var(--line); border-radius: .3rem; cursor: pointer;
 }
 .chip.on { outline: 2px solid var(--today); outline-offset: 1px; }
-.chiprow { display: flex; gap: .3rem; }
+
+/* ---- the panel's two sections ---- */
+/* The filter at the top, the settings below, under a heading each: both are things you adjust
+   about the view in front of you and then leave alone, and two buttons a thumb's width apart
+   asked which of the two a given switch was before you could reach it. */
+.sect {
+  margin: .9rem 0 .2rem; font-size: .7rem; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.sect:first-of-type { margin-top: .4rem; }
 
 /* ---- icon buttons ---- */
 .ib {
@@ -271,10 +294,6 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 .pop-head h2 { margin: 0; font-size: 1rem; }
 .pop-head .spacer { flex: 1; }
 .pop-title { width: auto; margin: 0; padding: .3rem .4rem; font-weight: 600; color: var(--fg); background: none; border: 0; }
-.pop-sub {
-  margin: .6rem 0 .15rem; font-size: .65rem; font-weight: 700; letter-spacing: .05em;
-  text-transform: uppercase; color: var(--muted);
-}
 .link { width: auto; margin: 0; padding: .25rem .4rem; font-size: .78rem; font-weight: 500; color: var(--today); background: none; border: 0; }
 
 .pick-body { display: grid; gap: 2px; }
@@ -296,6 +315,17 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 
 .glab { display: flex; align-items: center; gap: .55rem; padding: .45rem .3rem; font-size: .9rem; color: var(--fg); cursor: pointer; }
 .glab input { width: 1.1rem; height: 1.1rem; margin: 0; flex: none; }
+
+/* The zoom's list: the four periods, or the board's two orientations, the current one marked. */
+.zrow {
+  display: flex; align-items: center; gap: .5rem; width: 100%; margin: 0;
+  padding: .5rem .5rem; font: inherit; font-size: .95rem; text-transform: capitalize;
+  color: var(--fg); background: none; border: 0; border-radius: .4rem; cursor: pointer;
+}
+.zrow:hover { background: var(--soft); }
+.zrow .dot { flex: none; width: .5rem; height: .5rem; border-radius: 999px; background: none; }
+.zrow.on { font-weight: 700; }
+.zrow.on .dot { background: var(--today); }
 .swatch { flex: none; width: .85rem; height: .85rem; border-radius: 999px; }
 
 .centred {
@@ -341,18 +371,22 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
      in size and the label between them is larger - the label carries a date to be read and an
      arrow carries only a direction. */
   .tb-mid { flex: 0 0 100%; order: 3; gap: .15rem; }
-  .tb-mid .nav:not(.caret) { flex: 1 1 0; min-width: 0; }
+  .tb-mid .nav { flex: 1 1 0; min-width: 0; }
   .nav { min-width: 2.2rem; }
   .nav.ic svg { width: clamp(1.3rem, 5.2vw, 1.9rem); height: clamp(1.3rem, 5.2vw, 1.9rem); }
-  #gear { font-size: clamp(1.2rem, 4.8vw, 1.7rem); }
+  /* The second row's arrows are drawn at the size of the icons on the row above: they were
+     larger than everything over them, which made the row that steps the period the loudest
+     thing in the pane. */
+  .tb-mid .nav { font-size: clamp(1.3rem, 5.2vw, 1.9rem); }
   .period { flex: 3 1 0; padding: .3rem .1rem; font-size: clamp(1.25rem, 7vw, 2rem); }
-  .caret { min-width: 1.4rem; padding: .3rem .05rem; font-size: .85rem; }
 
   /* The board's pager fills the header: it is the only way to see another stage, and a small
      square in the middle of an otherwise empty row asked a thumb to aim at the narrowest part
      of it. The left track that balances the `+` on a desktop is dropped to make the room. */
-  .khead { grid-template-columns: 1fr auto; }
-  .kpad { display: none; }
+  /* The pager fills the header where there is a pager: stacked there is none, so the header
+     keeps the desktop's two side tracks and the name stays centred on the column. */
+  .kb:not(.vert) .khead { grid-template-columns: 1fr auto; }
+  .kb:not(.vert) .kpad { display: none; }
   .kmid { gap: .3rem; }
   /* Mixed from the foreground rather than taken from a token, because it has to read as
      brighter than the column's own `--soft` in the dark theme as well as the light one. */
@@ -419,29 +453,50 @@ select {
   color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem;
   resize: vertical;
 }
-/* Every field is a row: its icon, its name, and its value once it is set. The row is the pen, so
-   it carries no button of its own, and a set row is plain - being above the unset ones and
-   showing a value is what says it is set. */
-.frows { margin-top: .4rem; }
+/* A row is the icon, then the value - no field name beside it, because the name said what the
+   icon already says in the one column where the value has to fit. An unset row shows the name in
+   the value's place, muted, which is what an empty input does everywhere else in Mine. */
 .frow {
   display: flex; align-items: center; gap: .6rem; width: 100%; margin: 0;
-  padding: .6rem .3rem; font: inherit; font-size: .9rem; text-align: left;
-  color: var(--fg); background: none;
-  border: 0; border-top: 1px solid var(--line); border-radius: 0; cursor: pointer;
+  padding: .55rem .3rem; border-top: 1px solid var(--line);
 }
-.frow svg { flex: none; width: 1.15rem; height: 1.15rem; }
-.flab { flex: none; color: var(--fg); }
-.fval {
-  flex: 1; min-width: 0; text-align: right; color: var(--muted);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+.frow > svg { flex: none; width: 1.15rem; height: 1.15rem; }
+/* The whole row left of its trashcan is the way in, so it is the button. */
+.ftap {
+  flex: 1; min-width: 0; margin: 0; padding: .1rem .2rem; font: inherit; font-size: .9rem;
+  text-align: left; color: var(--fg); background: none; border: 0; border-radius: .4rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
 }
+.ftap:hover { background: var(--soft); }
+.ftap.unset { color: var(--muted); }
+/* A row being edited: the control takes the row's width and the two buttons sit under it, so a
+   date pair or a textarea is not squeezed into what is left beside them. */
+.frow.open { display: block; padding: .5rem .2rem .6rem; }
+.fedit { display: block; }
+.fbtns { display: flex; align-items: center; justify-content: flex-end; gap: .15rem; margin-top: .4rem; }
+.ftitle { display: flex; align-items: center; gap: .4rem; margin-bottom: .2rem;
+  font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  color: var(--muted); }
+.ftitle svg { flex: none; width: 1rem; height: 1rem; }
+.ftitle .spacer { flex: 1; }
+/* The title row carries no icon, so it reads as the entry's name rather than as a field. */
+.frow.first { border-top: 0; }
+.ttap { font-size: 1.25rem; font-weight: 600; line-height: 1.25; white-space: normal; }
+.wtap { font-size: .85rem; color: var(--muted); text-transform: capitalize; }
+/* The body: rendered in full when the row is closed, raw markdown when it is open. */
+.vbody-tap {
+  display: block; width: 100%; margin: 0; padding: .3rem .2rem; font: inherit; text-align: left;
+  color: var(--fg); background: none; border: 0; border-radius: .4rem; cursor: pointer;
+}
+.vbody-tap:hover { background: var(--soft); }
 
-/* ---- a field's own popup, above the entry popup ---- */
+/* ---- the group manager, the one survivor of the sub-popup ---- */
 .pop.sub {
   z-index: 14; width: min(24rem, calc(100vw - 1.5rem)); max-height: 84dvh;
   border-radius: .8rem;
 }
 .rec .ends { display: flex; align-items: center; gap: .4rem; margin-top: .7rem; }
+.rec .ends .flab { flex: none; font-size: .85rem; color: var(--muted); }
 .rec .ends select, .rec .ends input { flex: 1; width: auto; margin: 0; }
 .glist { display: flex; flex-direction: column; gap: .1rem; }
 .gpick {
@@ -484,8 +539,12 @@ select {
 /* ---- desktop ---- */
 @media (min-width: 600px) {
   :root { --cell: 6.4rem; --gutter: 2.4rem; --tcol: 3.4rem; --hour: 2.8rem; }
-  #cal { max-width: 78rem; margin-inline: auto; }
+  /* No cap on #cal: the pane, the calendar window and the sync line are as wide as the browser.
+     The cap is on the board alone, below, so the pane cannot change width when the view does. */
   .topbar { padding: .7rem .8rem; gap: .5rem; }
+  /* About half an arrow glyph either side of the label. Three controls crammed together read as
+     one control, and this is the group the pane is used through. */
+  .tb-mid { gap: 1rem; }
   .period { font-size: 1.9rem; }
   .nav.ic svg { width: 2.1rem; height: 2.1rem; }
   .nav { min-width: 3rem; min-height: 3rem; }
@@ -497,20 +556,10 @@ select {
   .panel { max-height: 88dvh; }
 }
 
-/* ---- the view popup ---- */
-/* An entry that already exists opens here: the same centred card as the form, with text where
-   the form has inputs. */
-.vtitle { margin: .6rem 0 .2rem; font-size: 1.25rem; line-height: 1.25; }
-.vwhen { margin: 0 0 .2rem; font-size: .8rem; color: var(--muted); text-transform: capitalize; }
+/* ---- the repeating entry's scope and skip ---- */
+/* The pair governs what the save writes, so it sits above the rows it applies to. */
 .vrep { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .5rem; }
-.vrows { margin-top: .6rem; }
-/* A field row without the pen: the preview reaches nothing, so it is a row of text. */
-.vrow {
-  display: flex; align-items: center; gap: .6rem; width: 100%;
-  padding: .55rem .3rem; font-size: .9rem; border-top: 1px solid var(--line);
-}
-.vrow svg { flex: none; width: 1.15rem; height: 1.15rem; }
-.vbody { margin-top: .7rem; padding-top: .6rem; border-top: 1px solid var(--line); }
+.vbody { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); }
 
 /* ---- a rendered markdown body ---- */
 /* `#` is an h3: a body must not out-shout the title it belongs to. A paragraph keeps its own

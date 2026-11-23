@@ -23,7 +23,7 @@ export const S = {
            settings: { anchor: DEFAULT_ANCHOR, interval: 2 } },
   view: { mode: 'M', anchor: todayKey(), sprint: 1, col: 0 },
   prefs: { weekStart: 1, showWeeks: false, confirmDiscard: true, timeZone: '',
-           theme: 'system', dateFormat: 'auto' },
+           theme: 'system', dateFormat: 'auto', boardOrientation: 'horz' },
   hidden: new Set(),                 // group names switched off in the filter
   kfilter: { importantOnly: false, assignee: '' },   // kanban only
   visible: new Map(),                // occurrence key -> occurrence, for what is on screen
@@ -110,7 +110,12 @@ const ICON = {
   glass:  { d: 'M3.8 1.8h8.4v1.3L9.1 8l3.1 4.9v1.3H3.8v-1.3L6.9 8 3.8 3.1z' },
   // The two ways out of a view, and the way out of the calendar.
   board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
-  house:  { d: 'M8 1.9 1.5 7.4h1.8V14h3.3V9.9h2.8V14h3.3V7.4h1.8z' }
+  house:  { d: 'M8 1.9 1.5 7.4h1.8V14h3.3V9.9h2.8V14h3.3V7.4h1.8z' },
+  // The zoom and the panel. Three lines of equal length for the hamburger, so `lines` keeps
+  // meaning details and no icon means two things.
+  zoom:   { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 },
+  menu:   { d: 'M2.4 4.4h11.2M2.4 8h11.2M2.4 11.6h11.2', stroke: 1.6 },
+  gear:   { d: 'M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM7.1 1.4h1.8l.3 1.7 1.2.5 1.4-1 1.3 1.3-1 1.4.5 1.2 1.7.3v1.8l-1.7.3-.5 1.2 1 1.4-1.3 1.3-1.4-1-1.2.5-.3 1.7H7.1l-.3-1.7-1.2-.5-1.4 1-1.3-1.3 1-1.4-.5-1.2-1.7-.3V7.1l1.7-.3.5-1.2-1-1.4 1.3-1.3 1.4 1 1.2-.5z', stroke: 1.2 }
 };
 
 export function icon(name) {
@@ -144,8 +149,9 @@ export function iconBtn(name, label, cls = '') {
 
 // ---- overlays ------------------------------------------------------------------------------
 // Two mechanisms and no third. `openPop` positions a dropdown under the button that opened it,
-// which only the date picker and the filter do. Everything else - the day preview, a field's own
-// popup, the settings panel - is centred by the stylesheet and only has to be unhidden.
+// which only the date picker and the zoom do. Everything else - the day preview, the panel, the
+// group manager - is centred by the stylesheet and only has to be unhidden. A field editor is
+// neither: it is drawn inside its own row.
 
 export const openCentred = pop => { pop.hidden = false; $('#scrim').hidden = false; };
 
@@ -160,9 +166,9 @@ export function openPop(pop, anchor, align = 'left') {
   anchor.setAttribute?.('aria-expanded', 'true');
 }
 
-const POPS = ['#picker', '#filter-pop', '#day-pop', '#settings-panel'];
+const POPS = ['#picker', '#zoom-pop', '#day-pop', '#settings-panel'];
 
 export function closePops() {
   for (const id of [...POPS, '#scrim']) $(id).hidden = true;
-  for (const id of ['#caret', '#filter-btn']) $(id).setAttribute('aria-expanded', 'false');
+  for (const id of ['#period', '#zoom-btn']) $(id).setAttribute('aria-expanded', 'false');
 }

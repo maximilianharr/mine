@@ -21,21 +21,20 @@
 
 <main id="cal" hidden>
   <div class="topbar">
-    <!-- leftmost: the way to the other kind of view, and the filter -->
+    <!-- leftmost: the way to the other kind of view, and the zoom -->
     <div class="tb-side">
       <button id="board" class="nav ic" aria-label="Kanban"></button>
-      <button id="filter-btn" class="nav ic" aria-label="Filter" aria-haspopup="true" aria-expanded="false"></button>
+      <button id="zoom-btn" class="nav ic" aria-label="Zoom" aria-haspopup="true" aria-expanded="false"></button>
     </div>
-    <!-- centred: the period. The label zooms, the caret opens the picker. -->
+    <!-- centred: the period. The label opens the picker, and that is all it does. -->
     <div class="tb-mid">
       <button id="prev" class="nav" aria-label="Previous">‹</button>
-      <button id="period" class="period" aria-label="Zoom"><span id="period-label">—</span></button>
-      <button id="caret" class="nav caret" aria-label="Pick a date" aria-haspopup="true" aria-expanded="false">▾</button>
+      <button id="period" class="period" aria-label="Pick a date" aria-haspopup="true" aria-expanded="false"><span id="period-label">—</span></button>
       <button id="next" class="nav" aria-label="Next">›</button>
     </div>
-    <!-- rightmost: the two ways out -->
+    <!-- rightmost: the panel, and the way out -->
     <div class="tb-side end">
-      <button id="gear" class="nav" aria-label="Settings">⚙</button>
+      <button id="menu-btn" class="nav ic" aria-label="Filter and settings"></button>
       <a class="nav ic" id="home" href="../" aria-label="Back to Mine"></a>
     </div>
   </div>
@@ -55,9 +54,9 @@
   <div class="pick-body" id="pick-body"></div>
 </div>
 
-<!-- view filter: a groups dropdown always, important and assignee on the board -->
-<div class="pop" id="filter-pop" hidden>
-  <div id="filter-body"></div>
+<!-- the zoom: day/week/month/year in a calendar view, vertical/horizontal on the board -->
+<div class="pop" id="zoom-pop" hidden>
+  <div id="zoom-body"></div>
 </div>
 
 <!-- the day preview, centred like every other overlay -->
@@ -68,12 +67,6 @@
     <button class="ib" id="day-close" type="button" title="Close" aria-label="Close"></button>
   </div>
   <div id="day-list" class="day-list"></div>
-</div>
-
-<!-- An entry that exists opens read-only: a pen in its top row opens the edit popup below.
-     Built entirely in app code. -->
-<div class="modal" id="viewpop" hidden>
-  <div class="card" id="view-card"></div>
 </div>
 
 <!-- Leaving a popup that holds unsaved changes asks first, once, unless told not to. -->
@@ -88,55 +81,36 @@
   </div>
 </div>
 
-<!-- the entry popup. The icon row and the detail rows are built in app code. -->
+<!-- One popup for an entry, read and written in the same rows. Every row, the top row and
+     the body are built in app code; one disk writes, and it appears only when there is
+     something to write. -->
 <div class="modal" id="popup" hidden>
   <form class="card" id="entry-form" autocomplete="off">
     <div class="iconbar" id="f-icons"></div>
-
-    <input class="title-in" id="f-title" name="title" placeholder="Title" required>
-
-    <div class="scope" id="f-scope" hidden>
-      <span class="scope-note">Part of a repeating entry.</span>
-      <div class="btngroup" role="radiogroup" aria-label="Edit scope">
-        <button type="button" class="seg" data-scope="occurrence">This occurrence</button>
-        <button type="button" class="seg" data-scope="series">Whole series</button>
-      </div>
-    </div>
-
-    <div class="row2">
-      <label>Start <input type="date" id="f-start-date" required></label>
-      <label class="t">Time <input type="time" id="f-start-time"></label>
-    </div>
-    <div class="row2">
-      <label>End <input type="date" id="f-end-date"></label>
-      <label class="t">Time <input type="time" id="f-end-time"></label>
-    </div>
-
-    <!-- the toggle row, under start and end: 24h, and on a task stage, important, estimate -->
-    <div class="iconbar flags" id="f-flags"></div>
-
-    <div class="frows" id="f-rows"></div>
+    <div id="f-rows"></div>
     <p class="msg" id="f-msg"></p>
   </form>
 </div>
 
-<!-- one field at a time, above the entry popup. Nothing here reaches the repo. -->
+<!-- the group manager, the one survivor of the sub-popup: reached from the panel, edits no
+     field of an entry, and writes groups.md itself. -->
 <div class="pop centred sub" id="sub" hidden>
   <div class="pop-head">
     <strong id="sub-title">—</strong><span class="spacer"></span>
-    <button class="ib bad" id="sub-clear" type="button" title="Clear this field" aria-label="Clear this field"></button>
-    <button class="ib save" id="sub-ok" type="button" title="Use this value" aria-label="Use this value"></button>
-    <button class="ib" id="sub-cancel" type="button" title="Abandon this edit" aria-label="Abandon this edit"></button>
-    <button class="ib" id="sub-close" type="button" title="Close" aria-label="Close" hidden></button>
+    <button class="ib" id="sub-close" type="button" title="Close" aria-label="Close"></button>
   </div>
   <div id="sub-body"></div>
 </div>
 
+<!-- one panel, two sections: the filter you open often, the settings that change once -->
 <div class="centred panel" id="settings-panel" hidden>
   <div class="pop-head">
-    <h2>Calendar settings</h2><span class="spacer"></span>
+    <h2>Calendar</h2><span class="spacer"></span>
     <button class="ib" id="settings-close" type="button" title="Close" aria-label="Close"></button>
   </div>
+  <h3 class="sect">Filter</h3>
+  <div id="filter-body"></div>
+  <h3 class="sect">Settings</h3>
   <div id="settings-body"></div>
 </div>
 

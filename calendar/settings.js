@@ -1,4 +1,8 @@
-// The settings panel behind the gear.
+// The panel behind the hamburger: the filter at the top, the settings below it, under a heading
+// each. They are one panel because they are one errand - both are things you adjust about the
+// view in front of you and then leave alone, and two buttons a thumb's width apart asked which
+// of the two a given switch was before you could reach it. Merging them also freed the slot the
+// zoom took, which is what keeps the pane at four controls.
 //
 // Everything here is stored on the device except the groups, the sprint length and the first
 // sprint date: those three are data and live in the repo, because the sprint a task belongs to
@@ -14,12 +18,82 @@ import { setKV } from '../shared/store.js';
 import { saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
-import { S, $, el, closePops, openCentred } from './ui.js';
+import { S, $, el, closePops, openCentred, colorOf, labelOf } from './ui.js';
 
-export function openSettings() {
+export function openPanel() {
   closePops();
   build();
+  renderFilter();
   openCentred($('#settings-panel'));
+}
+
+// ---- the filter ----------------------------------------------------------------------------
+// A view filter, remembered per device. Groups are named and coloured below, in the settings
+// section's `edit groups`, not here.
+
+function groupNames() {
+  const names = new Set(Object.keys(S.model.groups));
+  let ungrouped = false;
+  for (const e of [...S.model.dated, ...S.model.rules]) {
+    if (e.data.group) names.add(e.data.group); else ungrouped = true;
+  }
+  const out = [...names].sort().map(n => [n, labelOf(n)]);
+  if (ungrouped) out.push(['', 'no group']);
+  return out;
+}
+
+// Groups are a dropdown rather than a list: one row saying how many are on, which opens to the
+// same checkboxes. Folded is how it starts, and that is load bearing twice over now - a repo
+// with twenty groups would otherwise give the panel a filter taller than the screen and push
+// the nine settings rows below the fold.
+let groupsOpen = false;
+
+export function renderFilter() {
+  const names = groupNames();
+  const on = names.filter(([n]) => !S.hidden.has(n)).length;
+  const drop = el('button', 'gdrop', `groups · ${on} of ${names.length} ${groupsOpen ? '▴' : '▾'}`);
+  drop.type = 'button';
+  drop.setAttribute('aria-expanded', String(groupsOpen));
+  drop.addEventListener('click', () => { groupsOpen = !groupsOpen; renderFilter(); });
+  const kids = [drop];
+
+  if (groupsOpen) for (const [name, label] of names) {
+    const lab = el('label', 'glab');
+    const box = el('input');
+    box.type = 'checkbox';
+    box.checked = !S.hidden.has(name);
+    box.addEventListener('change', async () => {
+      if (box.checked) S.hidden.delete(name); else S.hidden.add(name);
+      await setKV('calendar.hiddenGroups', [...S.hidden]);
+      S.render();
+    });
+    const sw = el('span', 'swatch');
+    sw.style.background = colorOf(name);
+    lab.append(box, sw, el('span', '', label || name));
+    kids.push(lab);
+  }
+
+  // Importance and assignee narrow the board, where a sprint can hold more cards than fit. One
+  // switch, now that importance is a yes or no rather than three tiers to pick between.
+  if (S.view.mode === 'K') {
+    const chip = el('button', `chip${S.kfilter.importantOnly ? ' on' : ''}`, '!');
+    chip.type = 'button';
+    chip.title = 'Important only';
+    chip.setAttribute('aria-label', 'Important only');
+    chip.setAttribute('aria-pressed', String(S.kfilter.importantOnly));
+    chip.addEventListener('click', () => {
+      S.kfilter.importantOnly = !S.kfilter.importantOnly;
+      S.render();
+    });
+    kids.push(row('Important only', chip));
+
+    const people = [...new Set([...S.model.dated, ...S.model.rules]
+      .flatMap(e => [].concat(e.data.participants ?? []).map(String)))].sort();
+    kids.push(row('Assignee', choose([['', 'anyone'], ...people.map(p => [p, p])],
+      S.kfilter.assignee, v => { S.kfilter.assignee = v; S.render(); })));
+  }
+
+  $('#filter-body').replaceChildren(...kids);
 }
 
 // Nine rows and nothing after them: there is no paragraph explaining what is stored where,
@@ -145,6 +219,9 @@ async function local(key, value) {
   await setKV(`calendar.${key}`, value);
   S.render();
 }
+
+// A re-render redraws the filter, because the board's two controls are only in it on the board.
+// `S.render()` calls back into renderFilter, so this file does not have to.
 
 async function mine(key, value) {
   S.prefs[key] = value;

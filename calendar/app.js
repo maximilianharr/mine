@@ -1,5 +1,5 @@
-// The shell: the top pane, navigation, the date picker, the group filter, the sync line, and
-// which view the big calendar window holds.
+// The shell: the top pane, navigation, the date picker, the zoom, the sync line, and which view
+// the big calendar window holds. The filter lives in the panel with the settings.
 import { getConfig, getKV, setKV, queuedCount } from '../shared/store.js';
 import { pull, drain } from '../shared/github.js';
 import {
@@ -7,13 +7,12 @@ import {
   sprintRange, sprintOf
 } from './data.js';
 import {
-  S, $, el, phone, colorOf, labelOf, dayLabel, icon, weekLetters, currentSprint, openPop,
-  closePops
+  S, $, el, phone, dayLabel, icon, weekLetters, currentSprint, openPop, closePops
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
-import { closePopup, closeView } from './popup.js';
-import { openSettings } from './settings.js';
+import { closePopup } from './popup.js';
+import { openPanel, renderFilter } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
@@ -28,10 +27,11 @@ function render() {
   // why it has a slot of its own rather than a place in the cycle the label walks.
   $('#board').replaceChildren(icon(k ? 'cal' : 'board'));
   $('#board').setAttribute('aria-label', k ? 'Back to the month view' : 'Kanban');
-  $('#period').setAttribute('aria-label', k ? 'Pick a sprint' : 'Zoom');
+  $('#period').setAttribute('aria-label', k ? 'Pick a sprint' : 'Pick a date');
 
   if (k) renderKanban($('#view'));
   else renderView($('#view'));
+  renderZoom();
   renderFilter();
 }
 
@@ -56,18 +56,54 @@ function periodLabel() {
   return String(S.view.sprint);
 }
 
-// ---- navigation ----------------------------------------------------------------------------
+// ---- the zoom ------------------------------------------------------------------------------
+// A magnifier beside the view switch, offering what the view it was opened in can do and nothing
+// else: the four periods in a calendar view, the board's two orientations on the board. It
+// replaces the label's old cycle, which asked up to three taps to reach a view and never said
+// which one you were in.
 
-// The calendar's zoom, outermost first. Clicking the period label walks it towards the day and
-// round again. It is a cycle rather than a scale with two ends, because a single target cannot
-// be disabled at an end and still be the way on - so there is no `-` and no `+` in the pane.
-const ZOOM = ['Y', 'M', 'W', 'D'];
+const PERIODS = [['D', 'day'], ['W', 'week'], ['M', 'month'], ['Y', 'year']];
+const ORIENTS = [['vert', 'vertical'], ['horz', 'horizontal']];
 
-function zoomIn() {
-  S.view.mode = ZOOM[(ZOOM.indexOf(S.view.mode) + 1) % ZOOM.length];
+function renderZoom() {
+  const board = S.view.mode === 'K';
+  const rows = board
+    ? ORIENTS.map(([v, text]) => [v, text, S.prefs.boardOrientation === v, setOrientation])
+    : PERIODS.map(([v, text]) => [v, text, S.view.mode === v, setMode]);
+  $('#zoom-body').replaceChildren(...rows.map(([v, text, on, pick]) => {
+    const b = el('button', `zrow${on ? ' on' : ''}`);
+    b.type = 'button';
+    b.setAttribute('aria-pressed', String(on));
+    b.append(el('span', 'dot'), el('span', '', text));
+    b.addEventListener('click', () => pick(v));
+    return b;
+  }));
+}
+
+function setMode(mode) {
+  S.view.mode = mode;
   closePops();
   render();
 }
+
+// Remembered per device: it is a preference about this screen, like confirm discard. The
+// calendar's own zoom is not - the app opens on the month, on today, as it always has.
+async function setOrientation(v) {
+  S.prefs.boardOrientation = v;
+  await setKV('calendar.boardOrientation', v);
+  S.view.col = 0;
+  closePops();
+  render();
+}
+
+$('#zoom-btn').addEventListener('click', () => {
+  if (!$('#zoom-pop').hidden) return closePops();
+  closePops();
+  renderZoom();
+  openPop($('#zoom-pop'), $('#zoom-btn'));
+});
+
+// ---- navigation ----------------------------------------------------------------------------
 
 $('#board').addEventListener('click', () => {
   if (S.view.mode === 'K') S.view.mode = 'M';
@@ -96,19 +132,19 @@ $('#next').addEventListener('click', () => step(1));
 // dropdown, and an entry is created where it will live - a cell, the day preview, or a kanban
 // column header.
 
-for (const [id, name] of [['#home', 'house'], ['#filter-btn', 'filter'], ['#day-add', 'plus'],
-  ['#day-close', 'x'], ['#sub-clear', 'trash'], ['#sub-ok', 'disk'], ['#sub-cancel', 'x'],
-  ['#sub-close', 'x'], ['#settings-close', 'x']])
+for (const [id, name] of [['#home', 'house'], ['#zoom-btn', 'zoom'], ['#menu-btn', 'menu'],
+  ['#day-add', 'plus'], ['#day-close', 'x'], ['#sub-close', 'x'], ['#settings-close', 'x']])
   $(id).append(icon(name));
 
-$('#gear').addEventListener('click', openSettings);
+$('#menu-btn').addEventListener('click', openPanel);
 $('#settings-close').addEventListener('click', closePops);
 
 // ---- the dropdown date picker --------------------------------------------------------------
 // A month at a time, a 9-year grid, or - in the kanban - a list of sprints.
 
-// The caret is a button of its own, because the label itself zooms now - and the picker is the
-// only way back to today, so it cannot be a tap the zoom has taken.
+// The label opens the picker, and that is all it does, in every view and on both platforms. The
+// caret existed only because the label's own tap was taken by the zoom; the zoom is a button of
+// its own now, so the label is free to be the one thing it was always read as.
 function openPicker() {
   if (!$('#picker').hidden) return closePops();
   closePops();
@@ -117,15 +153,9 @@ function openPicker() {
     ? { mode: 'sprints', base: Math.max(1, S.view.sprint - 4) }
     : { mode: 'days', y, m: m - 1, base: y - 8 };
   renderPicker();
-  openPop($('#picker'), $('#caret'), 'right');
+  openPop($('#picker'), $('#period'), 'right');
 }
-$('#caret').addEventListener('click', openPicker);
-
-// The label zooms; on the board it opens the sprint list instead, because the board has no zoom.
-$('#period').addEventListener('click', () => {
-  if (S.view.mode === 'K') openPicker();
-  else zoomIn();
-});
+$('#period').addEventListener('click', openPicker);
 
 // There is no swipe. The label was swiped only because a phone's pane had no `‹` `›` to press;
 // they are on its second row now, and a gesture doing what a visible button does is a second
@@ -212,96 +242,12 @@ function renderPicker() {
     }));
 }
 
-// ---- the filter ----------------------------------------------------------------------------
-// A view filter, remembered per device. Groups are named and coloured in settings, not here.
-
-function groupNames() {
-  const names = new Set(Object.keys(S.model.groups));
-  let ungrouped = false;
-  for (const e of [...S.model.dated, ...S.model.rules]) {
-    if (e.data.group) names.add(e.data.group); else ungrouped = true;
-  }
-  const out = [...names].sort().map(n => [n, labelOf(n)]);
-  if (ungrouped) out.push(['', 'no group']);
-  return out;
-}
-
-// Groups are a dropdown rather than a list: one row saying how many are on, which opens to the
-// same checkboxes. Folding the list away is all it does - any subset can still be hidden, which
-// a single-select control could not do - and it keeps a repo with twenty groups from giving the
-// filter a panel taller than the screen.
-let groupsOpen = false;
-
-function renderFilter() {
-  const names = groupNames();
-  const on = names.filter(([n]) => !S.hidden.has(n)).length;
-  const drop = el('button', 'gdrop', `groups · ${on} of ${names.length} ${groupsOpen ? '▴' : '▾'}`);
-  drop.type = 'button';
-  drop.setAttribute('aria-expanded', String(groupsOpen));
-  drop.addEventListener('click', () => { groupsOpen = !groupsOpen; renderFilter(); });
-  const kids = [drop];
-
-  if (groupsOpen) for (const [name, label] of names) {
-    const lab = el('label', 'glab');
-    const box = el('input');
-    box.type = 'checkbox';
-    box.checked = !S.hidden.has(name);
-    box.addEventListener('change', async () => {
-      if (box.checked) S.hidden.delete(name); else S.hidden.add(name);
-      await setKV('calendar.hiddenGroups', [...S.hidden]);
-      render();
-    });
-    const sw = el('span', 'swatch');
-    sw.style.background = colorOf(name);
-    lab.append(box, sw, el('span', '', label || name));
-    kids.push(lab);
-  }
-
-  // Importance and assignee narrow the board, where a sprint can hold more cards than fit. One
-  // switch, now that importance is a yes or no rather than three tiers to pick between.
-  if (S.view.mode === 'K') {
-    kids.push(el('div', 'pop-sub', 'Important'));
-    const chips = el('div', 'chiprow');
-    const b = el('button', `chip${S.kfilter.importantOnly ? ' on' : ''}`, '!');
-    b.type = 'button';
-    b.title = 'Important only';
-    b.setAttribute('aria-label', 'Important only');
-    b.setAttribute('aria-pressed', String(S.kfilter.importantOnly));
-    b.addEventListener('click', () => {
-      S.kfilter.importantOnly = !S.kfilter.importantOnly;
-      render();
-    });
-    chips.append(b);
-    kids.push(chips, el('div', 'pop-sub', 'Assignee'));
-    const people = [...new Set([...S.model.dated, ...S.model.rules]
-      .flatMap(e => [].concat(e.data.participants ?? []).map(String)))].sort();
-    const sel = el('select');
-    for (const [v, text] of [['', 'anyone'], ...people.map(p => [p, p])]) {
-      const o = el('option', '', text);
-      o.value = v;
-      if (v === S.kfilter.assignee) o.selected = true;
-      sel.append(o);
-    }
-    sel.addEventListener('change', () => { S.kfilter.assignee = sel.value; render(); });
-    kids.push(sel);
-  }
-
-  $('#filter-body').replaceChildren(...kids);
-}
-
-$('#filter-btn').addEventListener('click', () => {
-  if (!$('#filter-pop').hidden) return closePops();
-  closePops();
-  openPop($('#filter-pop'), $('#filter-btn'), 'right');
-});
-
 $('#scrim').addEventListener('click', closePops);
 addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!$('#ask').hidden) $('#ask-keep').click();
-  else if (!$('#sub').hidden) $('#sub-cancel').click();
+  else if (!$('#sub').hidden) $('#sub-close').click();
   else if (!$('#popup').hidden) closePopup();
-  else if (!$('#viewpop').hidden) closeView();
   else closePops();
 });
 matchMedia('(min-width: 600px)').addEventListener('change', () => { closePops(); render(); });
@@ -369,7 +315,8 @@ if (!await getConfig()) {
     weekStart: (await getKV('calendar.weekStart')) ?? 1,
     showWeeks: !!(await getKV('calendar.showWeeks')),
     confirmDiscard: (await getKV('calendar.confirmDiscard')) ?? true,
-    timeZone: (await getKV('calendar.timeZone')) || ''
+    timeZone: (await getKV('calendar.timeZone')) || '',
+    boardOrientation: (await getKV('calendar.boardOrientation')) || 'horz'
   };
   setZone(S.prefs.timeZone);
   S.hidden = new Set(await getKV('calendar.hiddenGroups') || []);
