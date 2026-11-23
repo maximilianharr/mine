@@ -91,9 +91,11 @@ list leaves anything in the repo on its own, read from the queue being empty unt
 rows and the body in turn: that clicking it puts an input, select or textarea **inside that row**,
 that no `#sub` popup is opened by any of them, and that the row then carries **a trashcan and an
 `x` and no save** — one save in the popup, in the top row, and a row that has grown its own is
-the two-saves confusion this rule exists against. That the row's `x` **puts that row back as it
-was** and leaves the rest of the draft alone: typed into two rows, reverting one keeps the other.
-That clicking a second row accepts the first. That only one row is active at a time.
+the two-saves confusion this rule exists against. That the two sit on the row's **first line**,
+above the editor and with the `x` rightmost, resolved from document order and left edges: under
+a textarea they would land in a different place on every row. That the row's `x` **closes the row
+and keeps what is in it**, and still writes nothing. That clicking a second row closes the first
+the same way. That only one row is active at a time.
 
 **One edit is one commit.** That editing four things in one popup and pressing the disk queues
 **one** write, and that the file then holds all four values. This is the measurement a popup
@@ -178,9 +180,10 @@ discard dialog that usually goes wrong. That ticking **don't ask again** and reo
 makes the next `x` discard without asking, and that the hamburger panel's `Confirm discard` row
 turns the prompt back on.
 
-That **a row's own `x` never prompts** — it puts one field back, and the field it abandons never
-reached the draft — and that a row opened and closed without typing leaves the popup with no disk
-showing, so merely activating a row is not a change. That the prompt and the disk agree in both
+That **a row's own `x` never prompts** — it closes a row and keeps what is in it, so there is
+nothing to lose by pressing it — and that a row opened and closed without typing leaves the popup
+with no disk showing, so merely activating a row is not a change. That the prompt and the disk
+agree in both
 directions: nothing typed means no disk and no prompt, something typed means both.
 
 **The hamburger panel.** That **one button opens both halves**: the hamburger is the only way

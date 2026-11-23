@@ -224,7 +224,8 @@ It was two before, a read-only preview with a pen into a form, and the reason wa
 answers *what day is this on* in input boxes, which are harder to read than text and leave every
 value one slip away from a tap meant to scroll. Editing in place keeps that — a row is text until
 it is clicked, so there is still nothing to slip into — and gives back the two things the split
-cost. A change was four taps before the field was even typed into: open, pen, row, and back. And the preview and the
+cost. A change was four taps before the field was even typed into: open, pen, row, and back. And
+the preview and the
 form had to agree about every field twice over, in two blocks of code, which is how one of them
 came to show the stage and the other to hide it.
 
@@ -282,11 +283,18 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
 - **A set row carries a trashcan at its right**, which clears that field in the draft. An unset
   row has nothing to clear and carries none.
 - **Clicking a row makes it active.** The value becomes the control for it, in the row itself,
-  and the row carries **a trashcan and an `x`** — and **no save of its own**. The `x` puts the row
-  back as it was, so one field's typing can be abandoned without abandoning the popup; clicking
-  another row, or the disk, takes what is in it. There is exactly one save in this popup and it
-  is the one in the top row.
-- **Only one row is active at a time.** Clicking another row accepts the one that was open.
+  and the row's first line carries its name and then, at the right, **a trashcan and an `x`** —
+  and **no save of its own**. They sit at the top right rather than under the editor, because the
+  way out of a thing is in the same corner everywhere in Mine, and an `x` below a textarea is in
+  a different place on every row depending on how tall its editor is.
+- **The `x` closes the row and keeps what is in it.** There is nothing to accept: the editor has
+  been writing into the draft since the first keystroke, which is what lets the disk appear the
+  moment something differs from the file. So closing a row is only closing it — a field typed
+  into is not undone by leaving it, which is what a tap meant for the row below would otherwise
+  do. Clearing the field is the trashcan beside the `x`, and undoing the edit of a whole entry is
+  the popup's own `x`. There is exactly one save in this popup and it is the one in the top row.
+- **Only one row is active at a time.** Clicking another row closes the one that was open, which
+  likewise keeps what is in it.
 - **Clicking a row's trashcan does not activate the row.** This is the rule a kanban card already
   holds to, and it matters more here, because the trashcan now sits on the surface being tapped.
   The row and its controls are one place where a click that does two things is easy to build.
@@ -370,8 +378,10 @@ rows above it.
 
 It carries a small header of its own: the `lines` icon, and the trashcan at the right when there
 is a body to clear. **Clicking the body makes it active**, replacing the rendered text with the
-raw markdown in a textarea, with its `x` at the foot to put it back. A body is read far more
-often than it is written, which is the same argument the rows make, with more text behind it.
+raw markdown in a textarea and putting the `x` in that same header beside the trashcan. A body
+is read far more often than it is written, which is the same argument the rows make, with more
+text behind it — and the body's header is the shape every open row takes, since a textarea is
+the clearest case for why the buttons do not sit under the editor.
 
 ### A new entry
 
@@ -420,8 +430,8 @@ the top row to have missed. A half-written new entry counts as work: it is as ea
 edit of a saved one, and one rule covering both is shorter than two with an exception between
 them.
 
-**A row's own `x` is not guarded.** It puts one field back as it was, which is a smaller thing
-than leaving, and the field it abandons never reached the draft.
+**A row's own `x` is not guarded**, and has nothing to guard: it closes a row and keeps what is
+in it. Nothing is lost by pressing it, which is the whole reason it is not the one that asks.
 
 The prompt carries a **don't ask again** toggle. Ticking it silences the prompt on that device for
 good, so the `x` goes straight back to discarding. That is a preference about this screen's

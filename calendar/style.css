@@ -471,9 +471,10 @@ select {
 .ftap.unset { color: var(--muted); }
 /* A row being edited: the control takes the row's width and the two buttons sit under it, so a
    date pair or a textarea is not squeezed into what is left beside them. */
-.frow.open { display: block; padding: .5rem .2rem .6rem; }
+.frow.open { display: block; padding: .3rem .2rem .6rem; }
 .fedit { display: block; }
-.fbtns { display: flex; align-items: center; justify-content: flex-end; gap: .15rem; margin-top: .4rem; }
+/* The name on the first line, the trashcan and the x at the right of it: the way out of a row
+   is in the same corner as the way out of the popup. */
 .ftitle { display: flex; align-items: center; gap: .4rem; margin-bottom: .2rem;
   font-size: .72rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
   color: var(--muted); }

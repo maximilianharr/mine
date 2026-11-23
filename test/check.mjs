@@ -196,14 +196,14 @@ const openRow = async field => {
   })()`);
   await sleep(300);
 };
-// A row has no save of its own: its x leaves the field as it was, and clicking another row - or
-// the disk - takes what is in the one that was open.
+// A row has no save of its own: closing it keeps what is in it, because the editor has been
+// writing into the draft all along. Its trashcan and its x sit at the right of its first line.
 const rowX = async field => {
-  await ev(`document.querySelector('#f-rows [data-field="${field}"] [aria-label^="Leave"]').click()`);
+  await ev(`document.querySelector('#f-rows [data-field="${field}"] [aria-label="Close this field"]').click()`);
   await sleep(250);
 };
 const rowButtons = field => ev(`[...document.querySelectorAll(
-  '#f-rows [data-field="${field}"] .fbtns button')]
+  '#f-rows [data-field="${field}"] .ftitle button')]
   .map(b => (b.getAttribute('aria-label') || '?').split(':')[0])`);
 const typeIn = async (field, value) => {
   await ev(`(() => {
@@ -316,21 +316,36 @@ eq('the unset rows keep their order',
   rows1.filter(r => r.unset && r.field !== 'estimate').map(r => r.field),
   ['group', 'recurrence', 'alerts', 'participants']);
 
-// A row being edited carries a trashcan and an x and no save: there is one save in this popup.
+// A row being edited carries a trashcan and an x and no save: there is one save in this popup,
+// and the two sit at the right of the row's first line, not under its editor.
 await openRow('location');
 eq('an open row carries a trashcan and an x, and no save', await rowButtons('location'),
-  ['Clear location', 'Leave this field as it was']);
+  ['Clear location', 'Close this field']);
+eq('both above the editor it belongs to', await ev(
+  `document.querySelector('#f-rows [data-field="location"] .ftitle')
+     .compareDocumentPosition(document.querySelector('#f-rows [data-field="location"] .fedit'))
+     & 4 ? 'after' : 'before'`), 'after');
+ok('and the x is the rightmost of them', await ev(
+  `(() => { const bs = [...document.querySelectorAll(
+     '#f-rows [data-field="location"] .ftitle button')];
+    const x = bs.find(b => b.getAttribute('aria-label') === 'Close this field');
+    return bs.every(b => b === x || b.getBoundingClientRect().left < x.getBoundingClientRect().left);
+  })()`), 'the x is not rightmost in the row');
 eq('and the editor is inside the row',
   await ev(`!!document.querySelector('#f-rows [data-field="location"] input')`), true);
 eq('with no sub-popup opened', await ev(`document.querySelector('#sub').hidden`), true);
 
-// The row's x puts that one field back and leaves the rest of the draft alone.
+// The row's x closes it and keeps what was typed: the editor has been writing into the draft all
+// along, so there is nothing left to accept and nothing to lose by leaving.
 await typeIn('location', 'Somewhere else');
 await rowX('location');
-eq('the row\'s x reverts that row', (await ev(FIELD_ROWS)).find(r => r.field === 'location').text,
-  'Conference room 3B');
-eq('and leaves the title it was typed with', await ev(
-  `document.querySelector('#f-rows [data-field="title"] .ftap').textContent`), 'A new one');
+const kept = (await ev(FIELD_ROWS)).find(r => r.field === 'location');
+eq('the row\'s x closes the row', kept.open, false);
+eq('and keeps what was typed', kept.text, 'Somewhere else');
+eq('still without writing it', await queueLen(), 0);
+await openRow('location');
+await typeIn('location', 'Conference room 3B');
+await rowX('location');
 
 // Clicking a row's trashcan clears the field without opening it.
 await ev(`document.querySelector('#f-rows [data-field="location"] [aria-label^="Clear"]').click()`);
@@ -389,7 +404,7 @@ eq('beneath the toggle row', est.after, 'after');
 eq('and opens no sub-popup', est.sub, true);
 eq('prefilled with one day', est.value, '1');
 eq('its buttons are a trashcan and an x', await rowButtons('estimate'),
-  ['Clear estimate', 'Leave this field as it was']);
+  ['Clear estimate', 'Close this field']);
 eq('the trashcan is red', await ev(
   `getComputedStyle(document.querySelector('#f-rows [data-field="estimate"] [aria-label^="Clear"]')).color`),
   BAD);
@@ -509,7 +524,7 @@ eq('and no trashcan', pick.trashes, 0);
 eq('and no + add', pick.add, 0);
 eq('and no no-category row', pick.none, 0);
 eq('the row carries no save, because the tap is the choice', await rowButtons('group'),
-  ['Leave this field as it was']);
+  ['Close this field']);
 
 // A tap on a group closes the row in one tap, and writes nothing: the disk is what writes.
 await ev(`document.querySelector('#f-rows [data-field="group"] .gpick').click()`);

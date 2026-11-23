@@ -26,7 +26,7 @@ const FORM_KEYS = ['title', 'type', 'start', 'end', 'stage', 'important',
   'estimate', 'group', 'location', 'recurrence', 'alerts', 'participants'];
 
 let D = null;        // the draft
-let active = null;   // the row being edited: { key, restore }
+let active = null;   // the row being edited: { key }
 
 // ---- the fields behind the icons ------------------------------------------------------------
 
@@ -75,7 +75,7 @@ export function openEntry(occ) {
 function open(occ, scope, seed) {
   D = draft(occ, scope, seed);
   D.clean = snapshot(D);
-  active = occ ? null : { key: 'title', restore: null };
+  active = occ ? null : { key: 'title' };
   $('#popup').hidden = false;
   $('#f-msg').textContent = '';
   fillForm();
@@ -128,7 +128,8 @@ const dirty = () => !!D && (!D.occ || snapshot(D) !== D.clean);
 // ---- leaving -------------------------------------------------------------------------------
 
 // Leaving a popup that holds unsaved changes asks first - the x, the backdrop and Escape are one
-// way out and ask one question. A row's own x is not guarded: it puts one field back.
+// way out and ask one question. A row's own x is not guarded and has nothing to guard: it closes
+// a row and keeps what is in it.
 export function closePopup() {
   if (D && S.prefs.confirmDiscard && snapshot(D) !== D.clean) {
     $('#ask-never').checked = false;
@@ -166,8 +167,8 @@ $('#popup').addEventListener('click', e => { if (e.target === $('#popup')) close
 // its own. There is exactly one save in this popup and it is the one in the top row.
 //
 // An open editor writes into the draft as it is typed, which is what lets the disk appear the
-// moment something differs from the file without the row being re-rendered under the cursor.
-// `restore` is the value the row held when it was opened, and the row's x puts it back.
+// moment something differs from the file without the row being re-rendered under the cursor -
+// and it is what makes closing a row keep what was typed without a save to press.
 
 function fillForm() {
   iconRow();
@@ -183,14 +184,16 @@ const is = key => !!active && active.key === key;
 
 // Only one row is active at a time: opening another simply closes the one that was open, whose
 // value is already in the draft.
-function openRow(key, restore) {
-  active = { key, restore };
+function openRow(key) {
+  active = { key };
   fillForm();
   focusRow();
 }
 
-function closeRow(revert) {
-  if (revert && active && active.restore) active.restore();
+// Closing a row keeps what is in it: the editor has been writing into the draft all along, so
+// there is nothing to accept. Clearing the field is the trashcan beside the x, and undoing the
+// edit of a whole entry is the popup's own x.
+function closeRow() {
   active = null;
   fillForm();
 }
@@ -222,7 +225,7 @@ function iconRow() {
   } else for (const [t, ic, label] of [['task', 'check', 'Task'], ['event', 'cal', 'Event']]) {
     const b = iconBtn(ic, label, D.type === t ? 'on' : '');
     b.setAttribute('aria-pressed', String(D.type === t));
-    b.addEventListener('click', () => { D.type = t; closeRow(false); });
+    b.addEventListener('click', () => { D.type = t; closeRow(); });
     kids.push(b);
   }
   kids.push(el('span', 'spacer'));
@@ -253,12 +256,12 @@ function titleRow() {
     i.value = D.title;
     i.placeholder = 'Title';
     live(i, () => { D.title = i.value; });
-    return editorShell(null, 'Title', i, null, true);
+    return editorShell(null, 'Title', i, true);
   }
   const row = el('div', 'frow first');
   row.dataset.field = 'title';
   row.append(tap(D.title || 'Untitled', !D.title, 'ttap',
-    () => openRow('title', revert('title', D.title)),
+    () => openRow('title'),
     `Title${D.title ? `: ${D.title}` : ''}`));
   return row;
 }
@@ -282,13 +285,11 @@ function whenRow() {
     const r2 = el('div', 'row2');
     r2.append(mk('End', 'date', 'endDate'), mk('Time', 'time', 'endTime', 't'));
     wrap.append(r1, r2);
-    const before = { startDate: D.startDate, startTime: D.startTime,
-                     endDate: D.endDate, endTime: D.endTime };
-    return editorShell('cal', 'When', wrap, () => Object.assign(D, before), true);
+    return editorShell('cal', 'When', wrap, true);
   }
   const row = el('div', 'frow');
   row.dataset.field = 'when';
-  row.append(tap(whenText(), false, 'wtap', () => openRow('when', () => {}),
+  row.append(tap(whenText(), false, 'wtap', () => openRow('when'),
     `When: ${whenText()}`));
   return row;
 }
@@ -318,7 +319,7 @@ function scopeRow() {
     b.addEventListener('click', () => {
       D = draft(D.occ, v, {});
       D.clean = snapshot(D);
-      closeRow(false);
+      closeRow();
     });
     group.append(b);
   }
@@ -348,7 +349,7 @@ function closedRow(f) {
   const set = f.set(readField(f));
   row.append(icon(f.ic));
   row.append(tap(set ? f.sum(readField(f)) : f.label, !set, '',
-    () => openRow(f.k, revertField(f)),
+    () => openRow(f.k),
     `${f.label}${set ? `: ${f.sum(readField(f))}` : ''}`));
   if (set) row.append(clearBtn(f));
   return row;
@@ -357,26 +358,26 @@ function closedRow(f) {
 function editorRow(f, ic) {
   const ed = f.ed(readField(f));
   live(ed.node, () => writeField(f, ed.read()));
-  return editorShell(ic, f.label, ed.node, revertField(f), false, f);
+  return editorShell(ic, f.label, ed.node, false, f);
 }
 
-// A row being edited: its name above, the control across the row's width, and the buttons under
-// it - so a date pair or a textarea is not squeezed into what is left beside them.
-function editorShell(ic, label, node, restore, noClear, f) {
+// A row being edited: its name on the first line with the trashcan and the x at the right of it,
+// and the control across the row's width below - so a date pair or a textarea is not squeezed
+// into what is left beside them, and the way out of the row is in the corner it is in
+// everywhere else. The body's header is already this shape when the body is closed.
+function editorShell(ic, label, node, noClear, f) {
   const row = el('div', `frow open${ic ? '' : ' first'}`);
   if (active) row.dataset.field = active.key;
   const head = el('div', 'ftitle');
   if (ic) head.append(icon(ic));
-  head.append(el('span', '', label));
+  head.append(el('span', '', label), el('span', 'spacer'));
+  if (!noClear && f && f.set(readField(f))) head.append(clearBtn(f));
+  const x = iconBtn('x', 'Close this field');
+  x.addEventListener('click', closeRow);
+  head.append(x);
   const wrap = el('div', 'fedit');
   wrap.append(node);
-  const btns = el('div', 'fbtns');
-  if (!noClear && f && f.set(readField(f))) btns.append(clearBtn(f));
-  const x = iconBtn('x', 'Leave this field as it was');
-  x.addEventListener('click', () => closeRow(true));
-  btns.append(x);
-  row.append(head, wrap, btns);
-  if (restore && active) active.restore = restore;
+  row.append(head, wrap);
   return row;
 }
 
@@ -397,13 +398,10 @@ function clearBtn(f) {
   b.addEventListener('click', e => {
     e.stopPropagation();
     writeField(f, f.empty);
-    closeRow(false);
+    closeRow();
   });
   return b;
 }
-
-const revert = (key, value) => () => { if (key === 'title') D.title = value; };
-const revertField = f => { const was = readField(f); return () => writeField(f, was); };
 
 // The toggle row, under the when: `24h`, and on a task stage, important and estimate. A tap on
 // one of them is the whole edit - into the draft, like everything else.
@@ -427,7 +425,7 @@ function allDayBtn() {
     D.allDay = !D.allDay;
     if (D.allDay) { D.startTime = ''; D.endTime = ''; }
     else { D.startTime = D.startTime || '09:00'; D.endTime = D.endTime || '10:00'; }
-    closeRow(false);
+    closeRow();
   });
   return b;
 }
@@ -447,7 +445,7 @@ function stageBtn() {
   const b = badged(iconBtn('cols', `Stage: ${D.stage}`), '', '', STAGE_COLOR[D.stage]);
   b.addEventListener('click', () => {
     D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
-    closeRow(false);
+    closeRow();
   });
   return b;
 }
@@ -457,7 +455,7 @@ function stageBtn() {
 function bangBtn() {
   const b = iconBtn('!', 'Important', D.important ? 'on' : '');
   b.setAttribute('aria-pressed', String(D.important));
-  b.addEventListener('click', () => { D.important = !D.important; closeRow(false); });
+  b.addEventListener('click', () => { D.important = !D.important; closeRow(); });
   return b;
 }
 
@@ -466,7 +464,7 @@ function estBtn() {
     is('estimate') ? 'on' : '');
   if (D.estimate) badged(b, `${D.estimate}d`, 'wide');
   b.addEventListener('click', () =>
-    is('estimate') ? closeRow(false) : openRow('estimate', revertField(EST)));
+    is('estimate') ? closeRow() : openRow('estimate'));
   return b;
 }
 
@@ -488,7 +486,7 @@ function bodyBlock() {
   const b = el('button', 'vbody-tap');
   b.type = 'button';
   b.setAttribute('aria-label', 'Details');
-  b.addEventListener('click', () => openRow('body', revertField(f)));
+  b.addEventListener('click', () => openRow('body'));
   if (f.set(D.v.body)) b.append(render(D.v.body));
   else b.append(el('span', 'ftap unset', 'Details'));
   wrap.append(head, b);
@@ -591,7 +589,7 @@ $('#sub-scrim').addEventListener('click', closeSub);
 function groupPicker(cur) {
   return groupList(cur || '', name => {
     writeField(FIELDS.find(f => f.k === 'group'), name);
-    closeRow(false);
+    closeRow();
   });
 }
 
