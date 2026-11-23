@@ -1,0 +1,1 @@
+good catch. The 'x' shall not revert but close and save. also put the 'x' on the top right instead of buttom right. implement directly without asking. then commit and push. I will then test again.
