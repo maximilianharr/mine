@@ -30,12 +30,19 @@ or moved to another stage without affecting the rest.
 
 A navigation pane at the top and a big calendar window below it.
 
+**The calendar window is as wide as the browser.** Nothing caps it: a month at 1920 px is a
+month 1920 px wide, because the one thing a desktop has over a phone is room, and a grid that
+stops at 78 rem spends that room on margins. **The board is the exception** and keeps the cap,
+centred — three columns stretched across a wide monitor are three columns of mostly empty card,
+and a card is read at the width a sentence is read at, not at a third of the screen. The pane
+itself is full width in both, so it never changes shape when you switch between them.
+
 In the top pane, three groups: the two view controls at the left, the period in the middle, the
 two ways out at the right.
 
 ```
-[board]    [filter]     [‹] [NOV/26 ▾] [›]     [⚙] [⌂]     a calendar view
-[calendar] [filter]     [‹] [7 ▾]      [›]     [⚙] [⌂]     the kanban
+[board]    [zoom]     [‹]   [NOV/26]   [›]     [☰] [⌂]     a calendar view
+[calendar] [zoom]     [‹]   [7]        [›]     [☰] [⌂]     the kanban
 ```
 
 Everything in the pane is drawn at **twice the size** it was: this is the row reached for on
@@ -44,8 +51,8 @@ every visit, and it was the smallest thing on the screen.
 **On a phone the pane is two rows**, each one filling the width:
 
 ```
-[board]  [filter]  [⚙]   [⌂]       the four that go somewhere
-[‹]     [ NOV/26 ▾ ]     [›]       the period, and the way to another
+[board]  [zoom]  [☰]   [⌂]         the four that go somewhere
+[‹]     [ NOV/26 ]     [›]         the period, and the way to another
 ```
 
 Five controls across one line left the period label — the one thing in the pane you read rather
@@ -56,15 +63,11 @@ and the label between them is larger**, because the label carries a date to be r
 carries only a direction. The pane still fits a 320 px viewport, and neither row drops a control
 or lets one wrap away.
 
-- **Leftmost, the view switch and the filter.** One slot always holds the way to the other kind
+- **Leftmost, the view switch and the zoom.** One slot always holds the way to the other kind
   of view: a board icon in a calendar view, and on the board a calendar icon, which returns to
   the month view. The board is not a zoom step, which is why it has a slot of its own rather
-  than a place in the cycle the label walks. Beside it the filter. **Groups are a dropdown inside
-  it, not a list**: one `groups` row saying how many are on, which opens to the same checkboxes,
-  each group showing its colour. Any subset can still be hidden — the dropdown only folds the
-  list away, so that a repo with twenty groups cannot give the filter a panel taller than the
-  screen. This is a view filter and is remembered per device; groups are *named and coloured* in
-  settings, not here.
+  than a place in the zoom's list. Beside it the **zoom**, drawn as a magnifier — described
+  below.
 - **Centred, the period.** Left/right buttons, with the period label between them, to move to
   the previous/next day, week, month, year or sprint, depending on the current view. The label
   is short, because the pane has to fit a phone:
@@ -83,32 +86,64 @@ or lets one wrap away.
   nothing else. A week spanning two months takes the month its **fourth** day is in, which is
   the rule the gutter already uses, so label and gutter can never disagree.
 
-  **Clicking the label zooms the calendar**: year → month → week → day → year, and round again.
-  It is a cycle rather than a scale with two ends, because a single target cannot be disabled at
-  an end and still be the way on. So there is no `-` and no `+` in the pane, and no
-  `D` `W` `M` `Y` `K` row either. On the board the label is the sprint number and clicking it
-  opens the list of sprints instead; the board has no zoom.
+  **Clicking the label opens the picker**, and that is the only thing it does — in every view
+  and on a phone as much as on a desktop. **There is no caret `▾`.** The caret existed only
+  because the label's own tap was taken by the zoom; the zoom is a button of its own now, so the
+  label is free to be the one thing it was always read as — the period, pressed to pick another.
+  This is also what the board has always done, so the two kinds of view no longer differ in what
+  their label means. The label carries no glyph saying it is pressable: it takes a hover and a
+  press background, as the year view's month caption does.
 
-  **The caret `▾` beside the label is a button of its own** and opens the dropdown picker. It
-  has to be, now that the label itself zooms — the picker is the only way back to today, so it
-  cannot be a tap that the zoom has taken. The dropdown shows a month at a time, with its name
-  top left and left/right arrows top right. Clicking the month name switches to a year grid of 9
-  years ending with the current one, whose arrows page by 9 years. Today is highlighted in it,
-  and tapping it is how you get back to today — there is no jump-to-today button in the pane. In
-  the kanban the dropdown picks a sprint, and there the caret and the label do the same thing,
-  since that list is the picker: its rows read `Sprint 7 · 19 Jan – 1 Feb`, and the row holding
-  today reads `current · 19 Jan – 1 Feb` on a brighter background in dark mode, a darker one in
-  light.
+  The picker shows a month at a time, with its name top left and left/right arrows top right.
+  Clicking the month name switches to a year grid of 9 years ending with the current one, whose
+  arrows page by 9 years. Today is highlighted in it, and tapping it is how you get back to today
+  — there is no jump-to-today button in the pane. In the kanban the picker picks a sprint: its
+  rows read `Sprint 7 · 19 Jan – 1 Feb`, and the row holding today reads
+  `current · 19 Jan – 1 Feb` on a brighter background in dark mode, a darker one in light.
 
-  **On a phone the `‹` `›` are on the second row**, and **there is no swipe anywhere in the
-  calendar**. The label was swiped only because the arrows were not there to press; now that they
-  have a row of their own they are, and a gesture doing what a visible button does is the same
-  second mechanism this document refuses a card on a desktop. So no sideways gesture does
-  anything, in any view, and nothing ever has to be told apart from a card drag on the board or
-  from a scroll in a grid.
-- **Rightmost, the two ways out.** A gear button that opens settings, and a home icon back to the
-  Mine tile screen. A house rather than an arrow, because a third arrow beside the two that step
-  through periods reads as another way to move inside the calendar.
+  **The two arrows stand well clear of the label.** On a desktop the gap either side of it is
+  about half an arrow — three controls crammed together read as one control, and this is the
+  group the pane is used through. On a phone the second row keeps its tight gap, because there
+  the arrows are flexible halves and every millimetre of gap is taken off a thumb's target.
+
+  **On a phone the `‹` `›` are on the second row, drawn at the size of the first row's icons.**
+  They were larger than everything above them, which made the row that steps the period louder
+  than the four that leave it. And **there is no swipe anywhere in the calendar**: the label was
+  swiped only because the arrows were not there to press; now that they have a row of their own
+  they are, and a gesture doing what a visible button does is the same second mechanism this
+  document refuses a card on a desktop. So no sideways gesture does anything, in any view, and
+  nothing ever has to be told apart from a card drag on the board or from a scroll in a grid.
+- **Rightmost, the two ways out.** A **hamburger** button that opens the filter and the settings
+  in one panel, and a home icon back to the Mine tile screen. A house rather than an arrow,
+  because a third arrow beside the two that step through periods reads as another way to move
+  inside the calendar.
+
+### The zoom
+
+A magnifier beside the view switch, opening a short list under itself. **It offers what the view
+it was opened in can do, and nothing else:**
+
+| view | the list |
+| --- | --- |
+| day, week, month, year | `day` · `week` · `month` · `year` |
+| kanban | `vertical` · `horizontal` |
+
+The current one is marked. In a calendar view this is the whole of the zoom: it replaces the
+label's cycle, which walked year → month → week → day → year and so asked for up to three taps
+to reach the view you wanted and gave you no way to see which one you were in without reading
+the label. A list of four names you point at is one tap and says both. There is still no `-` and
+no `+` in the pane, and no `D` `W` `M` `Y` `K` row across it either — the four names are in a
+popup, not spread along the row the period lives on.
+
+On the board the same button carries the board's own one choice, its **orientation**, because a
+board has no period to zoom. The two never appear together: a calendar view cannot be stacked
+and a board cannot be a week.
+
+**The orientation is remembered per device** and starts at `horizontal`. It is a preference
+about this screen, like *confirm discard*, so it is kept where the rest of them are and has a
+row in neither the panel nor the repo. The calendar's own zoom is **not** remembered: the app
+opens on the month, on today, on the current sprint, as it always has — which view you were last
+in is where you were, not what you prefer.
 
 All views show **seven columns beginning with the configured first day of the week**, with
 Saturday and Sunday tinted wherever they land. A Saturday task has to be visible.
@@ -130,10 +165,15 @@ selected sprint. In the year view it is the day preview's `+`, as everywhere els
   is highlighted. A day with entries takes the background colour of its group, split between
   colours if there are several — a year grid has no room for anything else. Clicking a day shows
   that day's entries, as a preview like everywhere else. **The month's name is a button**: it
-  reads as a caption but is pressable, with a hover and a press state, and clicking it zooms
-  into that month in the month view — the same step clicking the period label takes, but landing
-  on the month you pointed at rather than the one the anchor is in. The whole label is the target, so
-  it stays finger-sized where a day in a year grid is not.
+  reads as a caption but is pressable, with a hover and a press state, and clicking it opens that
+  month in the month view — landing on the month you pointed at rather than the one the anchor is
+  in. The whole label is the target, so it stays finger-sized where a day in a year grid is not.
+
+  **At most six months to a row.** The months reflow with the width — four, three, two as it
+  narrows — but never more than six, so a year reads as two even rows of six rather than as ten
+  and then two. Now that the window is as wide as the browser, the extra width goes into wider
+  months with readable day cells; a grid free to keep adding columns spends it on more of them
+  instead, and twelve does not divide by seven, eight or ten.
 - **Month** — one row per week, and the grid **fills the whole height of the window** below the
   pane: the week rows divide the space between them equally, so the month is as tall as the
   screen allows rather than as tall as its cells happen to need. The extra height goes to the
@@ -171,75 +211,130 @@ is already showing the one day the preview would list.
 ## Entry popup
 
 The popup **opens in the middle of the screen**, on a phone as much as on a desktop — and so
-does every other overlay in the calendar: a field's own popup, the settings panel and the day
-preview. Nothing rises from the bottom edge any more. A centred card is reached with either
-thumb and does not pretend to be a drawer that can be dragged.
+does every other overlay in the calendar: the hamburger panel and the day preview. Nothing rises
+from the bottom edge any more. A centred card is reached with either thumb and does not pretend
+to be a drawer that can be dragged.
 
-**An entry that already exists opens read-only.** Clicking an entry — in any grid, in the day
-preview, or as a card on the board — opens a **view popup** that shows it, and a pen in that
-popup's top row opens the **edit popup**. Most openings are to read: what day is this on, what is
-on the agenda, who is coming. A form answers those questions in input boxes, which are harder to
-read than text, and it leaves every value one slip away from being changed by a tap meant to
-scroll. A new entry has nothing to read, so the `+` and a click on empty space open the edit
-popup directly.
+**There is one popup, and it is both.** Clicking an entry — in any grid, in the day preview, or
+as a card on the board — opens the entry, shown as text, and **every value in it is edited where
+it is read**: click the thing, change it, and one save at the top writes the lot. There is no
+pen, no second popup behind one, and no mode to be in.
 
-### The view popup
+It was two before, a read-only preview with a pen into a form, and the reason was sound: a form
+answers *what day is this on* in input boxes, which are harder to read than text and leave every
+value one slip away from a tap meant to scroll. Editing in place keeps that — a row is text until
+it is clicked, so there is still nothing to slip into — and gives back the two things the split
+cost. A change was four taps before the field was even typed into: open, pen, row, and back. And the preview and the
+form had to agree about every field twice over, in two blocks of code, which is how one of them
+came to show the stage and the other to hide it.
 
-A top row, and then the entry. The row carries **the type as a marker, not a choice** — a ticked
-square for a task, a calendar page for an event, shown and not pressable — and then,
-right-aligned, a trashcan to delete the entry, a **pen** to edit it, and an `x` to close:
+**Each row is edited in place, and one save writes.** The rows hold a draft; nothing reaches the
+repo until the popup's own disk, so **one entry edit is one commit** and the popup is one
+transaction rather than a stream of them. A row that writes the file the moment it is saved was
+tried on paper and gives this popup three faults it cannot see: the entry it is holding goes a
+generation stale after the first write, a saved date moves the file out from under it, and four
+rows saved offline queue four writes to one path. One save at the end has none of them.
+
+**The disk appears only once something differs from the file**, and it is the only button in the
+popup that writes. A popup opened to read has no save in it to wonder about — which is most
+openings — and a save that is there is a save with something to do.
 
 ```
-[☑]                          [trash] [pen] [x]
+[☑]                                  [trash] [x]      opened, nothing changed
+[☑]                          [trash] [disk] [x]       a row has been changed
+[☑] [📅]                             [disk] [x]       a new one: the type is still a choice,
+                                                      and the disk is disabled until it has a title
 ```
 
-The trashcan stays here rather than moving behind the pen. Deleting is not an edit of a field, and
-the board's rule that a card is deleted from its popup in two taps depends on the trashcan being
-on the first of them.
+The top row carries **the type**, then right-aligned a trashcan to delete the entry, the disk
+once there is something to save, and an `x` to close. On an entry that already exists the type is
+a **marker, not a choice** — a ticked square for a task, a calendar page for an event, shown and
+not pressable — because a task turned into an event drops its stage, its importance and its
+estimate, and the type is settled when the entry is made. On a new entry it is the pair, with the
+event selected.
 
-Below the row: the title, when it is, and then **only the fields that are set**, in the canonical
-order the edit popup's rows use. An entry with a title and a date shows a title and a date.
-Nothing here is a row waiting to be filled — that is what the pen is for — so an unset field has
-nothing to say and is left out, which also means the set-first ordering below is simply the
-canonical order here.
+The trashcan stays at the left of that group: deleting is not an edit of a field, it writes at
+once whatever the draft holds, and the board's rule that a card is deleted from its popup in two
+taps depends on the trashcan being on the first of them.
 
-**The details body is shown in full and rendered**, not clipped to two lines and not as raw
-markdown, by [Mine's shared renderer](../REQUIREMENTS.md#markdown-bodies). Two lines on a card and
-the whole text here are the difference between a glance and having opened the thing.
+Below the row, in this order: the **title**, the **scope and skip** row on a repeating entry, the
+**when**, the **toggle row**, the **five field rows**, and the **details body** last.
 
-**A repeating entry says so**, and carries its `skip this one`: skipping drops a single
-occurrence, which is an action on the entry like deleting it, not a change to a field. The scope
-pair is not here — it governs what an edit writes, and in a popup that writes nothing it would
-read as a choice about what you are looking at.
+### A row, and a row being edited
 
-### The edit popup
+Every row is **the icon, then the value** — no field name beside it:
 
-A row of icon buttons at the top, and it holds the type pair and the three on the right and
-nothing between them. **Every button in it is an icon; no button carries a letter.**
+```
+[ball]    Work                                      [trash]
+[pin]     Conference room 3B                        [trash]
+[repeat]  Repeat
+[bell]    Alerts
+```
 
-- Leftmost, a ticked square for **task** and a calendar page for **event**. Choosing one
-  deselects the other; the default is event. What the entry *is* comes first, because it governs
-  what the rest of the popup offers. **On an entry that already exists the pair is disabled** —
-  it shows which of the two this is and refuses to change it. A task turned into an event drops
-  its stage, its importance and its estimate, and a popup opened to fix a typo is not where that
-  belongs one tap away. The type is settled when the entry is made.
-- Then, right-aligned: a trashcan to delete the entry, a disk to save it, and an `x` to close and
-  discard. **The `x` is rightmost, in every popup in Mine.** The way out of an overlay sits in the
-  same corner wherever you are, so leaving one is never something to look for — and that corner
-  is worth more to the button you reach for by habit than to the one you aim at. The disk gives
-  it up and sits beside it.
+The name is gone because it said the same thing as the icon it sat beside, in the one column
+where the value has to fit. **An unset row shows the field's name in its place, muted** — which
+is what an empty input does everywhere else in Mine, and what keeps a bell from being a bell and
+nothing else. A set row reads as a value; an unset one reads as an invitation.
 
-There is no dash between the two groups: the gap to the right-aligned trio already separates
-them, and the field icons the dash used to divide off are not in this row at all any more.
+- **The rows that are set move to the top.** Set fields come first, unset ones follow, and inside
+  each group the order is always the canonical one below. Setting a field lifts its row into the
+  top group and shuffles nothing else, so a row never moves for a reason you did not cause.
+- **A set row carries a trashcan at its right**, which clears that field in the draft. An unset
+  row has nothing to clear and carries none.
+- **Clicking a row makes it active.** The value becomes the control for it, in the row itself,
+  and the row carries **a trashcan and an `x`** — and **no save of its own**. The `x` puts the row
+  back as it was, so one field's typing can be abandoned without abandoning the popup; clicking
+  another row, or the disk, takes what is in it. There is exactly one save in this popup and it
+  is the one in the top row.
+- **Only one row is active at a time.** Clicking another row accepts the one that was open.
+- **Clicking a row's trashcan does not activate the row.** This is the rule a kanban card already
+  holds to, and it matters more here, because the trashcan now sits on the surface being tapped.
+  The row and its controls are one place where a click that does two things is easy to build.
 
-Below it, in this order: the **title**, the **start and end** fields, the **toggle row**, and
-then **one row per field**.
+**Five of the six fields are rows**, in this canonical order:
+
+- a ball for **category**;
+- circular arrows for **repetition**;
+- a bell for **alerts**;
+- a pin for **location**;
+- a person for **participants**.
+
+The sixth, **details**, is not a row: it is the body, and it is drawn in full at the foot of the
+popup — described below. A markdown body is the one value that cannot be read on one line, so a
+row is the wrong shape for it, and putting it first in the order the way a row would be sorted
+pushes everything else below the fold on any entry with an agenda in it. It keeps its place in
+the canonical order of fields everywhere that order is a list of fields; it simply is not one of
+the rows that order sorts.
+
+**Every editor opens in its own row.** There is no popup over the popup any more: the field
+popups are gone, and with them the rule that a sub-popup never writes to the repo — the rows do
+not write either, so there is nothing left to carve out. The card scrolls, so a textarea fits in
+a row as well as it fitted in a card of its own. The one survivor of that mechanism is the group
+manager behind *edit groups*, which is not editing a field.
+
+**Picking a category takes it.** Tapping a group puts it in the draft and closes the row — there
+is nothing more to say about a choice from a list, and with no save in the row there is nothing
+for a second tap to press. It is the one row that closes itself.
+
+### The title, the when, and the toggle row
+
+**The title is a row too** — text until clicked, then an input with the trio. So is **the when**,
+which reads `MON, 20.11.2026 · 09:00–10:00` and opens the start and end date and time inputs
+inside the row. Four input boxes at the top of a popup opened to find out what day something is
+on was the form at its least readable, and this is the row that had the most to gain.
+
+The when-line no longer repeats the stage, the importance and the estimate as words. The toggle
+row shows all three, live, directly beneath it.
 
 ### The toggle row
 
-One row of icons directly under start and end. These are not fields with a form each: they are
-small values, edited in the row itself, and they **show their value** rather than merely whether
-they have one — each as a small badge on the corner of its icon.
+One row of icons directly under the when. These are not fields with an editor each: they are
+small values, edited in the row itself with a single tap, and they **show their value** rather
+than merely whether they have one — each as a small badge on the corner of its icon.
+
+**A tap on one of them is the whole edit**, into the draft like everything else — there is
+nothing in these four to type, so there is nothing for a row's `x` to put back and no editor to
+open. The disk appears on the first tap, as it does for any other change.
 
 - **`24h` for all-day** — the one control in the popup that is a word rather than a picture, and
   deliberately so: every drawing of a whole day reads as something else. The sun it replaces was
@@ -253,80 +348,91 @@ they have one — each as a small badge on the corner of its icon.
 - a `!` for **important** — a straight toggle, lit when the task is important and plain when it
   is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
   not already said, which is what made the old flag need a digit and this one not.
-- an hourglass for **estimate** — the one that opens a popup, because a number has to be typed.
-  Its badge reads the day count as `2d`. It stays on this row rather than joining the field rows
-  below, because what it carries is a badge-sized value like the other three, not a form.
+- an hourglass for **estimate** — the one of the four that opens an editor, because a number has
+  to be typed. It opens **inline, beneath the row**, with a trashcan and an `x`, like any other
+  field. Its badge reads the day count as `2d`.
 
 On an event, stage, important and estimate are not there at all, because an event has none of
 them. They sit here so that a task that is not on a board still carries the two fields a kanban
 card edits.
 
-Neither lit control — `24h` or `!` — is the save button's green: in all of Mine green is a save
-and red is a trashcan, and a green toggle beside the disk would make the popup look like it
-offers two primary actions.
+Neither lit control — `24h` or `!` — is the disk's green: in all of Mine green is a save and red
+is a trashcan, and a green toggle beside the disk would make the popup look like it offers two
+primary actions.
 
-### The field rows
+### The details body
 
-Every other field is a row, and **every field has a row, set or not** — the rows are now the only
-way to reach a field, so none of them can be hidden. A row is the icon on the left and the
-field's name beside it, and, when the field is set, its value after that:
+Last in the popup, and **shown in full and rendered** — not clipped to two lines, not as raw
+markdown — by [Mine's shared renderer](../REQUIREMENTS.md#markdown-bodies). Two lines on a card
+and the whole text here are the difference between a glance and having opened the thing, and that
+is the one thing the old preview existed for, so it is not spent on making the body look like the
+rows above it.
 
-```
-[ball]    Category     Work
-[pin]     Location     Conference room 3B
-[lines]   Details
-[repeat]  Repeat
-```
+It carries a small header of its own: the `lines` icon, and the trashcan at the right when there
+is a body to clear. **Clicking the body makes it active**, replacing the rendered text with the
+raw markdown in a textarea, with its `x` at the foot to put it back. A body is read far more
+often than it is written, which is the same argument the rows make, with more text behind it.
 
-The six fields, in their canonical order:
+### A new entry
 
-- three lines of text for **details** — the markdown body;
-- a ball for **category**;
-- circular arrows for **repetition**;
-- a bell for **alerts**;
-- a pin for **location**;
-- a person for **participants**.
+A new entry is **a draft like any other edit**, and no row behaves differently in it. It opens
+with its title row active and the when seeded from wherever it was made — the cell, the day
+preview's `+`, or a kanban column header, which seeds the stage as well — and every other row is
+live from the start. The disk creates the file; until it is pressed, a `+` opened and thought
+better of leaves no file and no commit.
 
-- **Clicking a row opens that field's popup.** The row *is* the pen, so no row carries one, and
-  clearing a field is the trashcan inside its popup, which is already there.
-- **The rows that are set move to the top.** Set fields come first, unset ones follow, and inside
-  each group the order is always the canonical one above. Setting a field lifts its row into the
-  top group and shuffles nothing else, so a row never moves for a reason you did not cause.
-- **A set row is plain.** Being in the top group and showing a value is what says the field is
-  set — which is what the old lit icon said, in a row that no longer exists. Nothing in the
-  popup lights except the two toggles on the row above, `24h` and `!`.
+**The disk is disabled until the title has something in it**, because an entry must have one.
+That is the only way a new entry differs from an edit of a saved one, and it is a disabled button
+rather than a rule about which row may be touched first.
 
-Each of the six opens its own popup, and every popup has the same three buttons in the entry
-popup's own order: a trashcan that clears that one field, a disk that commits the value into the
-entry form, and, rightmost, an `x` that abandons the sub-edit. **A sub-popup never writes to the
-repo**, now with no exception at all: a group is added in settings, not from an entry.
-Nothing is written until the entry popup's own disk, so one entry edit is one commit, and the
-entry popup's `x` discards the staged fields along with everything else. This is also what makes
-a brand-new entry work, since it has no file for a sub-popup to write to.
+### A repeating entry
 
-Saving **closes the popup and returns to the calendar immediately**; the push to GitHub runs in
+A repeating entry says so under the title, and carries two things the rest do not:
+
+- **the scope pair**, `this occurrence` or `whole series`, which governs **what the save
+  writes**. It is one choice about one write, which is what it always was; it is here rather than
+  absent because this popup can write, and the objection it was once kept out of the preview for
+  was that a preview could not. Switching it rebuilds the draft from the other file, so it also
+  resets what a discard is measured against.
+- **`skip this one`**, which drops a single occurrence. That is an action on the entry like
+  deleting it, not a change to a field, so it sits with the scope rather than among the rows.
+
+Only the series carries the rule, so **the repetition row is absent on an occurrence override** —
+a rule the popup must not rewrite has no row at all.
+
+### Saving, and leaving
+
+The disk **closes the popup and returns to the calendar immediately**; the push to GitHub runs in
 the background and is reported in the sync line, not in the popup. **Both ways out land on the
-calendar**, the disk and the `x` alike, even when the edit was reached by the pen from a view
-popup. Stepping back to the preview would leave a popup open over a change already committed, and
-the cell or the card behind it shows the result anyway.
+calendar**, the disk and the `x` alike. The cell or the card behind it shows the result anyway,
+and there is no preview left to step back to.
+
+Deleting the entry and skipping an occurrence also close the popup, because neither leaves
+anything to look at.
 
 ### Discarding an edit
 
-**Leaving a popup that holds unsaved changes asks first.** The `x`, a click on the backdrop and
-Escape are one way out and ask one question: a small centred prompt offering **discard** or
-**keep editing**. A popup that has not been touched closes without a word — the question is
-about losing work, and there is none to lose. A half-written new entry counts as work: it is as
-easy to lose as an edit of a saved one, and one rule covering both is shorter than two with an
-exception between them.
+**Leaving a popup that holds unsaved changes asks first.** The popup's `x`, a click on the
+backdrop and Escape are one way out and ask one question: a small centred prompt offering
+**discard** or **keep editing**. A popup that has not been touched closes without a word — the
+question is about losing work, and there is none to lose, which is also when there is no disk in
+the top row to have missed. A half-written new entry counts as work: it is as easy to lose as an
+edit of a saved one, and one rule covering both is shorter than two with an exception between
+them.
 
-The prompt carries a **don't ask again** toggle. Ticking it silences the prompt on that device
-for good, so the `x` goes straight back to discarding. That is a preference about this screen's
+**A row's own `x` is not guarded.** It puts one field back as it was, which is a smaller thing
+than leaving, and the field it abandons never reached the draft.
+
+The prompt carries a **don't ask again** toggle. Ticking it silences the prompt on that device for
+good, so the `x` goes straight back to discarding. That is a preference about this screen's
 behaviour rather than data, so it is stored on the device like the rest of them — and it has a
-row in the settings panel, because nothing in Mine may be switched off from a place that cannot
-switch it back on.
+row in the panel's settings section, because nothing in Mine may be switched off from a place
+that cannot switch it back on.
 
-**A field's own popup is not guarded.** Its `x` abandons one staged field, not an entry, and
-nothing it was holding had reached the repo in the first place.
+What the merge changes about losing work is only where it is typed. The unit is still the whole
+popup, the question is still asked once, and the disk is still the one thing that writes — so an
+entry is never half-written to the repo, and a row left open when the disk is pressed is taken
+along with the rest.
 
 ### Repetition
 
@@ -337,12 +443,15 @@ does not repeat · daily · weekly · every 2 weeks ·
 monthly on the x-th · monthly on the x-th weekday · yearly
 ```
 
-below it an **ends** control: never, on a date, or after a number of occurrences.
+below it an **ends** control: never, on a date, or after a number of occurrences. Both sit in
+the repetition row while it is active, and **the row stays open when the dropdown changes** —
+unlike the category's list, which closes on the tap, because a rule is the two controls together
+and `weekly` taken the moment it is chosen would be a rule with no end yet.
 
 Files may be hand-written or imported, so a rule the dropdown cannot express — `the last Friday
 of the month`, `Mondays, Wednesdays and Fridays` — is shown as a non-selectable **custom** state
-displaying the rule as text, with a note that choosing an option will replace it. Saving the
-entry without touching the dropdown leaves the rule untouched. No hand-written rule is ever
+displaying the rule as text, with a note that choosing an option will replace it. Saving the entry
+without having touched the dropdown leaves the rule untouched. No hand-written rule is ever
 silently rewritten.
 
 ### Category
@@ -351,14 +460,14 @@ silently rewritten.
 colour — but what it lets you do depends on where you came from, and the two sets of controls
 never appear together.
 
-- **Reached from an entry it only picks.** The groups and nothing else: no pen, no trashcan, no
-  `+ add category`. Naming, recolouring and deleting a group are settings, and an entry popup is
-  not where a list the whole repo shares should be rewritten — least of all by a trashcan a
-  thumb's width from the group being aimed at. The way to clear the field is the popup's own
-  trashcan, as in the other five, so there is no `no category` row in the list either: that was a
-  second way to do what the trio at the top already does, and the trio is the one that sits in
-  the same place in every field's popup.
-- **Reached from the settings panel's *edit groups* it only manages.** Every group with its
+- **Reached from an entry it only picks**, in the category row, and **a tap on a group closes
+  the row**. The groups and nothing else: no pen, no trashcan, no `+ add category`. Naming,
+  recolouring and deleting a group are settings, and an entry popup is not where a list the whole
+  repo shares should be rewritten — least of all by a trashcan a thumb's width from the group
+  being aimed at. The way to clear the field is the row's own trashcan, as in the other five, so
+  there is no `no category` row in the list either: that was a second way to do what the row's
+  trashcan already does, in the same place in every row.
+- **Reached from the panel's *edit groups* it only manages.** Every group with its
   colour, a pen, a trashcan and a `+ add`, and no way to pick one, because nothing is being
   filled in. Adding a group asks for a label and a colour; its stored name is derived from the
   label and never shown, which is why relabelling or recolouring later touches no entry. Entries
@@ -367,15 +476,19 @@ never appear together.
 This is **the only place in the calendar where a group is named or coloured**. One list, because
 two would have to be kept in step and neither would gain anything by it.
 
-Because adding a group now sits behind the gear, **nothing in a field's popup reaches the repo at
-all** and the rule above has no exception left to carve out. `groups.md` is written the moment the
-settings list commits a change — a different file from any entry, and nothing an entry popup is
-holding unsaved.
+Managing is **the one place the old sub-popup mechanism survives**, because it is not editing a
+field of an entry: it is reached from the panel, it writes `groups.md` the moment a row commits,
+and it has no entry around it to write into. That is also why it keeps a popup of its own rather
+than becoming a row — there is no row it could be.
 
 ## Kanban
 
 Three columns — **todo** (red), **doing** (yellow), **done** (green) — holding one sprint's
 tasks. Every task is a card and every card is a task; events never appear.
+
+**The board is capped and centred**, in both orientations, where the calendar window is as wide
+as the browser. A card is read at the width a sentence is read at; a third of a wide monitor is
+mostly empty card.
 
 A sprint is a date range, not a stored field: sprint 1 starts on the *kanban first week start
 date* and each one runs for the *kanban interval*. A task's sprint is whichever range its start
@@ -393,16 +506,39 @@ than a pure one, which would not be readable on the light theme. There is no col
 card count: the dot said what the coloured name now says, and a count is a number nobody acts
 on. The name is **centred and drawn at twice the size**; the `+` stays at the right of the
 header, where it is the board's only way to make a task, since the top pane has none. The sprint
-selector and the filter sit in the top pane, because one board shows one sprint. On the board the
-filter holds the groups dropdown, an assignee, and a single **important only** toggle — one
-switch, now that importance is a yes or no, where four priority chips used to ask which tiers you
-meant.
+selector sits in the top pane, because one board shows one sprint, and the filter is behind the
+hamburger with everything else. On the board that filter gains an assignee and a single
+**important only** toggle — one switch, now that importance is a yes or no, where four priority
+chips used to ask which tiers you meant.
+
+### Vertical and horizontal
+
+The board has one choice of its own, in the zoom: **horizontal**, the three columns side by side,
+or **vertical**, the three stages stacked one under the other, each full width.
+
+Horizontal is the default and is the board as it was. Vertical is for the sprint that does not
+fit: three columns side by side give each a third of the width and all of the height, which is
+the wrong way round for a stage holding fifteen cards and one holding none. Stacked, each stage
+takes the whole width and only the height its cards need, and the board is read by scrolling
+down — the direction everything else in Mine is read in.
+
+- **A stacked stage keeps its header**: the coloured name and the `+`, as before.
+- **The phone's `‹` `›` pager is horizontal's alone.** It exists because exactly one column is
+  on screen and it is the only way to see another; stacked, all three are already there, so
+  there is nothing to page and the header carries neither arrow. The rule that **exactly one
+  column is visible** likewise describes horizontal on a phone and says nothing about vertical.
+- **A card keeps its own `<` `>` on a phone in both**, because a phone has nothing to drag onto,
+  and **a desktop card is dragged between stages in both**, because a stacked stage is as good a
+  drop target as a column.
+- Vertical is not a phone layout: it is offered at every width, since a desktop board can be as
+  lopsided as a phone's.
 
 A card shows:
 
 - a top row with the title, and a `!` in front of it when the task is important. **No pen and no
-  trashcan.** The pen said what clicking the card already does. The trashcan put the one
-  irreversible action on the preview, a thumb's width from the title you were aiming at. **On a
+  trashcan.** The pen said what clicking the card already does — and there is no pen anywhere in
+  the calendar now. The trashcan put the one irreversible action on the board, a thumb's width
+  from the title you were aiming at. **On a
   phone the row also carries `<` `>`** to move the card to the previous or next stage — `<`
   disabled in todo, `>` disabled in done. **On a desktop it does not**: all three columns are
   there and the card is dragged between them, so arrows on every card are a second way to do what
@@ -418,9 +554,10 @@ title and two lines — the three things worth reading at a glance across three 
 The `!` is a **marker, not a button**: it is read on the card and set in the popup. So on a
 desktop the card holds nothing to press at all, and on a phone only the two arrows.
 
-**A card is deleted from the entry popup, not from the board.** Clicking the card opens its view
-popup; that popup's trashcan deletes the whole entry, and its skip control drops a single
-occurrence of a repeating task. Two taps rather than one, and no reachable trashcan on a surface whose whole
+**A card is deleted from the entry popup, not from the board.** Clicking the card opens the
+entry; that popup's trashcan deletes the whole entry, and its skip control drops a single
+occurrence of a repeating task. Two taps rather than one, and no reachable trashcan on a surface
+whose whole
 purpose is to be tapped.
 
 **There is no sprint control anywhere.** A sprint is derived from the start date, so moving a
@@ -434,10 +571,11 @@ reason a card may carry none that is not worth the care.
 
 On desktop all three columns are shown and a card can be dragged between them, and each header is
 its stage's name, centred, with the `+` at its right and **no `‹` `›`** — with every column on
-screen there is nothing for a per-column pager to page. On a phone one column fills the screen
-and its header pages between the three: `[‹] doing [›]`, the two buttons flanking the stage name
-on a background of their own — because the `<` `>` on a card mean something else entirely, they
-move that card.
+screen there is nothing for a per-column pager to page. On a phone, **horizontally**, one column
+fills the screen and its header pages between the three: `[‹] doing [›]`, the two buttons
+flanking the stage name on a background of their own — because the `<` `>` on a card mean
+something else entirely, they move that card. Stacked, there is nothing off screen to page to,
+so a vertical board's headers carry no arrows at any width.
 
 **The pager fills the header.** The two arrows are equal, flexible halves taking the whole width
 left of the `+`, the stage name centred between them, and each sits on a background **slightly
@@ -458,16 +596,41 @@ rather than wrapping.
 gesture on a column or on a card does nothing; the sprint is stepped by the `‹` `›` in the top
 pane's second row — so no gesture here ever has to be told apart from a drag.
 
-**Exactly one column is visible at a time.** No part of the next column may show at the edge of
-the screen: a sliver of `done` beside `doing` is a layout fault, and the cause is always the
-same — a gap between columns in a strip that is shifted by whole column widths.
+**Exactly one column is visible at a time**, on a phone, horizontally. No part of the next
+column may show at the edge of the screen: a sliver of `done` beside `doing` is a layout fault,
+and the cause is always the same — a gap between columns in a strip that is shifted by whole
+column widths. Stacked, all three stages are on screen by design and this says nothing.
 
 Cards are not reordered by hand; their order comes from importance and start — the important ones
 first, each block by start date.
 
-## Settings
+## The filter and the settings
 
-The gear button opens a centred panel whose top right has an `x` to close.
+**One button opens both.** The hamburger opens a centred panel, titled `Calendar`, whose top
+right has an `x` to close, and it holds two sections: **the filter at the top, the settings
+below it**, under a heading each.
+
+They are one panel because they are one errand. Both are things you adjust about the view in
+front of you and then leave alone, and two buttons a thumb's width apart — one to hide a group,
+one to change the week's first day — asked which of the two a given switch was before you could
+reach it. Merging them also freed the slot the zoom took, which is what keeps the pane at four
+controls and the phone's first row from gaining a fifth.
+
+The filter comes first because it is the half you open often: a group hidden this afternoon, the
+board narrowed to what is important. The settings are the nine rows that change once.
+
+| section | holds |
+| --- | --- |
+| Filter | the groups dropdown; on the board also **important only** and an **assignee** |
+| Settings | the nine rows below |
+
+**Groups stay a dropdown inside the filter, not a list**: one `groups` row saying how many are
+on, which opens to the same checkboxes, each group showing its colour. Any subset can still be
+hidden — the dropdown only folds the list away. Folded is how it starts, and that is now load
+bearing twice over: a repo with twenty groups would otherwise give the panel a filter taller
+than the screen *and* push the nine settings rows below the fold. This is a view filter and is
+remembered per device; groups are *named and coloured* in the settings section's **edit groups**,
+not here.
 
 **Every row is two halves: the label in the left half, its control in the right.** That one rule
 is what the panel was missing. A select, a text box, a checkbox and a date field each began
@@ -497,9 +660,9 @@ popup in its manage-only form — every group with its colour, a `+ add`, a pen 
 list in the panel grew with the repo and pushed the nine settings that never change below the
 fold, which is the one thing a settings panel must not do.
 
-**The panel ends at its last row.** There is no paragraph under it explaining what is stored
-where. That rule is the next two paragraphs, and it belongs in this document rather than on a
-screen you opened to change the theme.
+**The panel ends at its last settings row.** There is no paragraph under it explaining what is
+stored where. That rule is the next two paragraphs, and it belongs in this document rather than
+on a screen you opened to change the theme.
 
 A zone name, not an offset: a plain `UTC+1` is an hour wrong for half the year in any zone with
 daylight saving. This zone, not the device's, decides which day a timed entry lands in, where it
@@ -507,8 +670,10 @@ sits in the week and day grids, and what a time you type means. All-day entries 
 and are never run through it at all. The week view's label carries its ISO week number whether
 *calendar weeks* is on or off: that row governs the month view's gutter and nothing else.
 
-Everything here is stored on the device except the groups, the sprint length and the first sprint
-date, which are data and live in the repo so they follow you and mean the same thing everywhere.
+Everything in either section is stored on the device except the groups, the sprint length and the
+first sprint date, which are data and live in the repo so they follow you and mean the same thing
+everywhere. The board's orientation is a device preference too, and the one of them with no row
+here: it is picked in the zoom, where it is read as a view control rather than as a setting.
 Theme and date format apply to all of Mine, not the calendar alone, and the main app's settings
 shows the same two rows.
 
@@ -516,19 +681,20 @@ shows the same two rows.
 
 The views above describe the desktop. The same screens adapt:
 
-- The top pane is **two rows**: `[board] [filter] [⚙] [⌂]` sharing the first equally, and
-  `[‹] [NOV/26 ▾] [›]` filling the second, at twice their old size and at every phone width, 320
-  px included. The two arrows are equal, the label between them is larger than either, and the
-  caret `▾` on it still opens the picker. Nothing is swiped.
+- The top pane is **two rows**: `[board] [zoom] [☰] [⌂]` sharing the first equally, and
+  `[‹] [NOV/26] [›]` filling the second, at twice their old size and at every phone width, 320
+  px included. The two arrows are equal, **drawn at the size of the icons on the row above**, and
+  the label between them is larger than either and opens the picker. Nothing is swiped.
 - A month cell shows at most two entry lines, then `+N`; a line carries the title alone, with no
   time prefix and no done-rectangle, clipped at the cell's edge. A year cell stays a coloured
   day.
 - Tapping a day in the month or year view opens that day's entries as a centred card, each one
   tappable, with the small `+` and `x` in its top right — so nothing is ever smaller than a
   finger. Tapping a month's name in the year view zooms into that month instead.
-- The kanban shows one column at a time, paged by the `‹` `›` in its header, which **fill the
-  header's width** either side of the stage name on a background brighter than it, and its cards
-  keep their own `<` `>` because there is nothing to drag a card onto.
+- The kanban, **horizontally**, shows one column at a time, paged by the `‹` `›` in its header,
+  which **fill the header's width** either side of the stage name on a background brighter than
+  it. Stacked, all three stages are on screen and no header carries an arrow. Either way its
+  cards keep their own `<` `>`, because there is nothing to drag a card onto.
 
 **Every view fits a 320 CSS px viewport**, with the week gutter on and whatever the entries happen
 to be — the two-row top pane and the double-size kanban header included. **Nothing in the app

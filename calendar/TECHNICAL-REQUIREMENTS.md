@@ -146,9 +146,13 @@ on the numbering before the file exists.
 They are in the repo because the sprint a task belongs to is *derived* from them. On the device
 they would make the same file report a different sprint on a phone than on a laptop, and moving
 a card would then write the wrong date. Everything else — theme, date format, time zone, week
-start, show-calendar-weeks, the group filter — is a device preference in IndexedDB, the group
-filter under `calendar.hiddenGroups` as it already is. Theme and date format are Mine-wide keys,
-not the calendar's.
+start, show-calendar-weeks, the group filter, the board's orientation — is a device preference
+in IndexedDB, the group filter under `calendar.hiddenGroups` and the orientation under
+`calendar.boardOrientation`, which holds `horizontal` or `vertical` and is absent until picked.
+Theme and date format are Mine-wide keys, not the calendar's.
+
+The calendar's own zoom is **not** stored: `S.view.mode` starts at `M` on every open, as the
+anchor starts at today and the sprint at the current one.
 
 ## Sprints
 
@@ -182,6 +186,41 @@ Read the hour with `% 24`: some engines answer `24` for midnight under `hour12: 
 An unknown zone name falls back to the device's rather than throwing, because a bad value in
 settings must not stop the calendar rendering.
 
+## Writes from the popup
+
+The popup holds a draft and writes once. The disk is `createEntry` on a new entry, `updateEntry`
+on a saved one, and `saveOverride` when the scope pair says `this occurrence` — so **one entry
+edit is one commit**, and the occurrence the popup was opened with stays valid for as long as the
+popup is open, because nothing has moved under it.
+
+**Per-row write-through was considered and rejected**, and the reasons are worth keeping, because
+each of them is invisible until it bites:
+
+- the popup would have to re-point at the saved entry after every write. `S.reload()` rebuilds
+  the model, so the occurrence held by the popup is a generation stale the moment a row saves,
+  and its `baseOid` with it. The row that saved looks perfectly correct — it put the value there
+  itself — and the *next* row's save goes out against a dead base and lands as a conflict against
+  a file the user just wrote;
+- a date change moves the file, the day being in the path and the API having no rename, so the
+  popup would have to follow the entry to a new path mid-edit or write to one that no longer
+  exists;
+- several saves can queue before a drain, offline or faster than the chain runs, and
+  `POST /git/trees` is handed one entry per queued item — so the same path would appear more than
+  once in one tree, which the save-once popup cannot produce.
+
+A draft has none of these, and the only thing it gives up is that the popup shows a value the
+file does not yet hold. The disk appearing exactly when the two differ is what says so.
+
+**`snapshot(D)` is what the disk and the prompt both read.** It already exists for the discard
+prompt: the draft's editable parts, serialised, compared against the baseline taken when the
+popup opened. The disk's presence is the same comparison, so there is one definition of *changed*
+and not two to drift apart — a disk that shows when the prompt would stay silent, or the reverse,
+is that one function having grown a second copy.
+
+Switching the scope pair rebuilds the draft from the other file and **must retake the baseline**.
+A baseline left behind reads as changed, which puts a disk in the top row of a popup nobody has
+edited and makes every way out ask about changes nobody made.
+
 ## Modules
 
 ```
@@ -189,9 +228,9 @@ calendar/data.js      the model, the date and sprint arithmetic, and the writes
 calendar/ui.js        DOM helpers, the icon set, and the state every view reads
 calendar/views.js     year, month, week, day, and the day preview
 calendar/kanban.js    the board
-calendar/popup.js     the entry popup and its field sub-popups
-calendar/settings.js  the settings panel
-calendar/app.js       the top pane, navigation, the picker, the filter, the sync line
+calendar/popup.js     the one entry popup: its rows, their inline editors, their writes
+calendar/settings.js  the hamburger panel: the filter section above the settings section
+calendar/app.js       the top pane, navigation, the picker, the zoom, the sync line
 shared/prefs.js       theme and date format, which belong to Mine rather than to one app
 ```
 
@@ -203,14 +242,39 @@ back and making an import cycle.
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.
 
 **There are two overlay mechanisms and no third.** `openPop` positions a dropdown under the
-button that opened it, which only the date picker and the filter do; everything else carries
-`.centred` and is only unhidden, by `openCentred`. A third mechanism is how the day preview came
+button that opened it, which only the date picker and the zoom do; everything else carries
+`.centred` and is only unhidden, by `openCentred`. The filter was the third user of `openPop`
+and is now a section of the centred panel, so the count went down rather than up when the zoom
+arrived. **A field editor is neither**: it is drawn inside its own row, so the popup-over-a-popup
+layer — `#sub` and `#sub-scrim` — is no longer part of editing an entry at all. It survives for
+the group manager alone, which is reached from the panel and edits no entry.
+
+The one popup means one builder. There is no `viewCard` beside `fillForm` any more: a row is
+drawn from the same `FIELDS` entry whether it is showing a value or editing one, which is what
+stops the two from disagreeing about a field — the preview showing the stage while the form hid
+it was exactly that, in two functions that had to be kept in step by hand. A third mechanism is
+how the day preview came
 to be anchored by script and then dragged back to the middle with `left: 50% !important` — one
 rule undoing another, in two files.
 
 Every icon comes from the one table in `ui.js`. The buttons in `index.html` are empty and are
 filled by `icon()` at boot, so an icon cannot drift between a hand-written path in the markup and
 the table the views draw from.
+
+## Width
+
+`#cal` carries **no `max-width`**: the pane, the calendar window and the sync line are as wide as
+the browser. The cap lives on the board alone — `.view.vK .kb` is `max-width: 78rem` and
+`margin-inline: auto`, in both orientations — so the pane cannot change width when the view does.
+A cap put back on `#cal` for the board's sake is the mistake this split exists to prevent: it
+narrows the pane with it, and the pane then jumps every time the board icon is pressed.
+
+The year grid is capped at six columns rather than by a container width, with
+`repeat(auto-fill, minmax(max(10.5rem, (100% - 5 * .7rem) / 6), 1fr))` against its `gap: .7rem`.
+The `max()` is what stops `auto-fill` from adding a seventh track on a wide monitor while still
+letting the grid reflow to four, three and two as it narrows. **The five gaps have to be
+subtracted**: a bare `100% / 6` makes six tracks plus five gaps wider than the container, so
+`auto-fill` fits five and a year reads as 5 + 5 + 2 — the opposite of the fix.
 
 ## Service worker version
 
