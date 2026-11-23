@@ -1,0 +1,110 @@
+/grill-me this repo has had multiple iterations on the calendar app. Your task is to go through the codebase and remove any legacy code and spaghetti code. Do not overcomplicate. Ignore backwards compatibility. This is repo is not yet live. The sample data in mine-data is just samples, you can change them to the latest version (e.g. where priority is a boolean instead of a number). Also update the unit tests. If unsure about what and how to do a specific task then quickly prompt the user for input.
+
+---
+
+<task-notification>
+<task-id>bmww5ualw</task-id>
+<tool-use-id>toolu_014QDjPVqGgojue3kBmVFR7C</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/bmww5ualw.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the test suite baseline" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bsist1q49</task-id>
+<tool-use-id>toolu_01ANdheZB8w1WCpcGDqVsuz1</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/bsist1q49.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite in the background" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bg1n06px5</task-id>
+<tool-use-id>toolu_01SNFT8Ly9bV2yxGaqqUetd6</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/bg1n06px5.output</output-file>
+<status>failed</status>
+<summary>Background command "Rerun the full suite cleanly" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bhyvanto2</task-id>
+<tool-use-id>toolu_01NNrGNLHuR4CoUr5n4BGjZt</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/bhyvanto2.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite in the background" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b3i1w010w</task-id>
+<tool-use-id>toolu_01HwoFpP9A8oeKZnwexV4V2W</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/b3i1w010w.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the suite with screenshots" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>box7x8xlq</task-id>
+<tool-use-id>toolu_01LJxDssj4y6cM1ukDrhe7Pd</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/box7x8xlq.output</output-file>
+<status>completed</status>
+<summary>Monitor "screenshot test run finishing" stream ended</summary>
+<event>all checks passed
+rm: cannot remove '/tmp/tmp.ifM7sRtCP1': Directory not empty
+EXIT=0</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bv6bgq786</task-id>
+<tool-use-id>toolu_0177ZtToUdSbWeWG8zRc57Br</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/bv6bgq786.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the screenshot run to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1jts0z7l</task-id>
+<tool-use-id>toolu_013MkmGAG84t3GfZQC3dNT2V</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/b1jts0z7l.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the day-preview shot" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bfhoh1kug</task-id>
+<tool-use-id>toolu_018L61wHF2rPhz53iLznipHd</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/bfhoh1kug.output</output-file>
+<status>completed</status>
+<summary>Background command "Final run with the day-preview screenshot" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>busv9o9hw</task-id>
+<tool-use-id>toolu_01AyYt3EsPB6MKwy8p35TGqN</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/0c0c34d2-b023-4d96-b758-55afdd70d5b3/tasks/busv9o9hw.output</output-file>
+<status>completed</status>
+<summary>Monitor "final test run finishing" stream ended</summary>
+<event>rm: cannot remove '/tmp/tmp.VJ3CBZvIi8': Directory not empty
+EXIT=0</event>
+</task-notification>
+
+---
+
+commit and push. I will then test on my android/browser and provide feedback.
