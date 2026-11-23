@@ -1,0 +1,48 @@
+/grill-me This calendar app needs a few fixes, which I provided below. Your task is to question me about these if they contradict with the existing app or requirements (normal, technical, test, etc). After collecting the user input update the respective requirement markdown files. Prompt the user if things are unclear or if you need additional input. Do not guess. 
+```
+in calendar/kanban desktop main view
+- make calendar full page (horizontally as well) in browser
+- do not make the kanban full page though
+- more space between '<', 'SPRINT'/'DATE', '>' icons, approximately have the '>' icon size
+
+in calendar/kanban mobile main view
+- when clicking on the date show the calendar selection, when clicking on a sprint this behaviour is already implemented
+- make the second header row '<' and '>' icon same size as the top row icons
+
+in calendar/kanban view:
+- Replace the filter button with a zoom button where the user can select 'day', 'week', 'month', 'year' for calendar and 'vertical', 'horizontal' option. In 'vertical' the stages are stacked vertically.
+
+in calendar/kanban view:
+- remove calendar/sprint selection downwards arrow 
+```
+
+---
+
+I forgot the filter requirement. Good you asked. Put the filter and settings in one 'hamburger' icon button. At the top show the filter and below show the settings
+
+---
+
+Great work. Now the same for these additional requirements:
+
+
+<pasted_content id="2021">
+```
+in calendar item popup
+- when selecting a category, then save directly after a category is selected
+
+in calendar item preview/edit view:
+- merge these actually
+- keep the icon on the left, remove the text, e.g. 'o' instead of 'o category' (same as preview)
+- when user clicks on a field like category or details then this becomes active. The user can edit and save or discard with respective two buttons. 
+- remove the edit 'pen' icons as fields can be directly edited.
+- add the text/category/... directly after the icon. Add a 'delete icon at the right of the category/location/.. to delete
+```
+</pasted_content id="2021">
+
+---
+
+can we fix the flags by making row changes not a direct save but only when task/event is saved when closing? e.g. save button appears if row changes. Would be fine for me as well
+
+---
+
+Great work. Now commit the changes. Then implement the features, commit and push. I will then test on my phone/laptop and provide feedback.
