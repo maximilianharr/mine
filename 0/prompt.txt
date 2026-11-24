@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bco7466ff</task-id>
+<tool-use-id>toolu_01V5bLnajstNYHNJ6AD9S5TX</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bco7466ff.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the suite with important on events" completed (exit code 0)</summary>
+</task-notification>
