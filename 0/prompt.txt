@@ -1,0 +1,14 @@
+/grill-me Your task is to implement these features:
+
+```
+In task/event desktop popup
+- Enter shall close row edit not ticket
+- Shift+Enter shall add a new row to the text field
+
+In task/event popup
+- In repeating events
+  - remove the 'Part of a repeating entry' row
+  - remove the 'skip this one' button. This behavior shall be implemented if the event is deleted and 'This occurrence' is selected
+  - Put 'this occurence' and 'whole series' to the top row right to the task icon and rename to 'this event' and 'all events'
+- When editing the details, remove the 'Notes' line and the 'Raw markdown - exactly what lands in the file' to make it more lean
+```
