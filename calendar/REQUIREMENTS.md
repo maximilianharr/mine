@@ -246,6 +246,7 @@ openings — and a save that is there is a save with something to do.
 [☑]                          [trash] [disk] [x]       a row has been changed
 [☑] [📅]                             [disk] [x]       a new one: the type is still a choice,
                                                       and the disk is disabled until it has a title
+[☑] [this|all]               [trash] [disk] [x]       a repeating one: the scope pair
 ```
 
 The top row carries **the type**, then right-aligned a trashcan to delete the entry, the disk
@@ -253,14 +254,15 @@ once there is something to save, and an `x` to close. On an entry that already e
 a **marker, not a choice** — a ticked square for a task, a calendar page for an event, shown and
 not pressable — because a task turned into an event drops its stage, its importance and its
 estimate, and the type is settled when the entry is made. On a new entry it is the pair, with the
-event selected.
+event selected. On a repeating one the **scope pair** follows the marker, left of the gap —
+described below.
 
 The trashcan stays at the left of that group: deleting is not an edit of a field, it writes at
 once whatever the draft holds, and the board's rule that a card is deleted from its popup in two
 taps depends on the trashcan being on the first of them.
 
-Below the row, in this order: the **title**, the **scope and skip** row on a repeating entry, the
-**when**, the **toggle row**, the **five field rows**, and the **details body** last.
+Below the row, in this order: the **title**, the **when**, the **toggle row**, the **five field
+rows**, and the **details body** last. Nothing about repeating is among them.
 
 ### A row, and a row being edited
 
@@ -315,6 +317,15 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
   into is not undone by leaving it, which is what a tap meant for the row below would otherwise
   do. Clearing the field is the trashcan beside the `x`, and undoing the edit of a whole entry is
   the popup's own `x`. There is exactly one save in this popup and it is the one in the top row.
+- **Enter closes the row, and only the row.** It used to submit the form, so the key that ended
+  a word saved the entry and left for the calendar — the one gesture a popup opened to type one
+  word must not make. It closes the row like the row's own `x`, keeping what is in it, and the
+  disk in the top row stays the only thing that writes. **Shift+Enter is left alone**, which is
+  what puts a new line in the details textarea. Inside a field's own popup Enter is not the row's
+  Enter and does nothing: that popup closes by its `x` or by Escape.
+- **There is no keyboard save.** The disk is a button in the top row, reached by Tab and pressed
+  by Enter or space like any other. A shortcut that wrote and closed would be the thing Enter was
+  just stopped from doing, under a different key.
 - **Only one row is open at a time**, and a line's input and a field's popup are never both open.
   Opening either closes the other, which likewise keeps what is in it.
 - **Escape unwinds the one layer there is.** A field popup swallows it, so Escape inside a field
@@ -345,9 +356,11 @@ fields everywhere that order is a list of fields; it simply is not one of the ro
 rows do, so the old rule that a sub-popup never writes is not a carve-out any more: nothing
 below the top row's disk writes at all. **The body is the one field whose open shape still
 carries a line of its own** — a textarea cannot have its name and its buttons beside it — and
-that line is the same header the closed body already shows, so nothing moves there either. The
-group manager behind *edit groups* is the one overlay here that does write, and it is not editing
-a field of an entry.
+that line is the same header the closed body already shows, so nothing moves there either. **That
+header is the only name it carries**: the open body is the textarea and nothing else. A label
+reading *Notes* under a header reading *Details* named the field twice, and a line explaining that
+the box held raw markdown said what the monospace face already says. The group manager behind
+*edit groups* is the one overlay here that does write, and it is not editing a field of an entry.
 
 **Picking a category takes it.** Tapping a group puts it in the draft and closes the popup —
 there is nothing more to say about a choice from a list, and with no save in it there is nothing
@@ -438,15 +451,25 @@ rather than a rule about which row may be touched first.
 
 ### A repeating entry
 
-A repeating entry says so under the title, and carries two things the rest do not:
+A repeating entry carries one thing the rest do not: **the scope pair**, `this` or `all`, in the
+top row immediately right of the type marker. It governs **what the two writes in that row do** —
+the disk and the trashcan both — and it is one choice about one write, which is what it always
+was. Switching it rebuilds the draft from the other file, so it also resets what a discard is
+measured against.
 
-- **the scope pair**, `this occurrence` or `whole series`, which governs **what the save
-  writes**. It is one choice about one write, which is what it always was; it is here rather than
-  absent because this popup can write, and the objection it was once kept out of the preview for
-  was that a preview could not. Switching it rebuilds the draft from the other file, so it also
-  resets what a discard is measured against.
-- **`skip this one`**, which drops a single occurrence. That is an action on the entry like
-  deleting it, not a change to a field, so it sits with the scope rather than among the rows.
+It sits in the top row because that is where the controls it governs are. Below the title it
+needed a line saying *Part of a repeating entry* to explain itself; beside the marker, between
+the type and the trashcan, it explains itself, and that line is gone with it.
+
+**It reads `this` and `all`, not the noun.** The entry behind it is a task as often as an event,
+and the marker a thumb's width to its left already says which; a pair reading *all events* above
+a ticked square would be wrong on half the entries that have one. Two words also fit a top row
+that already holds a marker, a trashcan, a disk and an `x` without wrapping on a phone.
+
+**There is no `skip this one`.** Skipping one occurrence is what the trashcan does when the pair
+says `this` — a delete scoped the same way a save is, by the same control, rather than a link
+that did one of the two things on the row by another name. With `all` the trashcan deletes the
+whole entry, which is what it always did. Both ask first.
 
 Only the series carries the rule, so **the repetition row is absent on an occurrence override** —
 a rule the popup must not rewrite has no row at all.
@@ -458,8 +481,8 @@ the background and is reported in the sync line, not in the popup. **Both ways o
 calendar**, the disk and the `x` alike. The cell or the card behind it shows the result anyway,
 and there is no preview left to step back to.
 
-Deleting the entry and skipping an occurrence also close the popup, because neither leaves
-anything to look at.
+Deleting the entry, by either scope, also closes the popup, because it leaves nothing to look
+at.
 
 ### Discarding an edit
 
@@ -606,10 +629,9 @@ The `!` is a **marker, not a button**: it is read on the card and set in the pop
 desktop the card holds nothing to press at all, and on a phone only the two arrows.
 
 **A card is deleted from the entry popup, not from the board.** Clicking the card opens the
-entry; that popup's trashcan deletes the whole entry, and its skip control drops a single
-occurrence of a repeating task. Two taps rather than one, and no reachable trashcan on a surface
-whose whole
-purpose is to be tapped.
+entry; that popup's trashcan deletes the whole entry, or drops the single occurrence of a
+repeating task when its scope pair says `this`. Two taps rather than one, and no reachable
+trashcan on a surface whose whole purpose is to be tapped.
 
 **There is no sprint control anywhere.** A sprint is derived from the start date, so moving a
 task to another sprint *is* changing its date, and the date is the only way to do it. A control

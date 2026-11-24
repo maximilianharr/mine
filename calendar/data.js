@@ -417,11 +417,14 @@ export const deleteEntry = path => remove(path);
 
 // ---- occurrences of a series ------------------------------------------------------------
 
-// A plain skip, where there is nothing to record: exdate on the rule file.
+// A plain skip, where there is nothing to record: exdate on the rule file. An override for the
+// skipped occurrence goes with it, in the same commit: expandRule tests exdate *before* it looks
+// an override up, so a file left behind would be read by nothing and shown nowhere.
 export async function skipOccurrence(occ) {
   const ex = list(occ.seriesData.exdate).map(String);
   if (!ex.includes(occ.recId)) ex.push(occ.recId);
   ex.sort();
+  if (occ.override) await deleteEntry(occ.path);
   return updateEntry(occ.seriesPath, { ...occ.seriesData, exdate: ex }, occ.seriesBody, { move: false });
 }
 

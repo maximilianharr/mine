@@ -75,6 +75,11 @@ const alertText = n => n === 0 ? 'at start' : `${n} min before`;
 // Only the series carries the rule: an occurrence override must never rewrite it.
 const canRule = () => !D.occ || D.scope === 'series' || !D.occ.seriesId;
 
+// The scope pair governs the trashcan as well as the disk. `this` skips the one occurrence -
+// which is what the `skip this one` link beside the pair used to do - and `all` deletes the rule
+// file. One choice, read by both writes in the row it sits in.
+const skipping = () => !!D.occ && !!D.occ.seriesId && D.scope === 'occurrence';
+
 // ---- opening -------------------------------------------------------------------------------
 
 export function openNew(seed = {}) {
@@ -192,6 +197,19 @@ $('#popup').addEventListener('click', e => {
   if (justClosed === null && e.target === $('#popup')) closePopup();
 });
 
+// Enter in a row's editor closes the row; it does not submit. The editor has been writing into
+// the draft all along, so there is nothing for Enter to accept - and the key that ends a word
+// must not also commit the entry and close the popup. Shift+Enter is handed straight back to the
+// browser, whose own default is what puts a new line in the body's textarea, which is the whole
+// reason that case is a bail-out and not code. `#fpop` lives outside `#f-rows`, so a field's own
+// popup is untouched: it still closes by its x or by Escape.
+$('#f-rows').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  if (!/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) return;   // a row's own buttons still work
+  e.preventDefault();
+  closeRow();
+});
+
 // ---- rows ----------------------------------------------------------------------------------
 // A row is the icon, then the value - no field name beside it. Clicking it opens its control
 // without moving the row: an input in the line, or a popup anchored under it.
@@ -202,10 +220,7 @@ $('#popup').addEventListener('click', e => {
 
 function fillForm() {
   iconRow();
-  const kids = [titleRow()];
-  if (D.occ && D.occ.seriesId) kids.push(scopeRow());
-  kids.push(whenRow(), flagsRow(), ...fieldRows(), bodyBlock());
-  $('#f-rows').replaceChildren(...kids);
+  $('#f-rows').replaceChildren(titleRow(), whenRow(), flagsRow(), ...fieldRows(), bodyBlock());
 }
 
 const is = key => !!active && active.key === key;
@@ -304,8 +319,9 @@ function live(node, apply) {
 }
 
 // A ticked square and a calendar page choose the type on a new entry; on one that exists the
-// type is a marker, shown and not pressable. Then the trashcan, the disk once there is
-// something to save, and the x - rightmost in every popup in Mine.
+// type is a marker, shown and not pressable. On a repeating entry the scope pair follows it.
+// Then the trashcan, the disk once there is something to save, and the x - rightmost in every
+// popup in Mine.
 function iconRow() {
   const kids = [];
   if (D.occ) {
@@ -321,11 +337,12 @@ function iconRow() {
     b.addEventListener('click', () => { D.type = t; redraw(); });
     kids.push(b);
   }
+  if (D.occ && D.occ.seriesId) kids.push(scopePair());
   kids.push(el('span', 'spacer'));
 
   if (D.occ) {
-    const t = iconBtn('trash', D.occ.seriesId ? 'Delete the whole repeating entry' : 'Delete',
-      'bad');
+    const t = iconBtn('trash', !D.occ.seriesId ? 'Delete'
+      : skipping() ? 'Skip this occurrence' : 'Delete every occurrence', 'bad');
     t.addEventListener('click', () => removeEntry(D.occ));
     kids.push(t);
   }
@@ -340,6 +357,34 @@ function iconRow() {
   kids.push(x);
 
   $('#f-icons').replaceChildren(...kids);
+}
+
+// A repeating entry's one choice about one write, in the row with the two controls it governs:
+// `this` writes an override for this occurrence and skips it on the trashcan, `all` rewrites the
+// rule file and deletes it. It reads `this` and `all` and not the noun, because the noun is a
+// task on one entry and an event on the next while the marker beside it already says which.
+//
+// Switching it rebuilds the draft from the other file, so the baseline a discard is measured
+// against has to be retaken with it - left behind it reads as changed, which puts a disk in the
+// top row of a popup nobody has edited.
+function scopePair() {
+  const group = el('div', 'btngroup');
+  group.setAttribute('role', 'radiogroup');
+  group.setAttribute('aria-label', 'Edit scope');
+  for (const [v, text, aria] of [['occurrence', 'this', 'This occurrence'],
+    ['series', 'all', 'All occurrences']]) {
+    const b = el('button', 'seg', text);
+    b.type = 'button';
+    b.setAttribute('aria-label', aria);
+    b.setAttribute('aria-pressed', String(D.scope === v));
+    b.addEventListener('click', () => {
+      D = draft(D.occ, v, {});
+      D.clean = snapshot(D);
+      redraw();
+    });
+    group.append(b);
+  }
+  return group;
 }
 
 // The title is a row too: text until clicked, then an input in the same line at the same size.
@@ -380,37 +425,6 @@ function whenText() {
     : D.endTime && D.endTime !== D.startTime ? `${D.startTime}–${D.endTime}`
       : D.startTime || '';
   return when ? `${day} · ${when}` : day;
-}
-
-// A repeating entry: the scope pair, which governs what the save writes, and the skip. Switching
-// scope rebuilds the draft from the other file, so the baseline a discard is measured against
-// has to be retaken with it - left behind it reads as changed, which puts a disk in the top row
-// of a popup nobody has edited.
-function scopeRow() {
-  const wrap = el('div', 'scope');
-  wrap.append(el('span', 'scope-note', 'Part of a repeating entry.'));
-  const group = el('div', 'btngroup');
-  group.setAttribute('role', 'radiogroup');
-  group.setAttribute('aria-label', 'Edit scope');
-  for (const [v, text] of [['occurrence', 'This occurrence'], ['series', 'Whole series']]) {
-    const b = el('button', 'seg', text);
-    b.type = 'button';
-    b.setAttribute('aria-pressed', String(D.scope === v));
-    b.addEventListener('click', () => {
-      D = draft(D.occ, v, {});
-      D.clean = snapshot(D);
-      redraw();
-    });
-    group.append(b);
-  }
-  const rep = el('div', 'vrep');
-  const skip = el('button', 'link', 'skip this one');
-  skip.type = 'button';
-  skip.addEventListener('click', () =>
-    run(`skip ${D.occ.title} on ${D.occ.dayKey}`, () => skipOccurrence(D.occ)));
-  rep.append(group, skip);
-  wrap.append(rep);
-  return wrap;
 }
 
 // Five of the six fields are rows; the sixth is the body, at the foot. They are in the canonical
@@ -684,14 +698,18 @@ function hhmm(text) {
   return h < 24 && min < 60 ? `${pad(h)}:${pad(min)}` : null;
 }
 
+// The bare textarea, with no name and no hint of its own: the row it opens in already carries a
+// header reading DETAILS beside the same icon, so a label under it named the field twice and a
+// line about raw markdown said what the monospace face says. The name lives on, unseen, for a
+// screen reader, which has no header to read the textarea against.
 function bodyEditor(cur) {
   const t = el('textarea');
   t.rows = 8;
   t.spellcheck = false;
   t.className = 'body-in';
+  t.setAttribute('aria-label', 'Details');
   t.value = cur || '';
-  return { node: field('Notes', t, 'Raw markdown — exactly what lands in the file.'),
-           read: () => t.value };
+  return { node: t, read: () => t.value };
 }
 
 // One list, two forms, and the two sets of controls never appear together. From the category
@@ -986,7 +1004,14 @@ $('#entry-form').addEventListener('submit', async e => {
   });
 });
 
+// The one trashcan, reading the scope pair beside it. Both ways ask first: a skip is reached
+// from a red trashcan now rather than from a link, and it takes an override file with it, which
+// no hand edit of the rule file puts back.
 function removeEntry(occ) {
+  if (skipping()) {
+    if (!confirm(`Skip "${occ.title}" on ${occ.dayKey}?`)) return;
+    return run(`skip ${occ.title} on ${occ.dayKey}`, () => skipOccurrence(occ));
+  }
   const what = occ.seriesId
     ? `Delete the whole repeating entry "${occ.title}"? Its override files stay behind.`
     : `Delete "${occ.title}"?`;

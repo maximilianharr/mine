@@ -81,7 +81,10 @@ moved, retitled, cancelled — is an override file in the date tree carrying `se
 `recurrence-id:`, holding only the keys that differ. The rule file is never rewritten, and since
 each override is a fresh path it cannot conflict, even when two devices do it offline.
 
-`exdate:` covers a plain skip where there is nothing to record.
+`exdate:` covers a plain skip where there is nothing to record — what the popup's trashcan writes
+when the scope pair says `this`. It takes any override file for that occurrence with it, in the
+same commit: the expansion tests `exdate` *before* it looks an override up, so a file left behind
+would be read by nothing and shown nowhere.
 
 ## Rendering a range
 
@@ -196,9 +199,22 @@ settings must not stop the calendar rendering.
 ## Writes from the popup
 
 The popup holds a draft and writes once. The disk is `createEntry` on a new entry, `updateEntry`
-on a saved one, and `saveOverride` when the scope pair says `this occurrence` — so **one entry
-edit is one commit**, and the occurrence the popup was opened with stays valid for as long as the
-popup is open, because nothing has moved under it.
+on a saved one, and `saveOverride` when the scope pair says `this` — so **one entry edit is one
+commit**, and the occurrence the popup was opened with stays valid for as long as the popup is
+open, because nothing has moved under it.
+
+**The trashcan reads the same pair.** On a repeating entry `all` is `deleteEntry` on the rule
+file, as it always was, and `this` is `skipOccurrence` — one `exdate` line plus the removal of any
+override for that occurrence. One choice, read by both writes in the row it sits in, so there is
+no second control to keep in step with it.
+
+**Enter in a row does not submit.** The popup is a real `<form>`, so Enter in any of its inputs
+used to trigger implicit submission: the key that ended a word ran the disk's handler and closed
+the popup. One delegated `keydown` on `#f-rows` calls `closeRow()` and prevents the default
+instead. It is on `#f-rows` rather than on each editor because that node is never replaced — only
+its children are — and because `#fpop` is outside it, which is what leaves a field's own popup
+alone without a second rule saying so. `e.shiftKey` bails out before anything, so Shift+Enter is
+the browser's own newline and costs no code.
 
 **Per-row write-through was considered and rejected**, and the reasons are worth keeping, because
 each of them is invisible until it bites:

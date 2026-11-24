@@ -187,19 +187,48 @@ correctly but was built in the old order cannot pass — and a check that only c
 buttons would have passed on the old order, which is why this one reads their positions. That the
 top row runs trashcan, disk, `x` in that order once the disk is showing.
 
-**A repeating entry, which the fixture now carries.** Nothing in it repeated before, so the
-scope pair, the skip and the override paths had no entry to run against at all. That the popup
-says the entry repeats, carries `skip this one`, **and carries the scope pair** — which the
-read-only preview deliberately did not, so this check comes out the other way round now and a
-copy of the old assertion cannot survive the merge. That the pair sits **above** the rows it
-governs, in document order. That a save with `this occurrence` writes an override and leaves the
-series file alone, and that the same change saved with `whole series` writes the series and no
-override — the two must be checked separately, or a scope that is read but ignored passes. That
-the **repetition row is absent** on an occurrence override, since only the series carries the
-rule. That switching scope and then leaving **asks nothing** and leaves **no disk** showing:
-switching rebuilds the draft from the other file, so it has to retake the baseline too, and a
-baseline left behind is what puts a disk in an untouched popup and makes every way out ask about
-changes nobody made.
+**A repeating entry, which the fixture carries.** Nothing in it repeated before, so the scope
+pair and the override paths had no entry to run against at all. That the pair is in the **top
+row**, reading `this` and `all`, **right of the type marker** in document order, and named in
+full — `This occurrence`, `All occurrences` — for a screen reader that has two words to go on.
+That it is **on one line with the `x`** at 900px *and at 360px*: `.iconbar` wraps, so a pair that
+stretched would put the trashcan and the `x` on a line of their own, and only the narrow
+measurement can catch that. That **nothing of it is left among the rows** — no `.seg`, no
+`.scope`, no line saying the entry repeats, no `skip this one`. That a save with `this` writes an
+override and leaves the series file alone, and that the same change saved with `all` writes the
+series and no override — the two must be checked separately, or a scope that is read but ignored
+passes. That the **repetition row is absent** on an occurrence override, since only the series
+carries the rule. That switching scope and then leaving **asks nothing** and leaves **no disk**
+showing: switching rebuilds the draft from the other file, so it has to retake the baseline too,
+and a baseline left behind is what puts a disk in an untouched popup and makes every way out ask
+about changes nobody made.
+
+**The trashcan reads the scope pair.** `skip this one` is gone and the trashcan does both jobs, so
+which one it does has to be checked from the pair rather than taken on trust. That with `this` it
+is labelled `Skip this occurrence`, **asks first** — `Skip "…" on YYYY-MM-DD?` — and then leaves
+the rule file **in place with an `exdate` added**, not deleted; that with `all` it is labelled
+`Delete every occurrence`, asks about the whole entry, still warns that override files stay
+behind, and the rule file is **gone**. `confirm()` has no answer in a headless browser, so it is
+stubbed and the question read back from what the stub recorded — which is also the only way to
+check the wording. These two run **last** of the repeating checks, because the second deletes the
+fixture's only rule file.
+
+**Enter closes the row, not the entry.** The popup is a real `<form>`, so this is about native
+implicit submission: a synthetic `KeyboardEvent` cannot trigger it and so cannot prove it has
+stopped. The press goes through CDP's `Input.dispatchKeyEvent` with the element focused first,
+because the one listener reads the event's target. That Enter in the title row **leaves the popup
+open**, closes the row it was pressed in, leaves the typed title in the draft, and **writes
+nothing** — compared against the queue length before the press, not against zero, since earlier
+checks have saved entries. That **Shift+Enter in the details textarea leaves the row open and
+puts a newline in it**, which is the browser's own default and the whole reason that case is a
+bail-out. That plain Enter in the same textarea closes the row and keeps the text. And that Enter
+**inside a field's own popup** does neither — `#fpop` is outside `#f-rows`, and that boundary is
+what one listener buys instead of five.
+
+**The open details row carries no name of its own.** That it holds **no `label` and no `small`**,
+no line about raw markdown and no second reading of *Notes*, the row's own `DETAILS` header being
+the one name it needs — and that the textarea carries `aria-label="Details"`, unseen, because a
+screen reader has no header to read it against.
 
 **Discarding asks once, and only when there is something to lose.** That the `x` on a popup
 nothing has been typed into closes it with no prompt; that changing something and then pressing

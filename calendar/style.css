@@ -451,8 +451,11 @@ select {
 .seg:first-child { border-radius: .5rem 0 0 .5rem; }
 .seg:last-child { border-radius: 0 .5rem .5rem 0; border-left: 0; }
 .seg[aria-pressed="true"] { color: var(--bg); background: var(--accent); border-color: var(--accent); }
-.scope { margin-top: .7rem; }
-.scope-note { font-size: .75rem; color: var(--muted); }
+/* A repeating entry's scope pair rides in the top row beside the type marker, so it hugs its two
+   words instead of spanning the card the way a pair under the title did. `.iconbar` wraps, and a
+   stretching pair would push the trashcan, the disk and the x onto a second line. */
+.iconbar .btngroup { margin: 0 .2rem; }
+.iconbar .seg { flex: none; padding: .35rem .55rem; }
 .body-in {
   display: block; width: 100%; margin-top: .3rem; padding: .7rem;
   font: .85rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -575,9 +578,6 @@ select {
   .panel { max-height: 88dvh; }
 }
 
-/* ---- the repeating entry's scope and skip ---- */
-/* The pair governs what the save writes, so it sits above the rows it applies to. */
-.vrep { display: flex; align-items: center; justify-content: space-between; gap: .5rem; margin-top: .5rem; }
 .vbody { margin-top: .5rem; padding-top: .5rem; border-top: 1px solid var(--line); }
 
 /* ---- a rendered markdown body ---- */

@@ -162,6 +162,37 @@ const save = async () => {
   await sleep(500);
 };
 const hasDisk = () => ev(`!!document.querySelector('#f-icons [aria-label="Save"]')`);
+// A real key through CDP, not a synthetic KeyboardEvent: implicit form submission is native
+// behaviour, so only a real Enter can show that it no longer commits the entry and closes the
+// popup. The target is focused first, because the one listener reads the event's target.
+const pressEnter = async (sel, shift = false) => {
+  await ev(`document.querySelector('${sel}').focus()`);
+  const k = { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13,
+    modifiers: shift ? 8 : 0 };
+  await send('Input.dispatchKeyEvent', { ...k, type: 'keyDown', text: '\r' });
+  await send('Input.dispatchKeyEvent', { ...k, type: 'keyUp' });
+  await sleep(350);
+};
+// confirm() has no answer in a headless browser, so the trashcan's question is stubbed and read
+// back from what the stub recorded. A navigation wipes it, so it is set after each open().
+const stubConfirm = answer => ev(
+  `(window.__asked = [], window.confirm = q => (window.__asked.push(q), ${answer}), true)`);
+const asked = () => ev(`window.__asked`);
+// The repeating entry the fixture carries - a weekly task, so skipping one occurrence leaves the
+// rest, and its rule file is found by its text rather than by a path the checks must know.
+const REPEATING = `[...document.querySelectorAll('.eline')]
+  .find(l => /water the plants/i.test(l.textContent))`;
+const seriesFile = () => ev(`(async () => {
+  const all = await new Promise(r => {
+    const q = indexedDB.open('mine', 1);
+    q.onsuccess = () => {
+      const t = q.result.transaction('files', 'readonly').objectStore('files').getAll();
+      t.onsuccess = () => r(t.result);
+    };
+  });
+  const f = all.find(f => (f.text || '').includes('Water the plants'));
+  return f ? f.text : 'gone';
+})()`);
 const queueLen = () => ev(`(async () => {
   const db = await new Promise(res => { const r = indexedDB.open('mine', 1); r.onsuccess = () => res(r.result); });
   return await new Promise(res => {
@@ -1435,33 +1466,121 @@ ok('and the whole body is shown, not a clipped line',
   md.text.includes('dns cutover') && md.text.includes('spec'), md.text);
 await closeForm();
 
+// ---- 8b. Enter closes the row, and the lean body row -----------------------------------------
+// Enter in a row's editor used to submit the form, which saved the entry and closed the popup:
+// the key that ends a word committed the lot and left the calendar. It closes the row instead,
+// and the draft keeps what was typed, the editor having written into it all along. A real press
+// through CDP, because implicit submission is native and a synthetic event cannot trigger it.
+await open();
+await newEntry();
+const q0 = await queueLen();
+await typeIn('title', 'Enter closes the row');
+await pressEnter('#f-rows [data-field="title"] input');
+const afterEnter = await ev(`({
+  popup: !document.querySelector('#popup').hidden,
+  editors: document.querySelectorAll('#f-rows input, #f-rows textarea').length,
+  title: document.querySelector('#f-rows [data-field="title"] .ftap').textContent })`);
+eq('Enter leaves the popup open', afterEnter.popup, true);
+eq('and closes the row it was pressed in', afterEnter.editors, 0);
+eq('and the draft keeps what was typed', afterEnter.title, 'Enter closes the row');
+eq('and nothing was written', await queueLen(), q0);
+
+// The body row, open: no label and no hint of its own, the row's own DETAILS header being the
+// one name it needs - and the textarea carries that name unseen, for a screen reader.
+await openRow('body');
+const bodyOpen = await ev(`({
+  labels: document.querySelectorAll('#f-rows [data-field="body"] label, '
+    + '#f-rows [data-field="body"] small').length,
+  text: document.querySelector('#f-rows [data-field="body"]').textContent,
+  aria: document.querySelector('#f-rows [data-field="body"] textarea')
+    .getAttribute('aria-label') })`);
+eq('the open body row carries no label or hint of its own', bodyOpen.labels, 0);
+ok('and no raw-markdown line', !/raw markdown/i.test(bodyOpen.text), bodyOpen.text);
+ok('nor a second name for the field', !/notes/i.test(bodyOpen.text), bodyOpen.text);
+eq('the textarea is named for a screen reader', bodyOpen.aria, 'Details');
+
+// Shift+Enter is handed back to the browser, so it does in the textarea what it always did.
+await ev(`(() => {
+  const t = document.querySelector('#f-rows [data-field="body"] textarea');
+  t.value = 'first';
+  t.dispatchEvent(new Event('input', { bubbles: true }));
+  t.focus();
+  t.setSelectionRange(5, 5);
+})()`);
+await pressEnter('#f-rows [data-field="body"] textarea', true);
+const shifted = await ev(`(() => {
+  const t = document.querySelector('#f-rows [data-field="body"] textarea');
+  return { open: !!t, value: t ? t.value : null };
+})()`);
+eq('Shift+Enter leaves the body row open', shifted.open, true);
+eq('and puts a new line in the textarea', shifted.value, 'first\n');
+
+// Plain Enter in the textarea closes the row like any other, and what was typed is in the draft.
+await pressEnter('#f-rows [data-field="body"] textarea', false);
+const bodyClosed = await ev(`({
+  editor: !!document.querySelector('#f-rows [data-field="body"] textarea'),
+  popup: !document.querySelector('#popup').hidden,
+  shown: document.querySelector('#f-rows .vbody').textContent })`);
+eq('Enter closes the body row too', bodyClosed.editor, false);
+eq('with the popup still open', bodyClosed.popup, true);
+ok('and the draft keeps the text', /first/.test(bodyClosed.shown), bodyClosed.shown);
+
+// The boundary the one listener draws: `#fpop` is outside `#f-rows`, so Enter in a field's own
+// popup is not the row's Enter. The when stays open, and nothing is submitted.
+await tapRow('when');
+await pressEnter('#fpop input');
+eq('Enter in a field popup leaves it open', await ev(
+  `!document.querySelector('#fpop').hidden`), true);
+eq('and the entry popup too', await ev(`!document.querySelector('#popup').hidden`), true);
+await closeForm();
+
 // A repeating entry's scope pair rebuilds the draft from the other file, which must rebuild the
 // baseline a discard is measured against too: switching scope and leaving changed nothing, so
 // nothing may be asked. This is the check for a baseline left behind as undefined, which reads
 // as dirty for the rest of the popup's life.
 await open();
-await ev(`[...document.querySelectorAll('.eline')]
-  .find(l => /water the plants/i.test(l.textContent)).click()`);
+await ev(`${REPEATING}.click()`);
 await sleep(500);
-// The popup says it repeats, carries the skip, and carries the scope pair - which the read-only
-// preview deliberately did not, so this check comes out the other way round now.
-const rep = await ev(`({
-  note: /repeating/i.test(document.querySelector('#f-rows').textContent),
-  skip: [...document.querySelectorAll('#f-rows button')]
-    .filter(b => /skip this one/i.test(b.textContent)).length,
-  scope: document.querySelectorAll('#f-rows .seg').length,
-  above: document.querySelector('#f-rows .scope')
-    .compareDocumentPosition(document.querySelector('#f-rows [data-field="when"]')) & 4
-      ? 'after' : 'before' })`);
-eq('a repeating entry says so', rep.note, true);
-eq('and carries the skip', rep.skip, 1);
-eq('and the scope pair', rep.scope, 2);
-eq('which sits above the rows it governs', rep.above, 'after');
+// The pair rides in the top row beside the type marker, reading `this` and `all` - short because
+// that row also holds the trashcan, the disk and the x, and type-neutral because the entry behind
+// it is a task as often as an event. Nothing about repeating is left among the rows.
+const rep = await ev(`(() => {
+  const mid = n => { const r = n.getBoundingClientRect(); return r.top + r.height / 2; };
+  const segs = [...document.querySelectorAll('#f-icons .seg')];
+  return {
+    pair: segs.map(b => b.textContent),
+    aria: segs.map(b => b.getAttribute('aria-label')),
+    afterType: document.querySelector('#f-icons .ib')
+      .compareDocumentPosition(document.querySelector('#f-icons .btngroup')) & 4
+        ? 'after' : 'before',
+    oneLine: Math.abs(mid(segs[0])
+      - mid(document.querySelector('#f-icons [aria-label="Close"]'))) <= 1,
+    rows: document.querySelector('#f-rows').textContent,
+    inRows: document.querySelectorAll('#f-rows .seg, #f-rows .scope').length };
+})()`);
+eq('a repeating entry carries the scope pair in its top row', rep.pair, ['this', 'all']);
+eq('named in full for a screen reader', rep.aria, ['This occurrence', 'All occurrences']);
+eq('right of the type marker', rep.afterType, 'after');
+eq('and on one line with the x, not wrapped below it', rep.oneLine, true);
+eq('nothing of it is left among the rows', rep.inRows, 0);
+ok('no row says the entry repeats', !/repeating/i.test(rep.rows), rep.rows);
+ok('and no skip link is left', !/skip this one/i.test(rep.rows), rep.rows);
+// The narrowest screen is where the top row has to hold: `.iconbar` wraps, so a pair that
+// stretched would put the trashcan and the x on a line of their own. The entry popup is not one
+// of the dropdowns a resize closes, so this is the same popup, measured narrower.
+await viewport(360);
+await sleep(300);
+eq('and still on one line at phone width', await ev(`(() => {
+  const mid = n => { const r = n.getBoundingClientRect(); return r.top + r.height / 2; };
+  return Math.abs(mid(document.querySelector('#f-icons .seg'))
+    - mid(document.querySelector('#f-icons [aria-label="Close"]'))) <= 1;
+})()`), true);
+await viewport(900);
+await sleep(300);
 // Switching scope rebuilds the draft from the other file, so it has to retake the baseline too:
 // a baseline left behind puts a disk in an untouched popup and makes every way out ask about
 // changes nobody made.
-await ev(`[...document.querySelectorAll('#f-rows .seg')]
-  .find(b => /whole series/i.test(b.textContent)).click()`);
+await ev(`document.querySelector('#f-icons [aria-label="All occurrences"]').click()`);
 await sleep(400);
 eq('switching scope alone leaves no disk showing', await hasDisk(), false);
 await ev(`document.querySelector('#f-icons [aria-label="Close"]').click()`);
@@ -1469,6 +1588,50 @@ await sleep(350);
 eq('and asks nothing', await ev(
   `[document.querySelector('#ask').hidden, document.querySelector('#popup').hidden]`),
   [true, true]);
+
+// ---- 8c. the trashcan on a repeating entry reads the pair beside it --------------------------
+// `skip this one` is gone and the trashcan is the skip, which of the two it does being the pair
+// in the row with it. Both ask first: the skip is reached from a red trashcan now, not a link,
+// and it takes an override file with it. These run last of the repeating checks, because the
+// second of them deletes the fixture's only rule file.
+await open();
+await stubConfirm(true);
+await ev(`${REPEATING}.click()`);
+await sleep(500);
+eq('the pair opens on this occurrence', await ev(
+  `document.querySelector('#f-icons [aria-label="This occurrence"]')
+    .getAttribute('aria-pressed')`), 'true');
+eq('so the trashcan offers to skip the one', await ev(
+  `!!document.querySelector('#f-icons [aria-label="Skip this occurrence"]')`), true);
+await ev(`document.querySelector('#f-icons [aria-label="Skip this occurrence"]').click()`);
+await sleep(1000);
+const skipAsked = (await asked())[0] || '';
+ok('and asks before it writes', /^Skip "Water the plants" on \d{4}-\d{2}-\d{2}\?$/.test(skipAsked),
+  skipAsked);
+const skipped = await seriesFile();
+ok('the rule file is still there', skipped !== 'gone', skipped);
+ok('and gained an exdate for the occurrence',
+  /\nexdate:\n\s+- \d{4}-\d{2}-\d{2}\n/.test(skipped), skipped.split('---')[1]);
+eq('and the popup closed, nothing being left to look at', await ev(
+  `document.querySelector('#popup').hidden`), true);
+
+// `all` is what the trashcan always did on a repeating entry: the rule file goes, and the
+// question still warns that override files do not.
+await open();
+await stubConfirm(true);
+await ev(`${REPEATING}.click()`);
+await sleep(500);
+await ev(`document.querySelector('#f-icons [aria-label="All occurrences"]').click()`);
+await sleep(400);
+eq('picking all turns the trashcan into a delete', await ev(
+  `!!document.querySelector('#f-icons [aria-label="Delete every occurrence"]')`), true);
+await ev(`document.querySelector('#f-icons [aria-label="Delete every occurrence"]').click()`);
+await sleep(1000);
+const delAsked = (await asked())[0] || '';
+ok('which asks about the whole entry', /whole repeating entry/.test(delAsked), delAsked);
+ok('and still warns about the override files', /override files stay behind/.test(delAsked),
+  delAsked);
+eq('and the rule file is gone', await seriesFile(), 'gone');
 
 // Leaving a popup that holds unsaved changes asks first - and only then. The x, the backdrop and
 // Escape are one way out and ask one question.
