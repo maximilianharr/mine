@@ -89,10 +89,16 @@ export async function testConnection(config) {
 
 // ---- pull: 304-guarded, fetches only what changed ----
 // Also the first mirror: with no stored ETag it fetches the tree and every blob in it.
+//
+// The whole repo, always, and deliberately no way to ask for one app's folder. There is a
+// single `commitEtag` for the whole mirror, so a pull that fetched only `diary/` would store
+// the ETag of a commit it had not mirrored, and the calendar's next pull would 304 against it
+// and never see its own files again. A per-folder pull would need a per-folder ETag, and the
+// request it saves is one conditional GET.
 
-export async function pull(prefix = '') {
+export async function pull() {
   try {
-    const r = await pullNow(prefix);
+    const r = await pullNow();
     if (!r.unchanged)
       await record('pull', 'ok', null, r.empty ? 'repo is empty' : `${r.changed} file(s) updated`);
     return r;
@@ -102,7 +108,7 @@ export async function pull(prefix = '') {
   }
 }
 
-async function pullNow(prefix) {
+async function pullNow() {
   const c = await auth();
   const etag = await getKV('commitEtag');
   const r = await rest(`/repos/${c.owner}/${c.repo}/commits/${c.branch}`,
@@ -117,9 +123,9 @@ async function pullNow(prefix) {
   if (tree.truncated) throw new SyncError('Tree listing truncated - repo too large for a flat pull.');
 
   const remote = new Map(tree.tree
-    .filter(t => t.type === 'blob' && t.path.endsWith('.md') && t.path.startsWith(prefix))
+    .filter(t => t.type === 'blob' && t.path.endsWith('.md'))
     .map(t => [t.path, t.sha]));
-  const local = new Map((await allFiles(prefix)).map(f => [f.path, f.oid]));
+  const local = new Map((await allFiles()).map(f => [f.path, f.oid]));
 
   let changed = 0;
   for (const [path, sha] of remote) {
@@ -257,7 +263,7 @@ async function drainNow(message, retry) {
     if (!r.ok) {
       // Rejected: someone pushed elsewhere. Rebase onto the new base and retry once -
       // this succeeds because nearly every write is a create at a fresh path.
-      if (retry && (r.status === 422 || r.status === 409)) { await pullNow(''); return drainNow(message, false); }
+      if (retry && (r.status === 422 || r.status === 409)) { await pullNow(); return drainNow(message, false); }
       await ok(r, 'ref update');
     }
   }

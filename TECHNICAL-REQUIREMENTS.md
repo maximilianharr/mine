@@ -26,7 +26,7 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
           ui.js  sync.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
-/test/    run.sh  unit.mjs  serve.py  check.mjs
+/test/    run.sh  unit.mjs  serve.py  cdp.mjs  check-mine.mjs  check-calendar.mjs
 ```
 
 No build step: no bundler, no CI, no node_modules. `git push` deploys, every page opens from
@@ -34,7 +34,9 @@ disk, all paths relative so the `/mine/` prefix needs no config.
 
 The checks in `test/` hold to the same rule: `run.sh` drives a headless Chromium over the
 DevTools protocol with nothing installed, and what it covers — and the two mistakes that make
-it lie to you — are in [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md).
+it lie to you — are in [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md). One browser suite per app,
+`check-<slug>.mjs`, discovered by `run.sh` rather than listed in it, over the harness in
+`cdp.mjs`.
 
 `shared/ui.js` is the chrome every app builds its screens out of: the DOM helpers, the icon set,
 the three overlay mechanisms and the settings row. `shared/sync.js` is the sync line and the logs
@@ -57,6 +59,31 @@ written by hand on purpose: `install` uses `cache.addAll`, which rejects as a wh
 404s, so a wrong entry fails loudly at install. A *missing* one fails silently, which is how
 `shared/markdown.js` stayed out of the shell while `popup.js` imported it — an app installed and
 taken offline before an entry was ever opened could not draw a details body.
+
+## Adding an app
+
+Everything shared is in place, so an app is its folder plus two one-line registrations.
+
+1. **`/<slug>/`** with `index.html`, `icon.svg`, your modules, and `style.css` if it needs one.
+   Also `REQUIREMENTS.md`, `TECHNICAL-REQUIREMENTS.md` and `sample/`, which is the convention
+   [REQUIREMENTS.md](REQUIREMENTS.md) states for every app.
+2. **The head of `index.html`** carries the same CSP, viewport and theme-color as the others,
+   `../style.css` before its own stylesheet, and `icon.svg` as the apple-touch-icon. No
+   `manifest.json`: there is one, at the root, and its scope covers every folder.
+3. **`shared/apps.js`** — one entry: `{ slug, label, files }`. `files` are the app's own files
+   beyond its folder index and icon, and they are what the worker precaches.
+4. **`sw.js`** — bump `VERSION`. Nothing else: the shell reads the app list.
+5. **`test/check-<slug>.mjs`**, importing `test/cdp.mjs`. `test/run.sh` finds it by its name.
+   A fixture goes in `test/serve.py`'s `FIXTURES`.
+
+What you do **not** have to build: the setup gate is a config read (`getConfig()`) and six lines
+of HTML; the sync line and the logs panel are `createSync()` and `renderLogs()`; the icon set,
+the overlays and the settings row come from `shared/ui.js`; the markdown renderer and its
+stylesheet are shared already. Data goes under `<slug>/` in the data repo, and device settings
+under `<slug>.*` in `kv`.
+
+Two conventions the shared code assumes: an app that opens overlays has a `#scrim`, and it calls
+`registerPops()` once with the overlays `closePops()` should close.
 
 ## Stylesheets
 
@@ -113,6 +140,13 @@ way, and everything after drains normally once a history exists.
 1. `GET /repos/{o}/{r}/commits/{branch}` with `If-None-Match`. A 304 means nothing changed and
    costs no rate-limit quota, and no ETag at all means a first mirror.
 2. On 200: fetch the tree, diff blob SHAs, fetch only changed files, drop deleted paths.
+
+**Always the whole repo, and deliberately no way to ask for one app's folder.** There is a single
+`commitEtag` for the whole mirror, so a pull restricted to `diary/` would store the ETag of a
+commit it had not mirrored, and the calendar's next pull would 304 against it and never see its
+own files again. `pull()` used to take a prefix that did exactly this; no caller passed one, and
+it was the parameter a second app would have reached for first. A per-folder pull would need a
+per-folder ETag, and what it saves is one conditional GET.
 
 Run on app open and on window focus. Background Sync does not exist in Safari, so all syncing is
 foreground.
