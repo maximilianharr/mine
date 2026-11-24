@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>b1f6bgyec</task-id>
+<tool-use-id>toolu_01HmTdeQUqV2jCuoSyvZFJpo</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b1f6bgyec.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the suite after the picker extraction" completed (exit code 0)</summary>
+</task-notification>
