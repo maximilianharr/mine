@@ -372,19 +372,6 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 /* The toggle row, under start and end: `24h` alone on an event, with stage and important on a
    task. */
 .flags { padding: .5rem 0 .2rem; margin: 0; border: 0; }
-.flags .ib { position: relative; }
-/* Stage shows its value as a badge on the icon's corner. Important has nothing to put in one
-   and lights instead, the way `24h` does. */
-.badge {
-  position: absolute; right: .25rem; bottom: .25rem;
-  min-width: .95rem; padding: 0 .1rem;
-  font-size: .58rem; font-weight: 700; line-height: .95rem; text-align: center;
-  color: var(--bg); background: var(--fg); border-radius: 999px;
-}
-.badge:empty { min-width: .55rem; height: .55rem; line-height: .55rem; }
-.row2 { display: flex; gap: .6rem; }
-.row2 label { flex: 1; }
-.row2 label.t { flex: 0 0 5.5rem; }
 .btngroup { display: flex; margin: .7rem 0 0; }
 .seg {
   flex: 1; width: auto; margin: 0; padding: .55rem .4rem; font-size: .85rem; font-weight: 500;
@@ -437,7 +424,6 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .fpop { z-index: 14; max-height: 70dvh; overflow-y: auto; }
 .fpop .glist { max-height: 50dvh; overflow-y: auto; }
 .fpop label { margin: 0 0 .2rem; }
-.fpop .row2 + .row2 { margin-top: .5rem; }
 
 /* The body is the one field whose open shape still carries a line of its own, because a textarea
    cannot have its name and its buttons beside it. */
@@ -453,7 +439,24 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 /* The title row carries no icon, so it reads as the entry's name rather than as a field. */
 .frow.first { border-top: 0; }
 .ttap { font-size: 1.25rem; font-weight: 600; line-height: 1.25; white-space: normal; }
-.wtap { font-size: .85rem; color: var(--muted); text-transform: capitalize; }
+/* The when: two halves, each the way into the flow that sets it. They wrap rather than shrink,
+   so a span whose two datings do not fit one line drops the end to a second, still at the right
+   - the row is the one in the popup that may be two lines tall, and it is also the only one
+   carrying twice as much as the others. */
+.wtap { flex: 0 1 auto; font-size: .85rem; color: var(--muted); text-transform: capitalize; }
+.wrow { flex-wrap: wrap; }
+.wrow .wend { margin-left: auto; }
+.wdash { flex: none; font-size: .85rem; color: var(--muted); }
+
+/* A field's popup walking its steps: the month it is paging, the hours, and the quarters of the
+   hour that was picked. The head is naming the step, so the month pages from a line of its own. */
+.pnav { display: flex; align-items: center; gap: .2rem; margin-bottom: .35rem; }
+.pnav .plabel { flex: 1; text-align: center; font-size: .85rem; font-weight: 600; }
+.pnav-b.next svg { transform: rotate(180deg); }
+.dpick { min-width: 14rem; }
+.hgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.mgrid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px; }
+.hgrid .pk, .mgrid .pk { padding: .55rem .1rem; font-variant-numeric: tabular-nums; }
 /* The body: rendered in full when the row is closed, raw markdown when it is open. */
 .vbody-tap {
   display: block; width: 100%; margin: 0; padding: .3rem .2rem; font: inherit; text-align: left;

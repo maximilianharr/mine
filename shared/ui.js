@@ -60,7 +60,13 @@ export function icon(name) {
     p.setAttribute('stroke-width', String(spec.stroke));
     p.setAttribute('stroke-linecap', 'round');
     p.setAttribute('stroke-linejoin', 'round');
-  } else p.setAttribute('fill', 'currentColor');
+  } else {
+    p.setAttribute('fill', 'currentColor');
+    // A second subpath drawn inside the first is a hole rather than an overlap: the one way an
+    // icon can be a filled shape with a figure knocked out of it, which is what a stage reading
+    // its colour as a fill needs.
+    if (spec.rule) p.setAttribute('fill-rule', spec.rule);
+  }
   svg.append(p);
   return svg;
 }

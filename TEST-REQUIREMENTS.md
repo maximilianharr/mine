@@ -160,6 +160,26 @@ straight to it in **one tap**, and that tapping the row it is already on **close
 reopening it. That `#fpop`'s own `x` closes it and leaves the entry popup open. That no `#sub`
 popup is opened by any of the eight.
 
+**The when, and the flow that sets it.** That the row reads in halves — a weekday, a date with a
+two-digit year, a time, then a dash and the end time alone on a single day, and two whole datings
+on a span. That the flow opens **under the row with no scrim** and leaves the row's height and
+text exactly as they were.
+
+That tapping the **start half** enters at `Start date` with no back chevron and the day the field
+holds marked; that picking a day advances to `Start time` and the 24 hours with the field's hour
+marked; that picking an hour offers its four quarters **as whole times**; that picking one
+advances to `End date` **with the start date highlighted**; and that the last step closes the
+popup, the row then reading the span. That tapping the **end half** enters at `End date` whatever
+the entry's shape. That on an **all-day** entry the flow is the two dates and nothing else.
+
+That `‹` goes from the quarters back to the hours and from a step back to the one before, and
+that the first step has none. That an **end before its start is clamped** to the start. That a
+**digit** swaps a picker for a box in the chosen format, that Enter takes the date and opens the
+time **as a box**, that Enter there moves to the end date **as a picker again**, and that a date
+the calendar does not have — 31 February — is refused and the box goes back to the draft. That
+leaving mid-flow keeps what the steps wrote, and that **none of it reaches the repo**: the queue
+is still empty.
+
 That only one is open at a time, an inline input and a field popup never both. That **Escape is
 swallowed by a field popup and not by an inline row**: in a field popup it closes that and leaves
 the entry popup open, and in an inline row it asks the discard question, the row staying as it is.

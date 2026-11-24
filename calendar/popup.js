@@ -16,14 +16,15 @@
 // write, a saved date would move the file out from under it, and several saves queued offline
 // would write to one path more than once in a single tree.
 import {
-  isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, timeLabel, STAGES, pad, list,
+  isAllDay, todayKey, toInstant, wallParts, dowOf, partsOf, addMonths, STAGES, pad, list,
   createEntry, updateEntry, deleteEntry, saveOverride, skipOccurrence, createGroup, saveGroups
 } from './data.js';
 import { setKV } from '../shared/store.js';
 import { render } from '../shared/markdown.js';
 import {
-  S, $, el, icon, iconBtn, labelOf, longDayLabel, inkOn, openRowPop, STAGE_COLOR
+  S, $, el, icon, iconBtn, colorOf, labelOf, shortDayLabel, openRowPop, monthDays, STAGE_COLOR
 } from './ui.js';
+import { parseDateText, dateTextOf, datePlaceholder } from '../shared/prefs.js';
 
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
 
@@ -58,9 +59,6 @@ const FIELDS = [
     set: v => v.length > 0, sum: v => v.join(', '), ed: participantsEditor }
 ];
 
-// The when has no place in D.v and no stored value at all - it is four parts of the draft - so
-// its editor writes them itself.
-const WHEN = { k: 'when', label: 'When', mode: 'pop', ed: whenEditor };
 const readField = f => D.v[f.k];
 const writeField = (f, v) => { D.v[f.k] = v; };
 
@@ -159,6 +157,7 @@ function discard() {
   $('#fpop').hidden = true;
   active = null;
   popped = null;
+  flow = null;
   D = null;
 }
 
@@ -247,9 +246,9 @@ function redraw() {
 
 // ---- a field's own popup -------------------------------------------------------------------
 // Anchored to the row that opened it, which keeps its icon, its value and its trashcan: nothing
-// about the row moves, which is the whole point. The four fields behind one are those whose
-// control cannot be a single line - four date and time boxes, a list of categories, a rule and
-// its end condition, a number with a unit.
+// about the row moves, which is the whole point. The fields behind one are those whose control
+// cannot be a single line - a list of categories, a rule and its end condition - and the when,
+// whose steps are below rather than here, because it is a walk and not one control.
 //
 // It carries **no scrim**, unlike every other overlay in the calendar. A scrim would make the tap
 // that dismisses it stop there, so moving from one field to the next would take two taps; without
@@ -259,6 +258,7 @@ function redraw() {
 function openFieldPop(f) {
   closeRow();
   popped = f.k;
+  flow = null;
   const ed = f.ed(f.k === 'when' ? null : readField(f));
   if (f.k !== 'when') live(ed.node, () => writeField(f, ed.read()));
   $('#fpop-title').textContent = f.label;
@@ -274,6 +274,7 @@ function openFieldPop(f) {
 function closeFieldPop(render = true) {
   if (popped === null) return;
   popped = null;
+  flow = null;
   $('#fpop').hidden = true;
   if (render) fillForm();            // the row reads the value the popup has just changed
 }
@@ -399,23 +400,33 @@ function titleRow() {
   return row;
 }
 
-// The when: one row reading the day and the times, opening the four inputs in a popup under it.
-// Four input boxes at the top of a popup opened to find out what day something is on was the form
-// at its least readable, and four of them cannot be a line, so they are the clearest case for the
-// popup: the row goes on reading the day while they are open.
+// The when: one row with two halves, each the way into the flow that sets it. On one day it
+// reads `THU, 19.11.26 15:00–17:00`, the end half being the end time alone - the date is the
+// same one. Across days it reads two whole datings, start left and end right, because a date on
+// both sides is the only thing that tells a span from a day; they wrap rather than shrink, so
+// the end drops to a second line, still right, where the two do not fit one.
 function whenRow() {
-  const row = el('div', 'frow');
+  const row = el('div', 'frow wrow');
   row.dataset.field = 'when';
-  row.append(tap(whenText(), false, 'wtap', () => openField(WHEN), `When: ${whenText()}`));
+  const { start, end, span } = whenParts();
+  row.append(tap(start, false, 'wtap', () => openWhen('start'), `Start: ${start}`));
+  if (!end) return row;
+  if (!span) row.append(el('span', 'wdash', '–'));
+  row.append(tap(end, false, `wtap${span ? ' wend' : ''}`, () => openWhen('end'), `End: ${end}`));
   return row;
 }
 
-function whenText() {
-  const day = D.startDate ? longDayLabel(D.startDate) : 'no date';
-  const when = D.allDay ? 'all-day'
-    : D.endTime && D.endTime !== D.startTime ? `${D.startTime}–${D.endTime}`
-      : D.startTime || '';
-  return when ? `${day} · ${when}` : day;
+// No time where there is none: an all-day entry reads as its dates, and the lit 24h beside the
+// row is what says so - a word there would say it twice. An entry with no end reads as its
+// start alone, with no dash left dangling.
+function whenParts() {
+  if (!D.startDate) return { start: 'no date', end: '', span: false };
+  const at = (date, time) => `${shortDayLabel(date)}${D.allDay || !time ? '' : ` ${time}`}`;
+  const span = !!D.endDate && D.endDate !== D.startDate;
+  const start = at(D.startDate, D.startTime);
+  if (span) return { start, end: at(D.endDate, D.endTime), span };
+  const end = !D.allDay && D.endTime && D.endTime !== D.startTime ? D.endTime : '';
+  return { start, end, span };
 }
 
 // Five of the six fields are rows; the sixth is the body, at the foot. They are in the canonical
@@ -428,11 +439,21 @@ function fieldRows() {
     .map(f => f.mode === 'inline' && is(f.k) ? inlineRow(f) : closedRow(f));
 }
 
+// The category's ball is drawn in the colour of the category it holds: a field's icon saying
+// which value it has rather than only that it has one, which is the one thing a ball can say and
+// its name cannot. Unset, it is the row's ink like every other icon - a grey ball would be
+// indistinguishable from a group somebody coloured grey.
+function fieldIcon(f) {
+  const n = icon(f.ic);
+  if (f.k === 'group' && D.v.group) n.style.color = colorOf(D.v.group);
+  return n;
+}
+
 function closedRow(f) {
   const row = el('div', 'frow');
   row.dataset.field = f.k;
   const set = f.set(readField(f));
-  row.append(icon(f.ic));
+  row.append(fieldIcon(f));
   row.append(tap(set ? f.sum(readField(f)) : f.label, !set, '',
     () => openField(f),
     `${f.label}${set ? `: ${f.sum(readField(f))}` : ''}`));
@@ -451,7 +472,7 @@ function inlineRow(f) {
   live(ed.node, () => writeField(f, ed.read()));
   const x = iconBtn('x', 'Close this field');
   x.addEventListener('click', closeRow);
-  row.append(icon(f.ic), ed.node, clearBtn(f), x);
+  row.append(fieldIcon(f), ed.node, clearBtn(f), x);
   return row;
 }
 
@@ -507,17 +528,12 @@ function allDayBtn() {
 }
 
 // Stage and important are two small values rather than fields with a form each, so they are
-// edited in the row itself. Stage shows its value as a badge on the icon's corner; important has
-// nothing to put in one and lights instead.
-const badged = (b, text, cls, color) => {
-  const s = el('span', ['badge', cls].filter(Boolean).join(' '), text);
-  if (color) { s.style.background = color; s.style.color = inkOn(color); }
-  b.append(s);
-  return b;
-};
-
+// edited in the row itself. Stage is a ticked square carrying its own colour - the badge on its
+// corner was a 16px icon with a 9px dot on it, and the colour it carried is the whole of what
+// the badge was for. Important has nothing to colour and lights instead.
 function stageBtn() {
-  const b = badged(iconBtn('cols', `Stage: ${D.stage}`), '', '', STAGE_COLOR[D.stage]);
+  const b = iconBtn('ticked', `Stage: ${D.stage}`);
+  b.querySelector('svg').style.color = STAGE_COLOR[D.stage];
   b.addEventListener('click', () => {
     D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
     redraw();
@@ -575,12 +591,206 @@ function bodyRow(f) {
   return row;
 }
 
+// ---- a field edited in steps ---------------------------------------------------------------
+// `#fpop` holds one step at a time. The when walks start date, start time, end date, end time,
+// one picker to a step, which is what four input boxes at the top of a popup opened to find out
+// what day something is on were standing in for.
+//
+// Each step writes into the draft the moment it is picked, like every other editor here, so
+// there is nothing to accept at the end of a flow: the x, Escape and a tap outside leave it and
+// keep whatever it has already written. The head names the step and carries a `‹` on every step
+// but the first, so a mis-tapped hour costs one tap rather than the walk again.
+//
+// **Which half of the row was tapped is which value you meant**: the start half enters at the
+// start date and walks all four, the end half enters at the end date and walks the last two.
+// The end half is always the end date, even on a single day where it reads a time alone - one
+// rule, and the only way the end side can turn a day into a span.
+
+let flow = null;   // { key, sel, steps, i, phase, month, hour, typing }
+
+function startFlow(key, sel, steps, i) {
+  closeRow();
+  popped = key;
+  flow = { key, sel, steps, i, phase: 0, typing: null };
+  enterStep();
+}
+
+// What a step needs before it is drawn: the month a date picker opens on, which is the value
+// the field holds, or - on an end with none yet - the start it may not fall before.
+function enterStep() {
+  const step = flow.steps[flow.i];
+  flow.phase = 0;
+  if (step.kind === 'date') flow.month = D[step.key] || D.startDate || todayKey();
+  drawFlow();
+}
+
+function drawFlow() {
+  const step = flow.steps[flow.i];
+  const head = $('#fpop-title').parentElement;
+  head.querySelector('.ib.back')?.remove();
+  if (flow.i > 0 || flow.phase > 0) {
+    const b = iconBtn('chev', 'Back', 'back');
+    b.addEventListener('click', stepBack);
+    head.insertBefore(b, $('#fpop-title'));
+  }
+  $('#fpop-title').textContent = step.title;
+  $('#fpop-body').replaceChildren(
+    flow.typing !== null ? typedNode(step)
+      : step.kind === 'date' ? dateNode(step) : timeNode(step));
+  openRowPop($('#fpop'), $(flow.sel));
+  requestAnimationFrame(() => $('#fpop').querySelector('input')?.focus());
+}
+
+// A picked value and the step is done: there is nothing to confirm about a tap on a day. The
+// last step closes the popup, which is what a flow walked to its end looks like.
+//
+// `typed` carries the typing on: a date reached by keyboard hands the keyboard to the time
+// after it, because the hands that typed the date are not going to reach for an hour grid.
+function stepNext(typed = false) {
+  const next = flow.steps[flow.i + 1];
+  if (!next) return closeFieldPop();
+  flow.i += 1;
+  flow.typing = typed && next.kind === 'time' ? '' : null;
+  enterStep();
+}
+
+// Back over the minutes to the hours first, then step by step. It unwinds the walk and never
+// the values: what a step wrote stays written, as it does when the popup is simply left.
+function stepBack() {
+  if (flow.phase > 0) { flow.phase = 0; flow.typing = null; return drawFlow(); }
+  flow.i -= 1;
+  flow.typing = null;
+  enterStep();
+}
+
+// Every write of a date or a time goes through here, so the one rule about the pair cannot be
+// written around: **an end never precedes its start**. A day earlier than the start moves to
+// the start, and on one day a time earlier than the start's moves to the start's - silently,
+// because the row the flow was opened from reads the clamped value the moment it closes, and
+// that is the whole of the report such a slip needs.
+function writeWhen(key, value) {
+  D[key] = value;
+  if (D.endDate && D.startDate && D.endDate < D.startDate) D.endDate = D.startDate;
+  if (!D.allDay && D.endDate === D.startDate && D.startTime && D.endTime
+      && D.endTime < D.startTime) D.endTime = D.startTime;
+  syncDisk();
+}
+
+// An all-day entry has no times to walk: the 24h icon is how all-day is turned off, and two
+// disabled boxes in the middle of a flow would be two taps that do nothing.
+function whenSteps() {
+  const steps = [{ key: 'startDate', title: 'Start date', kind: 'date' }];
+  if (!D.allDay) steps.push({ key: 'startTime', title: 'Start time', kind: 'time' });
+  steps.push({ key: 'endDate', title: 'End date', kind: 'date' });
+  if (!D.allDay) steps.push({ key: 'endTime', title: 'End time', kind: 'time' });
+  return steps;
+}
+
+function openWhen(which) {
+  if (justClosed === 'when') return;         // the tap that closed it must not reopen it
+  const steps = whenSteps();
+  const i = which === 'end' ? steps.findIndex(st => st.key === 'endDate') : 0;
+  startFlow('when', '#f-rows [data-field="when"]', steps, i);
+}
+
+// The month grid, with the month it is on paged from a line of its own above it: the popup's
+// head is naming the step, so it has no room for a second pair of arrows.
+function dateNode(step) {
+  const wrap = el('div', 'dpick');
+  const [y, m] = partsOf(flow.month);
+  const page = dir => {
+    const b = iconBtn('chev', dir < 0 ? 'Previous month' : 'Next month',
+      `pnav-b${dir > 0 ? ' next' : ''}`);
+    b.addEventListener('click', () => { flow.month = addMonths(flow.month, dir); drawFlow(); });
+    return b;
+  };
+  const nav = el('div', 'pnav');
+  nav.append(page(-1), el('span', 'plabel',
+    new Date(y, m - 1, 1, 12).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })),
+    page(1));
+  const grid = el('div', 'pick-body days');
+  grid.append(...monthDays(y, m - 1, {
+    value: D[step.key] || '',
+    // While the end is being picked the start is marked too, so the day the end may not fall
+    // before is in the grid rather than in a rule the picker applies afterwards.
+    highlight: step.key === 'endDate' ? D.startDate : '',
+    onPick: k => { writeWhen(step.key, k); stepNext(); }
+  }));
+  wrap.append(nav, grid);
+  return wrap;
+}
+
+// Twenty-four hours, then the four quarters of the one that was picked, reading as whole times
+// rather than as bare minutes. Two taps, no scrolling, and 24-hour by construction - which a
+// native time control cannot be, because it takes its shape from the device's locale.
+// The hour grid opens on the value the field holds; an end with none yet opens an hour after
+// the start, which is the gap every new timed entry is already given.
+const timeShown = key => D[key] || (key === 'endTime' && D.startTime
+  ? `${pad((+D.startTime.slice(0, 2) + 1) % 24)}:${D.startTime.slice(3)}` : '09:00');
+
+function timeNode(step) {
+  const cur = timeShown(step.key);
+  if (flow.phase === 0) {
+    const grid = el('div', 'hgrid');
+    for (let h = 0; h < 24; h++) {
+      const b = el('button', `pk${cur.slice(0, 2) === pad(h) ? ' sel' : ''}`, pad(h));
+      b.type = 'button';
+      b.addEventListener('click', () => { flow.hour = pad(h); flow.phase = 1; drawFlow(); });
+      grid.append(b);
+    }
+    return grid;
+  }
+  const row = el('div', 'mgrid');
+  for (const mm of ['00', '15', '30', '45']) {
+    const t = `${flow.hour}:${mm}`;
+    const b = el('button', `pk${cur === t ? ' sel' : ''}`, t);
+    b.type = 'button';
+    b.addEventListener('click', () => { writeWhen(step.key, t); stepNext(); });
+    row.append(b);
+  }
+  return row;
+}
+
+// The keyboard's way through the same steps: a digit on a picker is the first character of the
+// value, so the picker gives way to a box holding it. Enter takes what is in the box and moves
+// on; a value that is not a date or a time of day is refused and the box goes back to what the
+// draft still holds, which is the rule the typed time has always followed.
+function typedNode(step) {
+  const date = step.kind === 'date';
+  const i = el('input');
+  i.inputMode = 'numeric';
+  i.placeholder = date ? datePlaceholder(S.prefs.dateFormat) : '09:00';
+  i.value = flow.typing;
+  i.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const v = date ? parseDateText(i.value, S.prefs.dateFormat, flow.month) : hhmm(i.value);
+    if (!v) {
+      i.value = date ? dateTextOf(D[step.key], S.prefs.dateFormat) : D[step.key] || '';
+      return;
+    }
+    writeWhen(step.key, v);
+    stepNext(true);
+  });
+  return i;
+}
+
+// A digit typed at a picker is the start of a value, in a popup where nothing else answers to
+// one. It is read on the document, because a grid of buttons has no field to hold the focus.
+addEventListener('keydown', e => {
+  if (!flow || flow.typing !== null || e.metaKey || e.ctrlKey || e.altKey) return;
+  if (!/^[0-9]$/.test(e.key)) return;
+  e.preventDefault();
+  flow.typing = e.key;
+  drawFlow();
+});
+
 // ---- the editors ---------------------------------------------------------------------------
 // Every editor returns the bare control: an inline row puts it in the line, a popup puts it in
 // its body, and only the ones with more than one control of their own wrap them in labels.
 
-function field(labelText, control, hint, cls) {
-  const l = el('label', cls || '', labelText);
+function field(labelText, control, hint) {
+  const l = el('label', '', labelText);
   l.append(control);
   if (hint) l.append(el('small', '', hint));
   return l;
@@ -617,40 +827,6 @@ function participantsEditor(cur) {
   i.placeholder = 'a@b.com, c@d.com';
   i.value = (cur || []).join(', ');
   return { node: i, read: () => splitList(i.value) };
-}
-
-// The four parts of the when, in two lines of a popup. The times are typed rather than native
-// `<input type="time">`: that control takes its 12- or 24-hour shape from the device's locale and
-// nothing in markup, CSS or the `lang` attribute can tell it otherwise, while every other time in
-// the calendar is 24-hour by construction. The dates stay native, because a date picker is worth
-// more than a format and an ISO date cannot be misread.
-function whenEditor() {
-  const wrap = el('div');
-  const date = (labelText, k) => {
-    const i = el('input');
-    i.type = 'date';
-    i.value = D[k];
-    live(i, () => { D[k] = i.value; });
-    return field(labelText, i);
-  };
-  const time = (labelText, k) => {
-    const i = el('input');
-    i.inputMode = 'numeric';
-    i.placeholder = '09:00';
-    i.disabled = D.allDay;
-    i.value = D[k];
-    // Written through on every valid reading, so the disk appears as it does for any other edit,
-    // and tidied on the way out: `930` leaves the field reading `09:30`.
-    live(i, () => { const t = hhmm(i.value); if (t !== null) D[k] = t; });
-    i.addEventListener('blur', () => { i.value = D[k]; });
-    return field(labelText, i, null, 't');
-  };
-  const r1 = el('div', 'row2');
-  r1.append(date('Start', 'startDate'), time('Time', 'startTime'));
-  const r2 = el('div', 'row2');
-  r2.append(date('End', 'endDate'), time('Time', 'endTime'));
-  wrap.append(r1, r2);
-  return { node: wrap, read: () => null };
 }
 
 // `9` and `900` and `9:00` are all 09:00; `930` and `0930` and `9:3` are 09:30. Anything that is

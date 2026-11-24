@@ -306,9 +306,9 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
   discards the whole edit, is a thumb's width above that line; it closes on Escape or by opening
   any other row.
 - **A field whose control cannot fit a line opens it in a popup anchored to the row.** The when,
-  the category and the repetition: four date and time boxes, a list of categories, a rule with an
-  end condition. The row keeps its icon, its value and its trashcan — **nothing about it moves**
-  — and the popup hangs directly under it, naming the field and carrying an `x`.
+  the category and the repetition: a date picker and an hour grid, a list of categories, a rule
+  with an end condition. The row keeps its icon, its value and its trashcan — **nothing about it
+  moves** — and the popup hangs directly under it, naming what it is holding and carrying an `x`.
 - **The field popup carries no scrim**, alone among the calendar's overlays. A scrim would stop
   the tap that dismisses it, so moving from one field to the next would take two taps; without one
   the tap reaches the row it landed on and opens it. Tapping the row it is already on closes it
@@ -371,20 +371,66 @@ for a second tap to press.
 ### The title, the when, and the toggle row
 
 **The title is a row too** — text until clicked, then an input in the same line at the same size.
-So is **the when**, which reads `MON, 20.11.2026 · 09:00–10:00` and opens the start and end date
-and time boxes in a popup under it. Four input boxes at the top of a popup opened to find out what
-day something is on was the form at its least readable; four of them also cannot be a line, which
-makes the when the clearest case for the popup — the row goes on reading the day while they are
-open, and only takes the new reading once they are shut.
 
-**The times are typed, not a native time control.** `HH:MM`, and forgiving about how it is reached:
-`9` and `900` and `9:00` all read back as `09:00`, `930` and `0930` and `9:3` as `09:30`, and
-anything that is not a time of day is refused and the box goes back to what the draft still holds.
-A native `<input type="time">` takes its 12- or 24-hour shape from the device's locale and nothing
-in markup, CSS or a `lang` attribute can tell it otherwise, while [every other time in the
-calendar is 24-hour by construction](#the-filter-and-the-settings). **The two dates stay native**,
-because a date picker is worth more than a format and a date, unlike a time, cannot be misread
-into a different value.
+**The when is a row of two halves.** It reads `THU, 19.11.26 15:00` — the weekday abbreviated and
+upper-cased, the date with a **two-digit year in the chosen date format**, and the time where
+there is one. On a single day the end is its time alone, after a dash: `THU, 19.11.26
+15:00–17:00`. **Across days it is two whole datings**, the start at the left and the end at the
+right, because a date on both sides is the only thing that tells a span from a day — and they
+wrap rather than shrink, so on a narrow screen the end drops to a second line, still at the
+right. An all-day entry reads its dates and no time at all: the lit `24h` beside the row has
+already said so, and a word there would say it twice.
+
+The short year is what buys the room for the second dating, and the format row still governs the
+order: `19.11.26` where the setting is `dd.mm.yyyy`, `11/19/26` where it is `mm/dd/yy`, and the
+device's own two-digit form on `auto`. It is the one date in the app written short, and it is
+written short because it is the one place two dates share a line.
+
+**Each half opens the flow at the value it reads.** Tapping the start walks start date, start
+time, end date, end time; tapping the end walks the last two. The end half is **always the end
+date**, on a span and on a single day alike — one rule, and the only way the end side can turn a
+day into a span.
+
+### The flow that sets the when
+
+One picker to a step, in the popup anchored under the row. Four input boxes at the top of a popup
+opened to find out what day something is on was the form at its least readable, and what those
+four boxes were standing in for was four questions asked at once.
+
+- **A date is the month grid** — the same one the pane's dropdown drops, with today marked and
+  the day the field already holds marked too. While the **end** date is being picked the start is
+  highlighted as well, so the day the end may not fall before is in the grid rather than in a
+  rule applied afterwards. The month pages from a line of its own above the grid, the popup's
+  head being busy naming the step.
+- **A time is the 24 hours, then the four quarters** of the one that was picked, which read as
+  whole times — `14:00 14:15 14:30 14:45`. Two taps, no scrolling, and **24-hour by
+  construction**: a native `<input type="time">` takes its 12- or 24-hour shape from the device's
+  locale and nothing in markup, CSS or a `lang` attribute can tell it otherwise, while [every
+  other time in the calendar is 24-hour](#the-filter-and-the-settings).
+- **A digit swaps the picker for a box.** Typing at a picker is the first character of a value,
+  so the grid gives way to a text box holding it — `DD.MM.YYYY` in the order the format row
+  reads dates in, `HH:MM` for a time. Enter takes what is in the box and moves on, and **a date
+  reached by keyboard hands the keyboard to the time after it**: the hands that typed a date are
+  not going to reach for an hour grid. The next step after that is a picker again.
+- **Both boxes are forgiving, and both refuse.** `9`, `900` and `9:00` are all `09:00`, `930` and
+  `0930` and `9:3` are `09:30`; `19.11.2026`, `19.11.26`, `19112026`, `191126` and `1911` are all
+  19 November 2026, the last taking its year from the month the picker was showing. Anything that
+  is not a time of day or a date of the calendar — `25:00`, 31 February — is refused and the box
+  goes back to what the draft still holds.
+- **An all-day entry has no time steps**, because it has no times: the flow is start date, end
+  date, and the `24h` icon is how all-day is turned off. Two disabled steps in the middle of a
+  walk are two taps that do nothing.
+- **An end never precedes its start.** A day earlier than the start moves to the start, and on
+  one day a time earlier than the start's moves to the start's — silently, because the row the
+  flow was opened from reads the clamped value the moment it closes, and that is the whole of the
+  report such a slip needs.
+- **The head names the step** — `Start date`, `Start time`, `End date`, `End time` — and carries a
+  `‹` on every step but the first, so a mis-tapped hour costs one tap rather than the walk again.
+  Back unwinds the walk and never a value.
+- **Leaving keeps what the flow has written.** The `x`, Escape and a tap outside end it where it
+  stands; each step writes into the draft as it is picked, like every other editor in this popup,
+  so there is nothing to accept at the end of one — and still nothing is written to the repo
+  until the disk.
 
 The when-line no longer repeats the stage and the importance as words. The toggle row shows both,
 live, directly beneath it.

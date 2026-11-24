@@ -10,7 +10,7 @@ import {
   todayKey, DEFAULT_ANCHOR, groupColor, groupLabel, monthGrid, weekStartOf, addDays, partsOf,
   dowOf, sprintRange, sprintOf
 } from './data.js';
-import { formatDate, weekdayName } from '../shared/prefs.js';
+import { formatDate, shortDate, weekdayName } from '../shared/prefs.js';
 import { addIcons, el } from '../shared/ui.js';
 
 export {
@@ -42,6 +42,11 @@ export const colorOf = g => groupColor(S.model.groups, g);
 export const labelOf = g => groupLabel(S.model.groups, g);
 export const dayLabel = key => formatDate(key, S.prefs.dateFormat);
 export const longDayLabel = key => `${weekdayName(key)}, ${formatDate(key, S.prefs.dateFormat)}`;
+// The entry popup's when-row: the weekday in three characters or whatever the locale's
+// abbreviation is, upper-cased, and the date with a two-digit year. Two of these share one line
+// on a span, which is what both abbreviations are for.
+export const shortDayLabel = key =>
+  `${weekdayName(key, 'short').replace(/\./g, '').toUpperCase()}, ${shortDate(key, S.prefs.dateFormat)}`;
 
 // Text on a group-coloured background. Luminance rather than a fixed colour, because the
 // groups are user-chosen and a light one would otherwise carry white text.
@@ -121,10 +126,14 @@ addIcons({
   filter: { d: 'M2 3h12l-4.8 5.8V14L6.8 12.6V8.8z' },
   // A ticked square for task, a calendar page for event: the icon row carries no letters.
   check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
-  // The toggle row: three columns for the stage. All-day and important are the words `24h` and
-  // `!`, which iconBtn renders as glyphs - there is no icon for either, deliberately: the sun
-  // was taken for weather and a flag needed a digit.
-  cols:   { d: 'M3.4 12.8V9.4M8 12.8V5.8M12.6 12.8V2.8', stroke: 2 },
+  // The stage: a filled square with a tick knocked out of it, carried in the stage's own colour
+  // - red, yellow, green. It is `check` filled in: the two are told apart by colour and by fill,
+  // which is how the category's ball tells one group from another, rather than by a badge on a
+  // 16px corner. All-day and important are the words `24h` and `!`, which iconBtn renders as
+  // glyphs - there is no icon for either, deliberately: the sun was taken for weather and a flag
+  // needed a digit.
+  ticked: { d: 'M2.6 3.4h10.8v9.2H2.6zM6.9 11.6 3.6 8.3 5 6.9 6.9 8.8 11 4.7 12.4 6.1Z',
+            rule: 'evenodd' },
   // The two ways out of a view: the board, and the zoom that picks a period by name.
   board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
   zoom:   { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 }

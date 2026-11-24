@@ -36,12 +36,14 @@ const newEntry = async () => {
   await sleep(350);
 };
 
-// Each row as label plus background, and - on the toggle row - the badge that carries the
-// value, which is the whole of what the two rows promise.
+// Each row as label plus background, and - where an icon carries a value rather than only a
+// subject - the colour that icon is drawn in: the stage's own, the category's own. That colour
+// replaced a badge on a 16px corner and is read the same way, in square brackets.
 const row = sel => `[...document.querySelectorAll('${sel} .ib')].map(b => {
-  const cs = getComputedStyle(b), d = b.querySelector('.badge');
+  const cs = getComputedStyle(b), svg = b.querySelector('svg');
+  const ink = svg ? getComputedStyle(svg).color : '';
   return (b.getAttribute('aria-label') || '?').split(':')[0] +
-    (d ? '[' + (d.textContent || getComputedStyle(d).backgroundColor) + ']' : '') +
+    (ink && ink !== cs.color ? '[' + ink + ']' : '') +
     (cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? '' : '@' + cs.backgroundColor);
 })`;
 const ROW = row('#f-icons'), FLAGS = row('#f-rows .flags');
@@ -161,17 +163,53 @@ const typeIn = async (field, value) => {
   })()`);
   await sleep(200);
 };
-// One of the when popup's four boxes: 0 start date, 1 start time, 2 end date, 3 end time.
-const typeWhen = async (i, value, blur) => {
-  await ev(`(() => {
-    const n = document.querySelectorAll('#fpop input')[${i}];
-    n.value = ${JSON.stringify(value)};
-    n.dispatchEvent(new Event('input', { bubbles: true }));
-    ${blur ? `n.dispatchEvent(new Event('blur'));` : ''}
-    return n.value;
-  })()`);
-  await sleep(200);
-  return ev(`document.querySelectorAll('#fpop input')[${i}].value`);
+// The when row reads in halves: the start, a dash or nothing, and the end. Read as text, in
+// document order, because which half carries which reading is half of what the row promises.
+const whenRow = () => ev(`[...document.querySelectorAll(
+  '#f-rows [data-field="when"] .ftap, #f-rows [data-field="when"] .wdash')]
+  .map(n => n.textContent)`);
+const whenHalf = async which => {
+  await ev(`[...document.querySelectorAll('#f-rows [data-field="when"] .ftap')]
+    ${which === 'end' ? '.pop()' : '[0]'}.click()`);
+  await sleep(350);
+};
+// Which step the popup is on, and what it is holding: a month of days, the 24 hours, the four
+// quarters of one of them, or the box a typed digit swaps the picker for.
+const step = () => ev(`(() => {
+  const p = document.querySelector('#fpop');
+  return { title: document.querySelector('#fpop-title').textContent,
+    shut: p.hidden,
+    back: !!document.querySelector('#fpop .ib.back, .pop .ib.back'),
+    kind: p.querySelector('.hgrid') ? 'hours' : p.querySelector('.mgrid') ? 'quarters'
+      : p.querySelector('.pick-body') ? 'days' : p.querySelector('input') ? 'typed' : 'none',
+    value: p.querySelector('input') ? p.querySelector('input').value : '',
+    hint: p.querySelector('input') ? p.querySelector('input').placeholder : '',
+    sel: [...p.querySelectorAll('.pk.sel')].map(n => n.textContent),
+    hl: [...p.querySelectorAll('.pk.hl')].map(n => n.textContent) };
+})()`);
+const pickIn = async (sel, text) => {
+  await ev(`[...document.querySelectorAll('#fpop ${sel} .pk')]
+    .find(b => b.textContent === ${JSON.stringify(text)}
+      && !b.classList.contains('out')).click()`);
+  await sleep(350);
+};
+const stepBack = async () => {
+  await ev(`document.querySelector('.pop-head .ib.back').click()`);
+  await sleep(300);
+};
+// A real digit, like the real Enter below it: the picker gives way to a box on a keystroke the
+// document hears, which a synthetic KeyboardEvent on no particular element would not prove.
+const pressDigit = async d => {
+  const k = { key: d, code: `Digit${d}`, windowsVirtualKeyCode: d.charCodeAt(0),
+    nativeVirtualKeyCode: d.charCodeAt(0) };
+  await send('Input.dispatchKeyEvent', { ...k, type: 'keyDown', text: d });
+  await send('Input.dispatchKeyEvent', { ...k, type: 'keyUp' });
+  await sleep(300);
+};
+const typeAndEnter = async value => {
+  await ev(`(() => { const n = document.querySelector('#fpop input');
+    n.value = ${JSON.stringify(value)}; n.focus(); })()`);
+  await pressEnter('#fpop input');
 };
 // The hamburger names its three errands before any opens: one tap to show them, one to pick.
 const menu = async which => {
@@ -380,51 +418,143 @@ const tookIt = await ev(`[document.querySelector('#fpop').hidden,
   document.querySelector('#popup').hidden,
   document.querySelector('#f-rows [data-field="group"] .ftap.unset') ? 'unset' : 'set']`);
 eq('picking a category closes the popup and keeps the entry', tookIt, [true, false, 'set']);
+// The ball is drawn in the colour of the category it holds - the one thing a field's icon can
+// say that its name cannot - and in the row's own ink when it holds none.
+const ball = await ev(`(() => {
+  const r = document.querySelector('#f-rows [data-field="group"]');
+  return [getComputedStyle(r.querySelector('svg')).color,
+          getComputedStyle(r).color]; })()`);
+ok('and the ball carries that category\'s colour', ball[0] !== ball[1], ball.join(' vs '));
 await ev(`document.querySelector('#f-rows [data-field="group"] [aria-label^="Clear"]').click()`);
 await sleep(300);
 
-// The when is the row that had the most to gain: four boxes cannot be a line, so they are in the
-// popup and the row goes on reading the day while they are open.
+// ---- the when, and the flow that sets it ----------------------------------------------------
+// The row reads `WD, DD.MM.YY HH:MM`, in halves, and each half is the way into the flow at the
+// value it reads. The flow walks one picker to a step: four boxes at the top of a popup opened
+// to find out what day something is on were four boxes standing in for four steps.
+
 const whenBefore = await ev(`(() => {
   const r = document.querySelector('#f-rows [data-field="when"]');
   return { h: Math.round(r.getBoundingClientRect().height), text: r.textContent }; })()`);
-await tapRow('when');
+const DAY = /^[^\s,]{2,4}, \d\d[./]\d\d[./]\d\d$/;      // THU, 19.11.26 - in any date format
+const onOneDay = await whenRow();
+ok('one day reads as a dating, a dash and the end time alone',
+  onOneDay.length === 3 && DAY.test(onOneDay[0].replace(/ \d\d:\d\d$/, ''))
+    && /^\d\d:\d\d$/.test(onOneDay[0].slice(-5)) && onOneDay[1] === '\u2013'
+    && /^\d\d:\d\d$/.test(onOneDay[2]), JSON.stringify(onOneDay));
+
+await whenHalf('start');
+const s1 = await step();
 const whenOpen = await ev(`(() => {
   const r = document.querySelector('#f-rows [data-field="when"]');
-  const ins = [...document.querySelectorAll('#fpop input')];
+  const p = document.querySelector('#fpop');
   return { h: Math.round(r.getBoundingClientRect().height), text: r.textContent,
-           count: ins.length, types: ins.map(i => i.type) }; })()`);
+           under: p.getBoundingClientRect().top > r.getBoundingClientRect().bottom,
+           scrim: document.querySelector('#scrim').hidden }; })()`);
 eq('the when row does not change when its popup opens',
   [whenOpen.h, whenOpen.text], [whenBefore.h, whenBefore.text]);
-eq('the popup holds four boxes', whenOpen.count, 4);
-// A native time input takes its 12- or 24-hour shape from the device locale and nothing in
-// markup can tell it otherwise, so the two times are typed. The dates stay native.
-eq('two native dates and two typed times, never a native time',
-  whenOpen.types, ['date', 'text', 'date', 'text']);
+ok('the flow opens under the row, with no scrim', whenOpen.under && whenOpen.scrim,
+  JSON.stringify(whenOpen));
+eq('the start half enters at the start date', [s1.title, s1.kind, s1.back],
+  ['Start date', 'days', false]);
+eq('with the day the field holds marked', s1.sel.length, 1);
 
-// What a typed time accepts, and what it reads back as. The draft is what the row reads, so the
-// row is checked too rather than only the box.
-for (const [typed, shown] of [['930', '09:30'], ['9', '09:00'], ['0815', '08:15'],
-  ['7:5', '07:05'], ['23:59', '23:59']]) {
-  eq(`${typed} reads back as ${shown}`, await typeWhen(1, typed, true), shown);
-}
-// Rejected outright: the box goes back to what the draft still holds rather than keeping nonsense.
-for (const bad of ['25:00', '9:70', 'noon', '99']) {
-  eq(`${bad} is refused`, await typeWhen(1, bad, true), '23:59');
-}
-// The row does not restate the time while the popup is open - that is what keeps it still - and
-// it reads it the moment the popup closes.
-eq('the row holds its text while the popup is typed into',
-  await ev(`document.querySelector('#f-rows [data-field="when"] .ftap').textContent`),
-  whenBefore.text);
+// A picked day is the whole of that step - there is nothing to confirm about a tap on a date -
+// and the hours follow, 24 of them, because a native time control takes its 12- or 24-hour
+// shape from the device's locale and nothing in markup can tell it otherwise.
+await pickIn('.pick-body', '20');
+const s2 = await step();
+eq('picking a day advances to the hours', [s2.title, s2.kind, s2.back],
+  ['Start time', 'hours', true]);
+eq('and marks the hour the field holds', s2.sel, ['09']);
+await pickIn('.hgrid', '14');
+const s3 = await step();
+eq('picking an hour offers its four quarters, as whole times',
+  [s3.title, s3.kind, await ev(`[...document.querySelectorAll('#fpop .mgrid .pk')]
+    .map(b => b.textContent)`)],
+  ['Start time', 'quarters', ['14:00', '14:15', '14:30', '14:45']]);
+// Back unwinds the walk and never a value: the quarters go back to the hours, and a step goes
+// back to the one before it.
+await stepBack();
+eq('back from the quarters is the hours', (await step()).kind, 'hours');
+await stepBack();
+eq('and back again is the step before', (await step()).title, 'Start date');
+await pickIn('.pick-body', '20');
+await pickIn('.hgrid', '14');
+await pickIn('.mgrid', '14:30');
+const s4 = await step();
+eq('a picked time advances to the end date', [s4.title, s4.kind], ['End date', 'days']);
+eq('with the start date highlighted in the grid, which the end may not fall before', s4.hl, ['20']);
+
+await pickIn('.pick-body', '22');
+eq('and the end date advances to the end time', (await step()).title, 'End time');
+await pickIn('.hgrid', '16');
+await pickIn('.mgrid', '16:00');
+eq('the last step closes the popup', (await step()).shut, true);
+const span = await whenRow();
+ok('and the row reads the span as two datings, start then end',
+  span.length === 2 && /20[./]/.test(span[0]) && /14:30$/.test(span[0])
+    && /22[./]/.test(span[1]) && /16:00$/.test(span[1]), JSON.stringify(span));
+eq('with nothing written to the repo', await queueSize(), 0);
+
+// The end half is the end date, always - on a span and on a single day alike, where it reads a
+// time alone. It is the only way the end side can turn a day into a span.
+await whenHalf('end');
+eq('the end half enters at the end date', (await step()).title, 'End date');
+// An end before its start is moved to the start, silently: the row the flow was opened from
+// reads the clamped value the moment it closes, which is the whole of the report it needs.
+await pickIn('.pick-body', '2');
+await pickIn('.hgrid', '16');
+await pickIn('.mgrid', '16:00');
+const clamped = await whenRow();
+ok('an end before the start is clamped to the start',
+  clamped.length === 3 && /20[./]/.test(clamped[0]), JSON.stringify(clamped));
+
+// The keyboard walks the same steps: a digit at a picker is the first character of the value,
+// so the picker gives way to a box holding it, and Enter takes what is in the box and moves on.
+// A date reached by keyboard hands the keyboard to the time after it.
+await whenHalf('start');
+await pressDigit('2');
+const typed = await step();
+// The box is ordered by the format row, so what it must read is derived from the device the
+// checks run on rather than named: a hard-coded `DD.MM.YYYY` would pass on a German phone and
+// hide a box that asks for a day where the app shows the month first.
+const firstField = await ev(`(() => {
+  const p = new Date('2026-11-19T12:00:00')
+    .toLocaleDateString(undefined, { day: '2-digit', month: '2-digit', year: 'numeric' })
+    .split(/\\D+/).filter(Boolean);
+  return p[0] === '2026' ? 'YYYY' : p[0] === '19' ? 'DD' : 'MM'; })()`);
+eq('a digit swaps the picker for a box, in the chosen format',
+  [typed.kind, typed.value, typed.hint.split(/[^A-Z]/)[0]], ['typed', '2', firstField]);
+await typeAndEnter('0312');
+const afterDate = await step();
+eq('Enter takes the date - the year from the month it was showing - and opens the time as a box',
+  [afterDate.title, afterDate.kind, afterDate.hint], ['Start time', 'typed', '09:00']);
+await typeAndEnter('845');
+eq('Enter on the time moves to the end date, a picker again', await ev(
+  `[document.querySelector('#fpop-title').textContent,
+    !!document.querySelector('#fpop .pick-body')]`), ['End date', true]);
 await ev(`document.querySelector('#fpop-close').click()`);
 await sleep(300);
 eq('the popup x closes it and leaves the entry open', await ev(
   `[document.querySelector('#fpop').hidden, document.querySelector('#popup').hidden]`),
   [true, false]);
-eq('and the row then reads the time it was given', await ev(
-  `document.querySelector('#f-rows [data-field="when"] .ftap').textContent.includes('23:59')`),
-  true);
+const written = await whenRow();
+ok('and what the flow wrote before it was left stands', /03[./]12[./]26 08:45/.test(written[0]),
+  JSON.stringify(written));
+
+// Refused outright, as a typed time already is: the box goes back to what the draft holds
+// rather than keeping a date the calendar does not have.
+await whenHalf('start');
+await pressDigit('9');
+await typeAndEnter('31.02.2026');
+const refused = await step();
+// What the draft holds, in the box's own order: the row's reading with its year written out.
+const back = (await whenRow())[0].match(/\d\d\D\d\d\D\d\d/)[0].replace(/(\d\d)$/, '20$1');
+eq('31 February is refused and the box goes back to the draft',
+  [refused.kind, refused.value], ['typed', back]);
+await ev(`document.querySelector('#fpop-close').click()`);
+await sleep(300);
 
 // Escape unwinds one layer at a time rather than throwing the edit away from inside a field.
 await tapRow('recurrence');
@@ -452,6 +582,18 @@ await sleep(250);
 const alldayOn = (await ev(FLAGS))[0];
 ok('all-day lights when on', alldayOn.includes('@'), alldayOn);
 ok('and not in green', !alldayOn.endsWith('@' + GOOD), `${alldayOn} must not be the disk's green`);
+
+// An all-day entry has no times to walk: the 24h icon beside the row is how all-day is turned
+// off, and two disabled steps in the middle of a flow are two taps that do nothing.
+await whenHalf('start');
+eq('all-day opens at the start date', (await step()).title, 'Start date');
+await pickIn('.pick-body', '12');
+eq('and goes straight to the end date, skipping the time', (await step()).title, 'End date');
+await pickIn('.pick-body', '14');
+eq('which is its last step', (await step()).shut, true);
+eq('the row then reads two days and no time at all',
+  (await whenRow()).some(t => /\d\d:\d\d/.test(t)), false);
+
 await flag(0);
 await sleep(200);
 eq('and goes plain again', allday.includes('@'), false);
@@ -463,7 +605,7 @@ eq('a task row carries the two', asTask.map(label), ['All-day', 'Stage', 'Import
 eq('and reads 24h and !', await ev(words('#f-rows .flags')), ['24h', '!']);
 eq('the field rows do not reshuffle', (await ev(FIELD_ROWS)).map(r => r.field),
   ['group', 'recurrence', 'alerts', 'location', 'participants']);
-ok('a new task starts at todo', !!badge(asTask[1]), 'the stage badge carries its colour');
+ok('a new task starts at todo', !!badge(asTask[1]), 'the stage icon carries its colour');
 // Nothing on the row opens an editor: there is no estimate to type any more, so a tap on any of
 // the three is the whole edit and the popup grows no field popup of its own.
 eq('and nothing on it opens a field popup', await ev(
@@ -472,6 +614,11 @@ eq('and nothing on it opens a field popup', await ev(
 const stages = [];
 for (let i = 0; i < 3; i++) { await flag(1); await sleep(220); stages.push(badge((await ev(FLAGS))[1])); }
 ok('stage cycles through three colours', new Set(stages).size === 3, stages.join(' '));
+// A ticked square filled with the stage's colour, not three columns with a dot on the corner.
+eq('and is drawn as a ticked square with the tick knocked out', await ev(
+  `(() => { const p = document.querySelector('#f-rows .flags .ib:nth-child(2) svg path');
+    return [p.getAttribute('fill'), p.getAttribute('fill-rule')]; })()`),
+  ['currentColor', 'evenodd']);
 ok('and returns to where it started', stages[2] === badge(asTask[1]), `${stages[2]} vs ${badge(asTask[1])}`);
 
 const bangs = [];
@@ -479,7 +626,7 @@ for (let i = 0; i < 2; i++) { await flag(2); await sleep(220); bangs.push((await
 ok('important lights when on', bangs[0].includes('@'), bangs[0]);
 ok('and not in green', !bangs[0].endsWith('@' + GOOD), `${bangs[0]} must not be the disk's green`);
 ok('two taps return it to plain', !bangs[1].includes('@'), bangs[1]);
-eq('and it carries no badge either way', bangs.map(badge), ['', '']);
+eq('and its icon carries no colour of its own either way', bangs.map(badge), ['', '']);
 
 await click(1);                                   // back to an event
 await sleep(300);
@@ -1411,8 +1558,11 @@ eq('with the popup still open', bodyClosed.popup, true);
 ok('and the draft keeps the text', /first/.test(bodyClosed.shown), bodyClosed.shown);
 
 // The boundary the one listener draws: `#fpop` is outside `#f-rows`, so Enter in a field's own
-// popup is not the row's Enter. The when stays open, and nothing is submitted.
+// popup is not the row's Enter. The when stays open, and nothing is submitted. Its typed box is
+// the input a field popup holds - `1` alone is not a date, so the box keeps the step rather
+// than advancing, which is what leaves the popup open to be read.
 await tapRow('when');
+await pressDigit('1');
 await pressEnter('#fpop input');
 eq('Enter in a field popup leaves it open', await ev(
   `!document.querySelector('#fpop').hidden`), true);
