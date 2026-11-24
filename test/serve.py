@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
-"""Serves the working tree for the browser checks, plus one synthetic route.
+"""Serves the working tree for the browser checks, plus one synthetic route per app.
 
-/__fixture.json is a month of entries for check.mjs to seed the local mirror with. It is
-generated rather than committed as markdown so that it always lands in the month the checks
-run in - a fixture pinned to April would leave the month view empty and the checks green.
+/__fixture/<app>.json is what test/check-<app>.mjs seeds the local mirror with. It is generated
+rather than committed as markdown so that it always lands in the month the checks run in - a
+fixture pinned to April would leave the month view empty and the checks green.
+
+A new app adds a function here and names it in FIXTURES. An app with no data of its own - the
+tile screen - takes the empty one, which still gets it a config and a mirror to open against.
 """
 import http.server, json, os, sys
 from datetime import date
@@ -43,7 +46,7 @@ ROWS = [
 ]
 
 
-def fixture():
+def calendar():
     today = date.today()
     files = [
         {"path": "calendar/groups.md", "oid": "g1",
@@ -72,14 +75,23 @@ def fixture():
     return files
 
 
+# The tile screen reads no files of its own: what it needs is the config the seed writes anyway.
+FIXTURES = {"calendar": calendar, "mine": lambda: []}
+
+PREFIX = "/__fixture/"
+
+
 class Handler(http.server.SimpleHTTPRequestHandler):
     def __init__(self, *a, **k):
         super().__init__(*a, directory=REPO, **k)
 
     def do_GET(self):
-        if not self.path.startswith("/__fixture.json"):
+        if not self.path.startswith(PREFIX):
             return super().do_GET()
-        body = json.dumps(fixture()).encode()
+        app = self.path[len(PREFIX):].split("?")[0].removesuffix(".json")
+        if app not in FIXTURES:
+            return self.send_error(404, "no fixture for %r" % app)
+        body = json.dumps(FIXTURES[app]()).encode()
         self.send_response(200)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))

@@ -10,6 +10,7 @@ whole of it:
 ```
 test/run.sh                 the checks
 test/run.sh --shot DIR      the checks, and a screenshot of each view into DIR
+test/run.sh calendar        one app's browser checks, by the name in test/check-<app>.mjs
 ```
 
 It needs `chromium` and node 20 or newer on the PATH, installs nothing, and writes nothing into
@@ -38,16 +39,30 @@ reads as `done` while its neighbours read as `todo`, that a wall-clock time insi
 zone skips in spring resolves to something stable rather than drifting an hour on every save,
 and that an empty field is omitted from the frontmatter rather than written as `None`.
 
-`test/serve.py` serves the working tree, plus one synthetic route, `/__fixture.json`: a month of
-entries generated for *the month the checks run in*. A fixture pinned to a fixed date would
-leave the month view empty and every check green. It holds what has historically broken things —
-long titles, timed entries, a day with more entries than a phone cell shows, all-day items, a
-Saturday task.
+`test/serve.py` serves the working tree, plus one synthetic route per app,
+`/__fixture/<app>.json`. The calendar's is a month of entries generated for *the month the checks
+run in* — a fixture pinned to a fixed date would leave the month view empty and every check
+green. It holds what has historically broken things: long titles, timed entries, a day with more
+entries than a phone cell shows, all-day items, a Saturday task.
 
-`test/check.mjs` connects to Chromium over the DevTools protocol, seeds that fixture into
-IndexedDB with a throwaway config, and drives the app by clicking the real buttons.
+**One browser suite per app**, `test/check-<app>.mjs`, over the harness in `test/cdp.mjs`. The
+harness holds what is the same for all of them — the DevTools connection, the one-line-per-check
+reporting, the viewport, the screenshot, and the readers and seeders for the shared store.
+`run.sh` finds the suites by globbing their names rather than listing them, so adding
+`test/check-diary.mjs` is all it takes for the diary to be checked. They share one Chromium and
+run in turn, because they drive the same page target.
 
-Two things about it are deliberate and easy to get wrong:
+That sharing is the one thing to be careful of: **`seed()` clears every store before it writes.**
+The suites run in the order the directory globs, so a seed that added to what was there would
+make each suite's result depend on which ran before it — a theme chosen by the tile screen's
+checks would be the theme another suite's colour checks read.
+
+`test/check-mine.mjs` covers the tile screen, which had no suite at all until the sync line moved
+into `shared/sync.js`. That is the reason it has one: the sequence that screen runs is now the
+same code the calendar runs, so a change made for one app lands on the other, and the screen
+nobody was looking at is the one that would break quietly.
+
+Three things about the harness are deliberate and easy to get wrong:
 
 - **The viewport comes from `Emulation.setDeviceMetricsOverride`, never from `--window-size`.**
   Chromium's headless mode lays the page out at a fixed 500 px and then *scales the capture* to
@@ -56,8 +71,44 @@ Two things about it are deliberate and easy to get wrong:
 - **The config holds a fake token.** The mirror is local, so every view renders from it; the
   push fails and writes a line into the sync indicator, which is correct and is not a failure.
   Nothing in the checks talks to GitHub, and no real token ever goes near a browser profile.
+- **A suite reports through `report()` and never its own counter.** `run.sh` adds up the exit
+  codes, so a suite that printed `FAIL` and exited 0 would make a red run look green.
 
 ## What is checked
+
+### The tile screen
+
+**The setup gate.** That with nothing stored, the setup screen is the one shown, that it asks
+for owner, repo, branch, token and expiry and nothing else, and that the token field is a
+password field — the token is never a readable field, in Mine or anywhere.
+
+**A tile per app, each one opening its folder and drawing its own icon.** `naturalWidth > 0`,
+not just that an `img` is in the markup: an app added to `shared/apps.js` without an `icon.svg`
+beside it would otherwise pass.
+
+**No update is offered when none is waiting**, and the banner is `display: none` rather than
+merely invisible. A class rule setting `display` beats the UA stylesheet's `[hidden]`, so this
+banner rendered permanently until that rule moved into the shared base —
+[REQUIREMENTS.md](REQUIREMENTS.md) asks that reloading twice with no deploy in between leaves no
+banner, and this is the check that holds it to that.
+
+**The token expiry warning**: silent at 90 days, warning with the count at 9, and saying so
+outright once it has passed.
+
+**The sync line runs the same sequence the apps do.** That opening with a queue retries it
+rather than reporting a count, that the failure reads as an error, that the queue survives a
+failed push, and that the attempt is recorded with its reason. And that the record names the
+screen that made it — `mine` here, `calendar` from inside the calendar. Note what this does
+*not* prove: both answers were also right when `appName()` tested for the literal `/calendar/`,
+so what catches a regression to that is a third app's suite asserting its own name. Write that
+assertion when you write the app.
+
+**The two Mine-wide settings are theme and date format**, with the same options every app
+offers, the repo and branch named, the token never shown, and a theme chosen here applying at
+once and still applying in an app opened afterwards. That last one is the whole of what "one
+setup, every app" means, in one check.
+
+### The calendar
 
 **Every view fits a phone.** Day, week, month, year and kanban, at 320 and 360 CSS px, in light
 and dark. The test is `scrollWidth === clientWidth`: nothing may extend past the screen, in any

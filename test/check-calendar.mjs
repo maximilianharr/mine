@@ -1,90 +1,12 @@
-// The browser checks. Run through test/run.sh, which starts the server and Chromium for it.
+// The calendar in a browser. Run through test/run.sh, which starts the server and Chromium and
+// then runs every test/check-<app>.mjs in turn.
 //
-// Chromium is driven over CDP rather than with --window-size and --screenshot, because that
-// flag pair lays the page out at a fixed 500px and only scales the capture: a 320px screenshot
-// of a 500px layout passes a fit check that a real phone fails. Emulation.setDeviceMetricsOverride
-// is the width the page actually sees.
-//
-// Node 20 has no WebSocket global, hence --experimental-websocket in run.sh.
-const PORT = 8787, CDP = 9222, ORIGIN = `http://127.0.0.1:${PORT}`;
-const SHOT = process.argv.includes('--shot') ? process.argv[process.argv.indexOf('--shot') + 1] : null;
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-let failures = 0;
-const ok = (name, pass, detail = '') => {
-  failures += pass ? 0 : 1;
-  console.log(`${pass ? 'pass' : 'FAIL'}  ${name}${pass || !detail ? '' : '  — ' + detail}`);
-};
-const eq = (name, got, want) => ok(name, JSON.stringify(got) === JSON.stringify(want),
-  `got ${JSON.stringify(got)}, want ${JSON.stringify(want)}`);
-
-// ---- CDP ------------------------------------------------------------------------------------
-
-async function pageTarget() {
-  for (let i = 0; i < 50; i++) {
-    try {
-      const list = await (await fetch(`http://127.0.0.1:${CDP}/json/list`)).json();
-      const page = list.find(t => t.type === 'page');
-      if (page) return page.webSocketDebuggerUrl;
-    } catch { /* Chromium is still coming up */ }
-    await sleep(200);
-  }
-  throw new Error('no CDP page target — is Chromium running with --remote-debugging-port?');
-}
-
-const ws = new WebSocket(await pageTarget());
-await new Promise(r => ws.addEventListener('open', r));
-let id = 0;
-const waiting = new Map();
-ws.addEventListener('message', e => {
-  const m = JSON.parse(e.data);
-  if (m.id && waiting.has(m.id)) { waiting.get(m.id)(m); waiting.delete(m.id); }
-});
-const send = (method, params = {}) => new Promise((res, rej) => {
-  const n = ++id;
-  waiting.set(n, m => m.error ? rej(new Error(`${method}: ${m.error.message}`)) : res(m.result));
-  ws.send(JSON.stringify({ id: n, method, params }));
-});
-const ev = async expression => {
-  const r = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true });
-  if (r.exceptionDetails) throw new Error(r.exceptionDetails.exception?.description || 'evaluate failed');
-  return r.result.value;
-};
-
-await send('Page.enable');
-await send('Runtime.enable');
-
-const viewport = (w, scheme = 'light') => Promise.all([
-  send('Emulation.setDeviceMetricsOverride', { width: w, height: 900, deviceScaleFactor: 1, mobile: true }),
-  send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-color-scheme', value: scheme }] })
-]);
-
-// A fake token is enough: the mirror is local, and the failed push only writes the sync line.
-const seed = () => ev(`(async () => {
-  const files = await (await fetch('${ORIGIN}/__fixture.json')).json();
-  const db = await new Promise((res, rej) => {
-    const r = indexedDB.open('mine', 1);
-    r.onupgradeneeded = () => {
-      const d = r.result;
-      if (!d.objectStoreNames.contains('kv')) d.createObjectStore('kv');
-      if (!d.objectStoreNames.contains('files')) d.createObjectStore('files', { keyPath: 'path' });
-      if (!d.objectStoreNames.contains('queue')) d.createObjectStore('queue', { autoIncrement: true });
-    };
-    r.onsuccess = () => res(r.result);
-    r.onerror = () => rej(r.error);
-  });
-  await new Promise((res, rej) => {
-    const t = db.transaction(['kv', 'files'], 'readwrite');
-    t.objectStore('kv').put({ owner: 'demo', repo: 'mine-data', branch: 'main',
-      token: 'not-a-real-token', expires: '2099-01-01' }, 'config');
-    t.objectStore('kv').put(1, 'calendar.weekStart');
-    t.objectStore('kv').put(true, 'calendar.showWeeks');
-    for (const f of files) t.objectStore('files').put(f);
-    t.oncomplete = res;
-    t.onerror = () => rej(t.error);
-  });
-  return files.length;
-})()`);
+// What is shared with the other suites - the CDP connection, the reporting, the viewport, the
+// screenshot and the store readers - is in test/cdp.mjs.
+import {
+  ORIGIN, ok, eq, report, sleep, send, ev, viewport, goto, shoot,
+  seed, kv, queueSize, seedQueue
+} from './cdp.mjs';
 
 // The app opens on the month view. The zoom button picks a period by name - the label no longer
 // cycles, it opens the picker - and the board has a slot of its own, which is also the way back
@@ -98,8 +20,7 @@ const zoomPick = async name => {
   await sleep(350);
 };
 const open = async (mode = 'M') => {
-  await send('Page.navigate', { url: `${ORIGIN}/calendar/` });
-  await sleep(1500);
+  await goto('/calendar/');
   if (mode === 'K') {
     await ev(`document.querySelector('#board').click()`);
     await sleep(500);
@@ -113,12 +34,6 @@ const open = async (mode = 'M') => {
 const newEntry = async () => {
   await ev(`document.querySelector('.day .num').click()`);
   await sleep(350);
-};
-
-const shoot = async name => {
-  if (!SHOT) return;
-  const s = await send('Page.captureScreenshot', { format: 'png' });
-  (await import('fs')).writeFileSync(`${SHOT}/${name}.png`, Buffer.from(s.data, 'base64'));
 };
 
 // Each row as label plus background, and - on the toggle row - the badge that carries the
@@ -192,13 +107,6 @@ const seriesFile = () => ev(`(async () => {
   });
   const f = all.find(f => (f.text || '').includes('Water the plants'));
   return f ? f.text : 'gone';
-})()`);
-const queueLen = () => ev(`(async () => {
-  const db = await new Promise(res => { const r = indexedDB.open('mine', 1); r.onsuccess = () => res(r.result); });
-  return await new Promise(res => {
-    const q = db.transaction('queue', 'readonly').objectStore('queue').count();
-    q.onsuccess = () => res(q.result);
-  });
 })()`);
 const label = g => g.split('@')[0].split('[')[0];
 const badge = g => (g.match(/\[(.*)\]/) || [, ''])[1];
@@ -285,7 +193,8 @@ const centred = b => b.top > 0 && b.bottom < b.h - 8;
 
 await viewport(360);
 await open();
-eq('fixture seeded', typeof await seed() === 'number', true);
+eq('fixture seeded', typeof await seed('calendar',
+  { 'calendar.weekStart': 1, 'calendar.showWeeks': true }) === 'number', true);
 
 for (const scheme of ['light', 'dark']) {
   for (const mode of ['M', 'W', 'Y', 'D', 'K']) {
@@ -413,7 +322,7 @@ await rowX('location');
 const kept = (await ev(FIELD_ROWS)).find(r => r.field === 'location');
 eq('the row\'s x closes the row', kept.open, false);
 eq('and keeps what was typed', kept.text, 'Somewhere else');
-eq('still without writing it', await queueLen(), 0);
+eq('still without writing it', await queueSize(), 0);
 await openRow('location');
 await typeIn('location', 'Conference room 3B');
 await rowX('location');
@@ -651,7 +560,7 @@ eq('and the top row then runs trashcan, disk, x', await rightmost('#f-icons'),
   ['Delete', 'Save', 'Close']);
 await typeIn('title', was);
 eq('and goes away again when it is put back', await hasDisk(), false);
-eq('nothing was written while it showed', await queueLen(), 0);
+eq('nothing was written while it showed', await queueSize(), 0);
 await closeForm();
 
 await open('K');
@@ -724,7 +633,7 @@ await sleep(300);
 const chose = await ev(FIELD_ROWS);
 eq('picking a group closes the popup', await ev(`document.querySelector('#fpop').hidden`), true);
 eq('and sets it', chose.find(r => r.field === 'group').unset, false);
-eq('and writes nothing on its own', await queueLen(), 0);
+eq('and writes nothing on its own', await queueSize(), 0);
 await closeForm();
 
 // ---- 4. the filter and the top pane ------------------------------------------------------------
@@ -1474,7 +1383,7 @@ await closeForm();
 // through CDP, because implicit submission is native and a synthetic event cannot trigger it.
 await open();
 await newEntry();
-const q0 = await queueLen();
+const q0 = await queueSize();
 await typeIn('title', 'Enter closes the row');
 await pressEnter('#f-rows [data-field="title"] input');
 const afterEnter = await ev(`({
@@ -1484,7 +1393,7 @@ const afterEnter = await ev(`({
 eq('Enter leaves the popup open', afterEnter.popup, true);
 eq('and closes the row it was pressed in', afterEnter.editors, 0);
 eq('and the draft keeps what was typed', afterEnter.title, 'Enter closes the row');
-eq('and nothing was written', await queueLen(), q0);
+eq('and nothing was written', await queueSize(), q0);
 
 // The body row, open: no label and no hint of its own, the row's own DETAILS header being the
 // one name it needs - and the textarea carries that name unseen, for a screen reader.
@@ -1710,56 +1619,8 @@ await sleep(300);
 // of what it said, and the reason was written to that same line and overwritten by the next
 // focus. The fake token means every drain in here fails, which is the state to check.
 
-const kv = key => ev(`(async () => {
-  const db = await new Promise(res => {
-    const r = indexedDB.open('mine', 1);
-    r.onsuccess = () => res(r.result);
-  });
-  return new Promise(res => {
-    const q = db.transaction('kv', 'readonly').objectStore('kv').get('${key}');
-    q.onsuccess = () => res(q.result === undefined ? null : q.result);
-  });
-})()`);
-
-const queueSize = () => ev(`(async () => {
-  const db = await new Promise(res => {
-    const r = indexedDB.open('mine', 1);
-    r.onsuccess = () => res(r.result);
-  });
-  return new Promise(res => {
-    const q = db.transaction('queue', 'readonly').objectStore('queue').count();
-    q.onsuccess = () => res(q.result);
-  });
-})()`);
-
-const seedQueue = n => ev(`(async () => {
-  const db = await new Promise(res => {
-    const r = indexedDB.open('mine', 1);
-    r.onsuccess = () => res(r.result);
-  });
-  await new Promise((res, rej) => {
-    const t = db.transaction(['queue', 'kv'], 'readwrite');
-    t.objectStore('queue').clear();
-    t.objectStore('kv').delete('sync.last');
-    // An ETag to be dropped: without one seeded, the check that discarding drops it reads null
-    // either way and cannot fail.
-    t.objectStore('kv').put('W/\"seeded-for-the-check\"', 'commitEtag');
-    for (let i = 0; i < ${n}; i++)
-      t.objectStore('queue').add({
-        op: i ? 'put' : 'del',
-        path: 'calendar/2026/04/2026-04-' + String(i % 28 + 1).padStart(2, '0') + '-0900-q' + i + '.md',
-        text: '---\\ntitle: queued ' + i + '\\n---\\n',
-        baseOid: null,
-        at: Date.now() - i * 3600000
-      });
-    t.oncomplete = res;
-    t.onerror = () => rej(t.error);
-  });
-  return true;
-})()`);
-
 await viewport(320);
-await seedQueue(14);
+await seedQueue(14, 'calendar/2026/04/2026-04-18-0900-');
 await open();                                  // the queue is retried by the boot itself
 
 const line = await ev(`(() => { const s = document.querySelector('#sync');
@@ -1823,6 +1684,4 @@ eq('and the panel says so, with nothing left waiting', await ev(
   `[document.querySelector('#logs-panel .srow .slab').textContent,
     document.querySelectorAll('#logs-panel .lrow').length]`), ['in sync', 0]);
 
-console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
-ws.close();
-process.exit(failures ? 1 : 0);
+report('calendar');
