@@ -1,0 +1,43 @@
+/grill-me implement these features:
+
+```
+in the Kanban/calendar event/task popup
+- fill the 'o' icon of the category in the color of the selected category
+- Multi-day event is not shown in the time preview. The end date is missing. In the preview make the date format '3-char weekday, DD.MM.YY HH:MM' (e.g. "THU, 19.11.26 15:00") and put start on the left and end on the right if multi-day and "TH, 19.11.26 15:00-17:00" if single day
+- If the user clicks on the date then open a date picker instead of the popup. If the user selects a date then switch to time picker. If the user enters digits then directly switch to 'DD.MM.YYYY' text filed and to time 'HH:MM' field when enter is pressed. Then continue with end date where the start date is highlighted in the date picker. followed by end date time.
+- remove the time estimate completely. Ignore it in sample data or remove from mine-data repo (which is used for testing)
+- Replace the stage button with a checkmark in a rectangle icon. Keep the coloring (red=Todo, etc)
+- Put all icons (expect location and participants), without their description, in a row (or two if necessary) for a quick edit view. If the user clicks any of these icons then the same popup opens as when clicking the line in full view. Make alert not a text field but dropdown like category with (0, 5m, 15m, 1h, 1d). Add a downwards '>' to show all icons with their descriptions as rows (as before). Put 24h and important toggle in one line in the extended view. For stage show 'Todo', 'Doing', 'Done'. Location and participants are always shown as line. As is the details. So for extended view there is only lines.
+- For the 'repeat' directly open the dropdown and not a popup that contains the dropdown. After user selected repetition ask for ending date with 'never' as option. For ending date provide the date picker. When user start typing number switch to date editor, similar behavior as the start/end date of the event
+
+In main Kanban/calendar view
+- Multi-day events shall be shown as continued top row elements in all views (d,w,m,y)
+
+In the filter view:
+- add stage and important to the category filter
+- Indicate a filter by adding a small number in a circle to the top right of the hamburger symbol with an increasing number per filter
+```
+
+---
+
+Commit. Then implement everything (not only estimate removal). When all agreed decisions are inplemented then commit and push. I will then test on Desktop and Android and will provide further instructions.
+
+---
+
+<task-notification>
+<task-id>bu07n9o9s</task-id>
+<tool-use-id>toolu_01VanbmHvoURdxto2RszRAeo</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bu07n9o9s.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full test suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1k3jxvf7</task-id>
+<tool-use-id>toolu_01PD967VMVp2gReCDsX54vjV</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b1k3jxvf7.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the test run to produce output" completed (exit code 0)</summary>
+</task-notification>
