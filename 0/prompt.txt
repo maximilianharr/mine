@@ -1,0 +1,107 @@
+<task-notification>
+<task-id>b7ktypcrl</task-id>
+<tool-use-id>toolu_01GW4K12Egv75iWLK7q3dJh2</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b7ktypcrl.output</output-file>
+<status>failed</status>
+<summary>Background command "Run the calendar suite with the new when checks" failed with exit code 144</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>benypxg5a</task-id>
+<tool-use-id>toolu_01TD4K7vef7xgJQPw263gTHb</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/benypxg5a.output</output-file>
+<status>completed</status>
+<summary>Background command "Rerun the calendar suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bdi4c64wt</task-id>
+<tool-use-id>toolu_01HA3qQy9o5jTTDXpyB1caaY</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bdi4c64wt.output</output-file>
+<status>completed</status>
+<summary>Background command "Rerun the calendar suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bmvkq8982</task-id>
+<tool-use-id>toolu_01Xnr9qa3PjFwPQk78Rixor6</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bmvkq8982.output</output-file>
+<status>completed</status>
+<summary>Background command "Rerun the calendar suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bcs0fclq6</task-id>
+<tool-use-id>toolu_01TZaMEb2rz3JnixW7jANf2k</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bcs0fclq6.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the calendar suite to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgza8bla0</task-id>
+<tool-use-id>toolu_01GnFErqKcTpm5LwW1NsLo1p</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bgza8bla0.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite alone" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bhyxzhvsc</task-id>
+<tool-use-id>toolu_01Jv6N2DXVvfZt7U3bnSd79c</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bhyxzhvsc.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the full suite and report" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bbuijn5vu</task-id>
+<tool-use-id>toolu_011kRsKck42ei9p15c7YDdyi</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bbuijn5vu.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for run6 to finish" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0ubjfum9</task-id>
+<tool-use-id>toolu_01CNB5hjhJgtc1GgsaciCX9C</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b0ubjfum9.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the calendar suite with coloured icons" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bljy5rxk2</task-id>
+<tool-use-id>toolu_0194UmLeg4KLVtfH1n5JGHTa</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bljy5rxk2.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for run7" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnag6ueb7</task-id>
+<tool-use-id>toolu_01KiBKXct2QL77X1azX7ScUJ</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bnag6ueb7.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for run7 to finish" completed (exit code 0)</summary>
+</task-notification>
