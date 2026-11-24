@@ -114,10 +114,10 @@ function card(o) {
     top.append(back, fwd);
   }
 
-  // That is the whole card: a coloured bar, a title and two lines. The estimate is edited in
-  // the entry popup, and the sprint number was the same on every card, because a board shows
-  // one sprint. There is no sprint control anywhere - a sprint is derived from the start date,
-  // so moving a task to another one is changing its date.
+  // That is the whole card: a coloured bar, a title and two lines. The sprint number was the
+  // same on every card, because a board shows one sprint. There is no sprint control anywhere -
+  // a sprint is derived from the start date, so moving a task to another one is changing its
+  // date.
   const main = el('div', 'kmain');
   main.append(top);
   if (o.body.trim()) main.append(el('p', 'kbody', o.body.trim()));

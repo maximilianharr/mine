@@ -10,18 +10,22 @@ See [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) for the file format.
 A title, a type — **event** or **task** — a start and end, a group, a location, participants,
 alerts, and a free markdown body for the agenda, checklist or notes.
 
-A task also carries a **stage** — `todo`, `doing` or `done` — and, optionally, an **important**
-mark and an estimate in days. An event has none of the three. Stage is the only record of a
-task's progress; there is no separate done flag.
+A task also carries a **stage** — `todo`, `doing` or `done`. An event has none, and stage is the
+only record of a task's progress; there is no separate done flag.
 
 **Important is a plain yes or no, not a scale.** There is no priority 1, 2 and 3. Three tiers
 asked you to decide twice — once whether a task matters and again how much — and the second
 answer never changed what got done first. A task that matters carries `important: true`; a task
-that does not carries no key at all, which is the convention the estimate already follows.
+that does not carries no key at all.
 
-A new task starts at `todo` with an estimate of **1 day**. Both are only defaults: either can be
-changed before saving, and the estimate can be cleared away again, so `estimate` stays a key an
-entry may simply not have — nothing writes one into a task that never carried one.
+A new task starts at `todo`, which is a default and nothing more: it can be changed before
+saving.
+
+**There is no estimate.** A task used to carry one, in days, and nothing ever read it: it was
+shown in the popup that set it and nowhere else, so it was a number to keep up to date rather
+than one to act on. The field, its hourglass and its default of one day are gone. A file that
+still carries an `estimate` key keeps it — the form does not own that key any more, so it
+survives a save the way any hand-added key does.
 
 Entries can repeat, and a repeating entry can have single occurrences skipped, moved, retitled
 or moved to another stage without affecting the rest.
@@ -253,7 +257,7 @@ The top row carries **the type**, then right-aligned a trashcan to delete the en
 once there is something to save, and an `x` to close. On an entry that already exists the type is
 a **marker, not a choice** — a ticked square for a task, a calendar page for an event, shown and
 not pressable — because a task turned into an event drops its stage, its importance and its
-estimate, and the type is settled when the entry is made. On a new entry it is the pair, with the
+importance, and the type is settled when the entry is made. On a new entry it is the pair, with the
 event selected. On a repeating one the **scope pair** follows the marker, left of the gap —
 described below.
 
@@ -302,11 +306,9 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
   discards the whole edit, is a thumb's width above that line; it closes on Escape or by opening
   any other row.
 - **A field whose control cannot fit a line opens it in a popup anchored to the row.** The when,
-  the category, the repetition and the estimate: four date and time boxes, a list of categories, a
-  rule with an end condition, a number with a unit. The row keeps its icon, its value and its
-  trashcan — **nothing about it moves** — and the popup hangs directly under it, naming the field
-  and carrying an `x`. The estimate's is the one that also carries the trashcan, because its row
-  is an icon on the toggle row with no room beside it.
+  the category and the repetition: four date and time boxes, a list of categories, a rule with an
+  end condition. The row keeps its icon, its value and its trashcan — **nothing about it moves**
+  — and the popup hangs directly under it, naming the field and carrying an `x`.
 - **The field popup carries no scrim**, alone among the calendar's overlays. A scrim would stop
   the tap that dismisses it, so moving from one field to the next would take two taps; without one
   the tap reaches the row it landed on and opens it. Tapping the row it is already on closes it
@@ -384,17 +386,17 @@ calendar is 24-hour by construction](#the-filter-and-the-settings). **The two da
 because a date picker is worth more than a format and a date, unlike a time, cannot be misread
 into a different value.
 
-The when-line no longer repeats the stage, the importance and the estimate as words. The toggle
-row shows all three, live, directly beneath it.
+The when-line no longer repeats the stage and the importance as words. The toggle row shows both,
+live, directly beneath it.
 
 ### The toggle row
 
 One row of icons directly under the when. These are not fields with an editor each: they are
-small values, edited in the row itself with a single tap, and they **show their value** rather
-than merely whether they have one — each as a small badge on the corner of its icon.
+small values, edited in the row itself with a single tap, and each **shows its value** rather
+than merely whether it has one.
 
 **A tap on one of them is the whole edit**, into the draft like everything else — there is
-nothing in these four to type, so there is nothing for a row's `x` to put back and no editor to
+nothing in these three to type, so there is nothing for a row's `x` to put back and no editor to
 open. The disk appears on the first tap, as it does for any other change.
 
 - **`24h` for all-day** — the one control in the popup that is a word rather than a picture, and
@@ -409,14 +411,9 @@ open. The disk appears on the first tap, as it does for any other change.
 - a `!` for **important** — a straight toggle, lit when the task is important and plain when it
   is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
   not already said, which is what made the old flag need a digit and this one not.
-- an hourglass for **estimate** — the one of the four that opens an editor, because a number has
-  to be typed. It opens **in a popup under the hourglass**, so the toggle row keeps its one line
-  like every other row. That popup is the one that carries the trashcan itself, because its row is
-  an icon with no room beside it. Its badge reads the day count as `2d`.
 
-On an event, stage, important and estimate are not there at all, because an event has none of
-them. They sit here so that a task that is not on a board still carries the two fields a kanban
-card edits.
+On an event, stage and important are not there at all, because an event has neither. They sit
+here so that a task that is not on a board still carries the two fields a kanban card edits.
 
 Neither lit control — `24h` or `!` — is the disk's green: in all of Mine green is a save and red
 is a trashcan, and a green toggle beside the disk would make the popup look like it offers two
@@ -619,10 +616,10 @@ A card shows:
   the drag already does, in the one place they are also easiest to mistake for the header's pager;
 - below it two lines of the markdown body, and the day the task sits on.
 
-**That is the whole card.** The estimate, the sprint number and the priority chip are gone from
-it. The estimate and the importance are set in the entry popup's toggle row, which is one tap
-further away and is where the rest of the task is edited anyway; the sprint number was identical
-on every card on the board, because a board shows one sprint. What is left is a coloured bar, a
+**That is the whole card.** The sprint number and the priority chip are gone from it. The
+importance is set in the entry popup's toggle row, which is one tap further away and is where the
+rest of the task is edited anyway; the sprint number was identical on every card on the board,
+because a board shows one sprint. What is left is a coloured bar, a
 title and two lines — the three things worth reading at a glance across three columns.
 
 The `!` is a **marker, not a button**: it is read on the card and set in the popup. So on a

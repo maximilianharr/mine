@@ -201,13 +201,13 @@ eq('and keeps counting', groupName('Work', ['work', 'work-2']), 'work-3');
 
 const written = entryFile({
   title: 'Draft the Q2 hiring plan', type: 'task', start: '2026-04-20', stage: 'doing',
-  important: true, estimate: 3, group: 'work', location: '', alerts: [], participants: ['a@b.c']
+  important: true, group: 'work', location: '', alerts: [], participants: ['a@b.c']
 }, 'notes here', 'calendar/x.md').text;
 ok('the frontmatter is ordered as the samples are',
   written.indexOf('title:') < written.indexOf('type:') &&
   written.indexOf('type:') < written.indexOf('start:') &&
   written.indexOf('stage:') < written.indexOf('important:') &&
-  written.indexOf('important:') < written.indexOf('estimate:'), written);
+  written.indexOf('important:') < written.indexOf('group:'), written);
 ok('an empty string is omitted', !written.includes('location:'), written);
 ok('an empty list is omitted', !written.includes('alerts:'), written);
 ok('nothing is ever written as None', !written.includes('None'), written);

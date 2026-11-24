@@ -97,11 +97,10 @@ addIcons({
   filter: { d: 'M2 3h12l-4.8 5.8V14L6.8 12.6V8.8z' },
   // A ticked square for task, a calendar page for event: the icon row carries no letters.
   check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
-  // The toggle row: three columns for the stage and an hourglass for the estimate. All-day and
-  // important are the words `24h` and `!`, which iconBtn renders as glyphs - there is no icon
-  // for either, deliberately: the sun was taken for weather and a flag needed a digit.
+  // The toggle row: three columns for the stage. All-day and important are the words `24h` and
+  // `!`, which iconBtn renders as glyphs - there is no icon for either, deliberately: the sun
+  // was taken for weather and a flag needed a digit.
   cols:   { d: 'M3.4 12.8V9.4M8 12.8V5.8M12.6 12.8V2.8', stroke: 2 },
-  glass:  { d: 'M3.8 1.8h8.4v1.3L9.1 8l3.1 4.9v1.3H3.8v-1.3L6.9 8 3.8 3.1z' },
   // The two ways out of a view: the board, and the zoom that picks a period by name.
   board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
   zoom:   { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 }

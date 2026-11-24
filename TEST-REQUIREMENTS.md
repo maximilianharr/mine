@@ -152,13 +152,13 @@ left edges. That **the title row carries neither**, the popup's own `x` being a 
 above it. That the row's `x` **closes the row and keeps what is in it**, and still writes nothing.
 That clicking a second row closes the first the same way.
 
-For the when, the category, the repetition and the estimate: that clicking it opens `#fpop`
+For the when, the category and the repetition: that clicking it opens `#fpop`
 **under the row**, that the row's height, its text and the number of rows in the popup are all
 unchanged, that the row holds no control of its own, and that **no scrim is raised** — the tap
 that dismisses this popup has to reach the row it landed on. That tapping a different row moves
 straight to it in **one tap**, and that tapping the row it is already on **closes** it rather than
 reopening it. That `#fpop`'s own `x` closes it and leaves the entry popup open. That no `#sub`
-popup is opened by any of the nine.
+popup is opened by any of the eight.
 
 That only one is open at a time, an inline input and a field popup never both. That **Escape is
 swallowed by a field popup and not by an inline row**: in a field popup it closes that and leaves
@@ -171,8 +171,7 @@ two presses to leave the commonest popup in the app.
 writing per row could not pass, and it is the reason for the draft, so it is checked as a count
 and not only as an outcome.
 
-**The trashcan on a row.** That a set row carries one and an unset row does not, and that the
-estimate's lives in its popup's head instead, its row being an icon with no room beside it. That
+**The trashcan on a row.** That a set row carries one and an unset row does not. That
 it clears the field in the draft — the row drops to its muted name and the disk appears — and that it does
 **not** write on its own. That **clicking a row's trashcan does not activate the row**: the field
 is cleared and no input appears, which is the same rule a kanban card holds to and matters more
@@ -220,14 +219,11 @@ row is inactive — the whole text, not a clipped line — and that clicking it 
 nodes with a textarea holding the raw markdown, with its `x` at the foot.
 
 **The toggle row.** That a new entry is an event and its toggle row holds `24h` by itself; that
-choosing a task puts stage, important and estimate on that same row and switching back to an
-event takes all three away again. That stage cycles through three stages in three badge colours
-and back; that **important is a toggle and not a cycle** — two taps return it to where it started,
-it carries no badge and no digit, and there is no third state to reach; and that the estimate
-opens its editor **in a popup under the hourglass**, leaving the toggle row's own height and row
-count untouched, prefilled with one day, badges `3d` once set and
-loses its badge once cleared. That a tap on any of the four **changes the draft and not the
-repo**: the disk appears, the queue stays empty. That `24h` and `!` light with the ordinary
+choosing a task puts stage and important on that same row and switching back to an event takes
+both away again. That stage cycles through three stages in three badge colours and back; and that
+**important is a toggle and not a cycle** — two taps return it to where it started, it carries no
+badge and no digit, and there is no third state to reach. That a tap on any of the three
+**changes the draft and not the repo**: the disk appears, the queue stays empty. That `24h` and `!` light with the ordinary
 enabled background and never with `--good`, because green is the disk's, and that nothing else in
 the popup lights at all. That the row sits **below** the when row, not above it — resolved from
 the elements' document order, since a row that merely looks right can still be the old one.
@@ -431,7 +427,7 @@ board, and it is invisible until the two widths are compared.
 **What a card holds, and what it no longer holds.** That a card's top row is the title alone,
 with a `!` in front of it when the task is important and nothing in front of it when not; that
 the `!` is **not a button** — no element bearing it is pressable; and that the card carries **no
-pen, no trashcan, no estimate, no sprint number and no priority chip** — and there is no pen
+pen, no trashcan, no sprint number and no priority chip** — and there is no pen
 anywhere in the calendar to find. On a desktop the card
 holds no pressable element at all, and on a phone only the two stage arrows: the count is what
 keeps the removed controls removed, since each of them came back once as a chip.
@@ -453,8 +449,9 @@ the colour — that is the half of it that
 can catch a regression to the old style.
 
 **What a saved task writes.** A new task saved with nothing but a title must land as
-`stage: todo` with `estimate: 1`, and a task whose estimate was cleared must have no `estimate`
-key at all — not an empty one, and never `None`. The same holds for importance: a task marked
+`stage: todo`, and must carry **no `estimate` key** — the field is gone, so nothing may write
+one. A file that already has one keeps it through a save, the form not owning that key any more.
+The same holds for importance: a task marked
 important writes `important: true`, an unmarked one writes **no `important` key**, and no file
 ever gains `important: false`. That a file carrying `important: true` reaches the toggle row lit
 and one without the key does not. There is no `priority` and no `done` to read any more, and

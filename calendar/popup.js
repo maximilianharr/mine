@@ -5,7 +5,7 @@
 // not do. So a row that can hold its control on one line does (the title, location, alerts and
 // participants are an input in the line, with the field's name as the placeholder), and a row
 // whose control cannot be a line opens that control in a small popup anchored to the row, which
-// is left exactly as it was (the when, the category, the repetition and the estimate).
+// is left exactly as it was (the when, the category and the repetition).
 //
 // The rows hold a draft and nothing reaches the repo until the top row's disk, so one entry edit
 // is one commit and the x discards the lot. The disk appears only once the draft differs from
@@ -30,7 +30,7 @@ const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Bool
 // Keys the form owns: cleared from the file's data before collect() writes them back, so
 // anything else - exdate, rdate, status, a hand-added key - survives a save untouched.
 const FORM_KEYS = ['title', 'type', 'start', 'end', 'stage', 'important',
-  'estimate', 'group', 'location', 'recurrence', 'alerts', 'participants'];
+  'group', 'location', 'recurrence', 'alerts', 'participants'];
 
 let D = null;        // the draft
 let active = null;   // the row holding an inline input: { key }
@@ -58,17 +58,11 @@ const FIELDS = [
     set: v => v.length > 0, sum: v => v.join(', '), ed: participantsEditor }
 ];
 
-// The estimate has an editor but no place in D.v, so it reads and writes through these two
-// rather than reaching into D.v itself. The when has no place in D.v either and no stored value
-// at all - it is four parts of the draft - so its editor writes them itself.
-// `popClear` is the estimate alone: its row is an icon on the toggle row with no room for a
-// trashcan beside it, so the one place its popup differs from the other three is that it carries
-// the trashcan in its own head.
-const EST = { k: 'estimate', ic: 'glass', label: 'Estimate', empty: null, mode: 'pop',
-  popClear: true, set: v => !!v, sum: v => `${v}d`, ed: estimateEditor };
+// The when has no place in D.v and no stored value at all - it is four parts of the draft - so
+// its editor writes them itself.
 const WHEN = { k: 'when', label: 'When', mode: 'pop', ed: whenEditor };
-const readField = f => f.k === 'estimate' ? D.estimate : D.v[f.k];
-const writeField = (f, v) => { if (f.k === 'estimate') D.estimate = v; else D.v[f.k] = v; };
+const readField = f => D.v[f.k];
+const writeField = (f, v) => { D.v[f.k] = v; };
 
 const alertText = n => n === 0 ? 'at start' : `${n} min before`;
 
@@ -122,7 +116,6 @@ function draft(occ, scope, seed) {
     type: occ ? (data.type === 'task' ? 'task' : 'event') : (seed.type || 'event'),
     stage: occ ? (occ.stage || 'todo') : (seed.stage || 'todo'),
     important: occ ? occ.important : false,
-    estimate: occ ? (occ.estimate ?? null) : 1,
     title: occ ? String(data.title ?? '') : '',
     allDay, startDate: sd, startTime: allDay ? '' : st, endDate: ed, endTime: allDay ? '' : et,
     v: {
@@ -139,7 +132,7 @@ function draft(occ, scope, seed) {
 // What a discard would lose, and - the same question - what the disk has to write: the draft's
 // editable parts against the baseline taken when the popup opened. One comparison, so the disk
 // cannot appear where the prompt would stay silent.
-const snapshot = d => JSON.stringify([d.type, d.stage, d.important, d.estimate, d.title,
+const snapshot = d => JSON.stringify([d.type, d.stage, d.important, d.title,
   d.allDay, d.startDate, d.startTime, d.endDate, d.endTime, d.v]);
 
 // A new entry always has something to write, there being no file yet; the disk is disabled until
@@ -270,8 +263,6 @@ function openFieldPop(f) {
   if (f.k !== 'when') live(ed.node, () => writeField(f, ed.read()));
   $('#fpop-title').textContent = f.label;
   const head = $('#fpop-title').parentElement;
-  head.querySelector('.ib.bad')?.remove();
-  if (f.popClear && f.set(readField(f))) head.insertBefore(clearBtn(f), $('#fpop-close'));
   $('#fpop-body').replaceChildren(ed.node);
   // The anchor is looked up rather than passed in: on a dismissing tap the capture-phase
   // listener below re-renders the rows before the row's handler calls this, so a node passed in
@@ -488,12 +479,12 @@ function clearBtn(f) {
   return b;
 }
 
-// The toggle row, under the when: `24h`, and on a task stage, important and estimate. A tap on
-// one of them is the whole edit - into the draft, like everything else.
+// The toggle row, under the when: `24h`, and on a task stage and important. A tap on one of
+// them is the whole edit - into the draft, like everything else.
 function flagsRow() {
   const bar = el('div', 'iconbar flags');
   bar.append(allDayBtn());
-  if (D.type === 'task') bar.append(stageBtn(), bangBtn(), estBtn());
+  if (D.type === 'task') bar.append(stageBtn(), bangBtn());
   return bar;
 }
 
@@ -515,11 +506,9 @@ function allDayBtn() {
   return b;
 }
 
-// Stage, important and estimate are three small values rather than fields with a form each, so
-// they are edited in the row itself. Stage and the estimate show their value as a badge on the
-// icon's corner; important has nothing to put in one and lights instead. Only the estimate opens
-// an editor, because a number has to be typed - and it opens in a popup under the hourglass, so
-// the toggle row stays one line like every other.
+// Stage and important are two small values rather than fields with a form each, so they are
+// edited in the row itself. Stage shows its value as a badge on the icon's corner; important has
+// nothing to put in one and lights instead.
 const badged = (b, text, cls, color) => {
   const s = el('span', ['badge', cls].filter(Boolean).join(' '), text);
   if (color) { s.style.background = color; s.style.color = inkOn(color); }
@@ -542,15 +531,6 @@ function bangBtn() {
   const b = iconBtn('!', 'Important', D.important ? 'on' : '');
   b.setAttribute('aria-pressed', String(D.important));
   b.addEventListener('click', () => { D.important = !D.important; redraw(); });
-  return b;
-}
-
-function estBtn() {
-  const b = iconBtn('glass', `Estimate: ${D.estimate ? `${D.estimate} day(s)` : 'none'}`,
-    popped === 'estimate' ? 'on' : '');
-  b.dataset.field = 'estimate';
-  if (D.estimate) badged(b, `${D.estimate}d`, 'wide');
-  b.addEventListener('click', () => openField(EST));
   return b;
 }
 
@@ -613,20 +593,6 @@ function textEditor(placeholder) {
     i.value = cur || '';
     i.placeholder = placeholder;
     return { node: i, read: () => i.value.trim() };
-  };
-}
-
-function estimateEditor(cur) {
-  const i = el('input');
-  i.type = 'number';
-  i.min = '0';
-  i.step = '0.5';
-  i.inputMode = 'decimal';
-  i.placeholder = 'days';
-  i.value = cur ?? '';
-  return {
-    node: i,
-    read: () => { const n = Number(i.value); return Number.isFinite(n) && n > 0 ? n : null; }
   };
 }
 
@@ -980,7 +946,6 @@ function collect() {
   if (D.type === 'task') {
     data.stage = STAGES.includes(D.stage) ? D.stage : 'todo';
     if (D.important) data.important = true;
-    if (D.estimate) data.estimate = D.estimate;
   }
   if (D.v.group) data.group = D.v.group;
   if (D.v.location) data.location = D.v.location;

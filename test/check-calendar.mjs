@@ -259,7 +259,7 @@ eq('the toggle row is below the when row', await ev(
 
 const rows0 = await ev(FIELD_ROWS);
 eq('five field rows, in canonical order, and no details row among them',
-  rows0.filter(r => r.field !== 'estimate').map(r => r.field),
+  rows0.map(r => r.field),
   ['group', 'recurrence', 'alerts', 'location', 'participants']);
 eq('each one unset shows its field name', rows0.filter(r => !r.unset).map(r => r.field), []);
 eq('and shows it muted, not plain',
@@ -288,8 +288,7 @@ eq('and shows the value alone', loc.text, 'Conference room 3B');
 eq('with the name only in its label', loc.aria, 'Location: Conference room 3B');
 eq('drawn plain rather than muted', loc.muted, FG);
 eq('and it now carries a trashcan', loc.trash, 1);
-eq('the unset rows keep their order',
-  rows1.filter(r => r.unset && r.field !== 'estimate').map(r => r.field),
+eq('the unset rows keep their order', rows1.filter(r => r.unset).map(r => r.field),
   ['group', 'recurrence', 'alerts', 'participants']);
 
 // A row being edited carries a trashcan and an x and no save: there is one save in this popup,
@@ -460,14 +459,15 @@ eq('and goes plain again', allday.includes('@'), false);
 await click(0);                                   // task
 await sleep(300);
 const asTask = await ev(FLAGS);
-eq('a task row carries the three', asTask.map(label),
-  ['All-day', 'Stage', 'Important', 'Estimate']);
+eq('a task row carries the two', asTask.map(label), ['All-day', 'Stage', 'Important']);
 eq('and reads 24h and !', await ev(words('#f-rows .flags')), ['24h', '!']);
-eq('the field rows do not reshuffle',
-  (await ev(FIELD_ROWS)).filter(r => r.field !== 'estimate').map(r => r.field),
+eq('the field rows do not reshuffle', (await ev(FIELD_ROWS)).map(r => r.field),
   ['group', 'recurrence', 'alerts', 'location', 'participants']);
-eq('a new estimate is one day', badge(asTask[3]), '1d');
 ok('a new task starts at todo', !!badge(asTask[1]), 'the stage badge carries its colour');
+// Nothing on the row opens an editor: there is no estimate to type any more, so a tap on any of
+// the three is the whole edit and the popup grows no field popup of its own.
+eq('and nothing on it opens a field popup', await ev(
+  `[...document.querySelectorAll('#f-rows .flags .ib')].some(b => b.dataset.field)`), false);
 
 const stages = [];
 for (let i = 0; i < 3; i++) { await flag(1); await sleep(220); stages.push(badge((await ev(FLAGS))[1])); }
@@ -481,48 +481,9 @@ ok('and not in green', !bangs[0].endsWith('@' + GOOD), `${bangs[0]} must not be 
 ok('two taps return it to plain', !bangs[1].includes('@'), bangs[1]);
 eq('and it carries no badge either way', bangs.map(badge), ['', '']);
 
-// The estimate is the one of the four that opens an editor, because a number has to be typed -
-// and it opens in a popup under the hourglass, so the toggle row keeps its one line.
-const flagsH = await ev(
-  `Math.round(document.querySelector('#f-rows .flags').getBoundingClientRect().height)`);
-await flag(3);
-await sleep(300);
-const est = await ev(`(() => {
-  const p = document.querySelector('#fpop');
-  const b = document.querySelector('#f-rows [data-field="estimate"]').getBoundingClientRect();
-  return { open: !p.hidden, title: document.querySelector('#fpop-title').textContent,
-           value: p.querySelector('input').value,
-           rows: document.querySelectorAll('#f-rows [data-field="estimate"]').length,
-           sub: document.querySelector('#sub').hidden,
-           under: p.getBoundingClientRect().top > b.bottom,
-           flagsH: Math.round(document.querySelector('#f-rows .flags').getBoundingClientRect().height) };
-})()`);
-ok('the estimate opens a popup under the hourglass', est.open && est.under, JSON.stringify(est));
-eq('named for the field', est.title, 'Estimate');
-eq('and the toggle row gains no row of its own', est.rows, 1);
-eq('nor any height', est.flagsH, flagsH);
-eq('and opens no sub-popup', est.sub, true);
-eq('prefilled with one day', est.value, '1');
-// The one popup that carries the trashcan itself: its row is an icon with no room beside it.
-eq('its buttons are a trashcan and an x', await popButtons(),
-  ['Clear estimate', 'Close this field']);
-eq('the trashcan is red', await ev(
-  `getComputedStyle(document.querySelector('#fpop [aria-label^="Clear"]')).color`), BAD);
-
-await typeIn('estimate', '3');
-await flag(3);                                   // tapping the hourglass again closes the popup
-await sleep(300);
-eq('the estimate badges its days', badge((await ev(FLAGS))[3]), '3d');
-eq('and the popup is shut', await ev(`document.querySelector('#fpop').hidden`), true);
-await flag(3);
-await sleep(300);
-await ev(`document.querySelector('#fpop [aria-label^="Clear"]').click()`);
-await sleep(300);
-eq('a cleared estimate loses its badge', badge((await ev(FLAGS))[3]), '');
-
 await click(1);                                   // back to an event
 await sleep(300);
-eq('an event drops all three', (await ev(FLAGS)).map(label), ['All-day']);
+eq('an event drops both', (await ev(FLAGS)).map(label), ['All-day']);
 
 // ---- 3. a trashcan is red wherever it appears --------------------------------------------------
 
@@ -1181,7 +1142,7 @@ const card = await ev(`(() => {
 eq('a card carries no chip', card.chips, 0);
 eq('no pen and no trashcan', card.controls, 0);
 eq('and on a phone two buttons, the stage arrows', card.buttons, 2);
-ok('no estimate and no sprint number on it', !/\bS\d|\b\d+d\b/.test(card.text), card.text);
+ok('no sprint number and no day count on it', !/\bS\d|\b\d+d\b/.test(card.text), card.text);
 ok('an important task carries a !', card.bangs > 0, 'no ! on any card');
 eq('and the ! is not a button', card.pressableBang, 0);
 
@@ -1265,18 +1226,11 @@ await orient('horizontal');
 
 await viewport(900);
 
-const saveTask = async (title, clearEstimate, important) => {
+const saveTask = async (title, important) => {
   await open();
   await newEntry();
   await click(0);
   await sleep(250);
-  if (clearEstimate) {
-    await flag(3);
-    await sleep(300);
-    // The estimate's trashcan is in its popup's head, its row being an icon with no room beside it.
-    await ev(`document.querySelector('#fpop [aria-label^="Clear"]').click()`);
-    await sleep(300);
-  }
   if (important) { await flag(2); await sleep(250); }
   await openRow('title');
   await typeIn('title', title);
@@ -1295,17 +1249,16 @@ const saveTask = async (title, clearEstimate, important) => {
   })()`);
 };
 
-const withEstimate = await saveTask('Check the defaults', false);
-ok('a saved task is todo', /\nstage: todo\n/.test(withEstimate), withEstimate.split('---')[1]);
-ok('and carries one day', /\nestimate: 1\n/.test(withEstimate), withEstimate.split('---')[1]);
-const without = await saveTask('Check a cleared estimate', true);
-ok('a cleared estimate writes no key', !/estimate:/.test(without), without.split('---')[1]);
+const plain = await saveTask('Check the defaults');
+ok('a saved task is todo', /\nstage: todo\n/.test(plain), plain.split('---')[1]);
+// The field is gone, so nothing may write the key - not even the default it used to carry.
+ok('and carries no estimate key', !/estimate:/.test(plain), plain.split('---')[1]);
 
-// Importance has the same shape of rule as the estimate: only `true` is ever written, and an
-// ordinary task carries no key at all rather than `important: false`.
-ok('an ordinary task writes no important key', !/important:/.test(withEstimate),
-  withEstimate.split('---')[1]);
-const marked = await saveTask('Check an important task', false, true);
+// Importance: only `true` is ever written, and an ordinary task carries no key at all rather
+// than `important: false`.
+ok('an ordinary task writes no important key', !/important:/.test(plain),
+  plain.split('---')[1]);
+const marked = await saveTask('Check an important task', true);
 ok('an important task writes important: true', /\nimportant: true\n/.test(marked),
   marked.split('---')[1]);
 // `important: true` in a file reaches the toggle row lit. Read through the popup rather than

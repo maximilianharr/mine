@@ -156,11 +156,6 @@ export const stageOf = data => STAGES.includes(data.stage) ? data.stage : 'todo'
 // no key at all. The quoted form is read too, because a file may be written by hand.
 export const importantOf = data => data.important === true || data.important === 'true';
 
-const estimateOf = v => {
-  const n = Number(v);
-  return Number.isFinite(n) && n > 0 ? n : null;
-};
-
 // ---- the model ---------------------------------------------------------------------------
 
 export async function loadModel() {
@@ -260,7 +255,6 @@ function occurrence(file, { data, body, base = null, series = null, recId = null
     group: data.group ?? '',
     stage: type === 'task' ? stageOf(data) : null,
     important: type === 'task' ? importantOf(data) : false,
-    estimate: type === 'task' ? estimateOf(data.estimate) : null,
     location: data.location ?? '',
     participants: list(data.participants).map(String),
     allDay: isAllDay(start),
@@ -375,8 +369,7 @@ export const idTail = path => path.replace(/\.md$/, '').split('-').pop();
 // RFC 5545 naming, ordered as the samples are. serialize() drops empty keys rather than
 // writing `None`, which a parser would hand back as the string "None".
 const ORDER = ['series', 'recurrence-id', 'title', 'type', 'start', 'end', 'stage', 'important',
-  'estimate', 'group', 'location', 'recurrence', 'exdate', 'rdate', 'alerts', 'participants',
-  'status'];
+  'group', 'location', 'recurrence', 'exdate', 'rdate', 'alerts', 'participants', 'status'];
 
 function order(data) {
   const out = {};
