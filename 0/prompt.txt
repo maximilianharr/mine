@@ -1,0 +1,67 @@
+<task-notification>
+<task-id>b37owad99</task-id>
+<tool-use-id>toolu_015FjCiVcAk1T3uYEHcQxqAM</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b37owad99.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait again for run20" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b0fwe7mzv</task-id>
+<tool-use-id>toolu_0139erpqkS23AojQs8tdiJ8L</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b0fwe7mzv.output</output-file>
+<status>completed</status>
+<summary>Background command "Block until run20 reports" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bs2ymow00</task-id>
+<tool-use-id>toolu_014t6NUzWsJCafyvjptU2j3X</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bs2ymow00.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for run20 to end" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bx5of2oxn</task-id>
+<tool-use-id>toolu_01CNSy9m9DDXLia7iyxAmbC7</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bx5of2oxn.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for run20 to report" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bpekg2w2x</task-id>
+<tool-use-id>toolu_01JbDYpB7uU6QFHMsWSWRLKU</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bpekg2w2x.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the final run20 lines" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bijynolym</task-id>
+<tool-use-id>toolu_01NhVrmsvZ7kgz6n2zqwFzVb</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bijynolym.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite with the filter" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bsil60lx4</task-id>
+<tool-use-id>toolu_01WvCic7QvsHccyRZLDCS6Se</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bsil60lx4.output</output-file>
+<status>completed</status>
+<summary>Background command "Block for the filter run result" completed (exit code 0)</summary>
+</task-notification>
