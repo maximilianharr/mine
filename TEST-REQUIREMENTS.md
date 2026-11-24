@@ -144,7 +144,7 @@ measurement the whole shape exists for, so it is a height and not a look: that a
 for every row in the popup, set and unset alike. A pixel of growth is a row below it having moved,
 which is the eye losing the field it has just tapped.
 
-For the title, the alerts, the location and the participants: that clicking it puts an **input in
+For the title, the location and the participants: that clicking it puts an **input in
 the line itself**, that the field's name is gone from the line and is the input's placeholder, and
 that the row carries **a trashcan and an `x` and no save** — one save in the popup, in the top row
 — with all three on the input's own line and the `x` rightmost, resolved from their top edges and
@@ -190,6 +190,17 @@ two presses to leave the commonest popup in the app.
 **one** write, and that the file then holds all four values. This is the measurement a popup
 writing per row could not pass, and it is the reason for the draft, so it is checked as a count
 and not only as an outcome.
+
+**The alert list and the repetition's two steps.** That the alerts open a list of `none` and
+the five, that the one the entry holds is marked, and that picking one **writes it and closes
+the list**. That a file holding two alerts shows them as a **custom row that cannot be picked**
+and keeps them until one of the six is chosen.
+
+That the repetition opens **the seven choices themselves**, with no `<select>` anywhere in it;
+that picking one advances to the end condition — `never`, `on a date`, `after n times` — with
+the current one marked; that `does not repeat` **ends the flow there**; that `on a date` opens
+the month picker and writes an `UNTIL` into the rule; and that a hand-written rule the list
+cannot express is a **custom row that cannot be picked** and survives untouched.
 
 **The trashcan on a row.** That a set row carries one and an unset row does not. That
 it clears the field in the draft — the row drops to its muted name and the disk appears — and that it does
@@ -238,15 +249,29 @@ That a ticked checkbox is not pressable. That the body is **rendered and shown i
 row is inactive — the whole text, not a clipped line — and that clicking it replaces the rendered
 nodes with a textarea holding the raw markdown, with its `x` at the foot.
 
-**The toggle row.** That a new entry is an event and its toggle row holds `24h` by itself; that
-choosing a task puts stage and important on that same row and switching back to an event takes
-both away again. That stage cycles through three stages in three badge colours and back; and that
-**important is a toggle and not a cycle** — two taps return it to where it started, it carries no
-badge and no digit, and there is no third state to reach. That a tap on any of the three
-**changes the draft and not the repo**: the disk appears, the queue stays empty. That `24h` and `!` light with the ordinary
-enabled background and never with `--good`, because green is the disk's, and that nothing else in
-the popup lights at all. That the row sits **below** the when row, not above it — resolved from
-the elements' document order, since a row that merely looks right can still be the old one.
+**The quick row.** That a new entry is an event whose row holds `24h`, `!`, and the three field
+icons, and that choosing a task adds the stage between them — the stage alone, since important is
+on every entry now. That stage cycles through three stages in three colours and back, the colour
+being the icon's own: a **ticked square with the tick knocked out of it**, drawn in the stage's
+colour, which is what the badge on its corner used to carry. That the category's **ball is drawn
+in its category's colour** when one is picked and in the row's ink when none is. That
+**important is a toggle and not a cycle** — two taps return it to where it started, its icon
+carries no colour of its own, and there is no third state to reach. That a tap on any of them
+**changes the draft and not the repo**: the disk appears, the queue stays empty. That `24h` and
+`!` light with the ordinary enabled background and never with `--good`, because green is the
+disk's. That the row sits **below** the when row, not above it — resolved from the elements'
+document order, since a row that merely looks right can still be the old one.
+
+**What the icons stand in for, and what they do not.** That the row carries all-day, the stage,
+important, the category, the repetition and the alerts **and no names**, and that location,
+participants and details are lines whether the chevron is open or shut — a pin standing in for an
+address says only that there is one. That a field icon is **lit when its field holds something**
+and plain when it does not, its value being in the label alone. That **tapping an icon opens
+exactly what tapping its line opens**, anchored under the icon that was tapped rather than under
+the row of the same name. That the chevron shows the lines, that `24h` and `!` share the first of
+them **as two chips on one line**, that the stage line reads `Todo`, `Doing` or `Done` and
+**cycles when tapped**, and that the state **survives a reload** — it is stored per device, like
+the board's orientation. That the row fits 320px with every icon on it.
 
 **That the `x` is the rightmost control in every popup**: the entry popup, each active row, each
 field popup, the day preview, the filter dropdown and the settings panel. Resolved from the buttons' left edges, so a row that reads

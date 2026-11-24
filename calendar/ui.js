@@ -23,7 +23,7 @@ export const S = {
            settings: { anchor: DEFAULT_ANCHOR, interval: 2 } },
   view: { mode: 'M', anchor: todayKey(), sprint: 1, col: 0 },
   prefs: { weekStart: 1, showWeeks: false, confirmDiscard: true, timeZone: '',
-           theme: 'system', dateFormat: 'auto', boardOrientation: 'horz' },
+           theme: 'system', dateFormat: 'auto', boardOrientation: 'horz', popupExpanded: false },
   hidden: new Set(),                 // group names switched off in the filter
   kfilter: { importantOnly: false, assignee: '' },   // kanban only
   visible: new Map(),                // occurrence key -> occurrence, for what is on screen

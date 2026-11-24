@@ -46,7 +46,7 @@ const row = sel => `[...document.querySelectorAll('${sel} .ib')].map(b => {
     (ink && ink !== cs.color ? '[' + ink + ']' : '') +
     (cs.backgroundColor === 'rgba(0, 0, 0, 0)' ? '' : '@' + cs.backgroundColor);
 })`;
-const ROW = row('#f-icons'), FLAGS = row('#f-rows .flags');
+const ROW = row('#f-icons'), FLAGS = row('#f-rows .quick');
 // Icons alone is a rule about the icon row. The toggle row carries two words on purpose - `24h`,
 // because every drawing of a whole day reads as something else, and `!` - so scoping this to the
 // icon row is what keeps the two rules from cancelling each other out.
@@ -73,7 +73,15 @@ const closeForm = async () => {
   }
 };
 const click = n => ev(`document.querySelectorAll('#f-icons .ib')[${n}].click()`);
-const flag = n => ev(`document.querySelectorAll('#f-rows .flags .ib')[${n}].click()`);
+const flag = n => ev(`document.querySelectorAll('#f-rows .quick .ib')[${n}].click()`);
+// The chevron at the end of the quick row, and what it shows: the icons' own fields as lines.
+const expand = async open => {
+  const now = await ev(`document.querySelector('#f-rows .quick .more')
+    .getAttribute('aria-expanded') === 'true'`);
+  if (now === open) return;
+  await ev(`document.querySelector('#f-rows .quick .more').click()`);
+  await sleep(300);
+};
 const save = async () => {
   await ev(`document.querySelector('#f-icons [aria-label="Save"]').click()`);
   await sleep(500);
@@ -116,7 +124,8 @@ const badge = g => (g.match(/\[(.*)\]/) || [, ''])[1];
 // A row: the field it is, the text it shows, whether that text is the muted field name rather
 // than a value, and whether it carries a trashcan. A set row shows its value and no field name.
 const FIELD_ROWS = `[...document.querySelectorAll('#f-rows .frow')]
-  .filter(r => !['title', 'when'].includes(r.dataset.field))
+  .filter(r => !['title', 'when', 'stage'].includes(r.dataset.field)
+    && !r.classList.contains('chips'))
   .map(r => ({
     field: r.dataset.field,
     text: r.querySelector('.ftap') ? r.querySelector('.ftap').textContent : '',
@@ -232,7 +241,8 @@ const centred = b => b.top > 0 && b.bottom < b.h - 8;
 await viewport(360);
 await open();
 eq('fixture seeded', typeof await seed('calendar',
-  { 'calendar.weekStart': 1, 'calendar.showWeeks': true }) === 'number', true);
+  { 'calendar.weekStart': 1, 'calendar.showWeeks': true,
+    'calendar.popupExpanded': true }) === 'number', true);
 
 for (const scheme of ['light', 'dark']) {
   for (const mode of ['M', 'W', 'Y', 'D', 'K']) {
@@ -269,9 +279,10 @@ eq('the x is its rightmost control', (await rightmost('#f-icons')).slice(-1), ['
 eq('no letter anywhere in the top row', await ev(glyphs), 0);
 eq('and no pen anywhere in the popup',
   await ev(`document.querySelectorAll('#popup [aria-label^="Edit"]').length`), 0);
-eq('a new entry is an event, and carries all-day and important',
-  (await ev(FLAGS)).map(label), ['All-day', 'Important']);
-eq('and its toggle row says 24h, not a sun', await ev(words('#f-rows .flags')), ['24h', '!']);
+eq('a new entry is an event, and its row is the flags then the fields',
+  (await ev(FLAGS)).map(label),
+  ['All-day', 'Important', 'Category', 'Repeat', 'Alerts', 'Hide the field names']);
+eq('and its row says 24h, not a sun', await ev(words('#f-rows .quick')), ['24h', '!']);
 // An entry must have a title, and that is the only way a new entry differs from an edit.
 eq('the disk is disabled until the title has text',
   await ev(`document.querySelector('#f-icons [aria-label="Save"]').disabled`), true);
@@ -291,9 +302,9 @@ eq('and carries no background', disk.bg, 'rgba(0, 0, 0, 0)');
 
 // The toggle row sits below the when row, not above it: read from document order, since a row
 // that merely looks right can still be the old one.
-eq('the toggle row is below the when row', await ev(
+eq('the quick row is below the when row', await ev(
   `document.querySelector('#f-rows [data-field="when"]')
-     .compareDocumentPosition(document.querySelector('#f-rows .flags')) & 4 ? 'after' : 'before'`),
+     .compareDocumentPosition(document.querySelector('#f-rows .quick')) & 4 ? 'after' : 'before'`),
   'after');
 
 const rows0 = await ev(FIELD_ROWS);
@@ -428,6 +439,70 @@ const ball = await ev(`(() => {
 ok('and the ball carries that category\'s colour', ball[0] !== ball[1], ball.join(' vs '));
 await ev(`document.querySelector('#f-rows [data-field="group"] [aria-label^="Clear"]').click()`);
 await sleep(300);
+
+// The alerts are a list of six now, not a line of minutes typed by hand: picking one is the
+// whole edit and it closes the list, exactly as the category's does.
+await tapRow('alerts');
+const alerts = await ev(`(() => {
+  const p = document.querySelector('#fpop');
+  return { title: document.querySelector('#fpop-title').textContent,
+    rows: [...p.querySelectorAll('.gpick')].map(b => b.textContent),
+    on: [...p.querySelectorAll('.gpick.on')].map(b => b.textContent),
+    inputs: p.querySelectorAll('input, select').length }; })()`);
+eq('the alerts open a list of none and the five', [alerts.title, alerts.rows],
+  ['Alerts', ['none', 'at start', '5 min before', '15 min before', '1 hour before',
+    '1 day before']]);
+eq('with none marked while the field is empty', alerts.on, ['none']);
+eq('and nothing to type in it', alerts.inputs, 0);
+await ev(`[...document.querySelectorAll('#fpop .gpick')]
+  .find(b => b.textContent === '15 min before').click()`);
+await sleep(350);
+eq('picking one writes it and closes the list', await ev(
+  `[document.querySelector('#fpop').hidden,
+    document.querySelector('#f-rows [data-field="alerts"] .ftap').textContent]`),
+  [true, '15 min before']);
+eq('and nothing reaches the repo', await queueSize(), 0);
+await ev(`document.querySelector('#f-rows [data-field="alerts"] [aria-label^="Clear"]').click()`);
+await sleep(250);
+
+// The repetition is two steps in the same flow the when walks: the rules themselves, then when
+// they stop. No select anywhere in it - a dropdown inside a popup is a tap to see the options
+// and an OS wheel across the phone.
+await tapRow('recurrence');
+const rules = await ev(`(() => {
+  const p = document.querySelector('#fpop');
+  return { title: document.querySelector('#fpop-title').textContent,
+    rows: [...p.querySelectorAll('.gpick')].map(b => b.textContent),
+    selects: p.querySelectorAll('select').length }; })()`);
+eq('the repetition opens its seven choices, and no select',
+  [rules.title, rules.rows.length, rules.rows[0], rules.selects],
+  ['Repeat', 7, 'does not repeat', 0]);
+await ev(`[...document.querySelectorAll('#fpop .gpick')]
+  .find(b => b.textContent === 'weekly').click()`);
+await sleep(350);
+eq('picking a rule asks when it ends, never among them', await ev(
+  `[document.querySelector('#fpop-title').textContent,
+    [...document.querySelectorAll('#fpop .gpick')].map(b => b.textContent)]`),
+  ['Repeat until', ['never', 'on a date', 'after n times']]);
+await ev(`[...document.querySelectorAll('#fpop .gpick')]
+  .find(b => b.textContent === 'on a date').click()`);
+await sleep(350);
+eq('on a date opens the month picker', await ev(
+  `[document.querySelector('#fpop-title').textContent,
+    !!document.querySelector('#fpop .pick-body')]`), ['Ends on', true]);
+await pickIn('.pick-body', '28');
+eq('and the picked day ends the flow, the row reading the whole rule', await ev(
+  `[document.querySelector('#fpop').hidden,
+    /^weekly, until /.test(document.querySelector('#f-rows [data-field="recurrence"] .ftap')
+      .textContent)]`), [true, true]);
+// `does not repeat` has no ending to ask about, so it is the one choice that ends the flow.
+await tapRow('recurrence');
+await ev(`[...document.querySelectorAll('#fpop .gpick')]
+  .find(b => b.textContent === 'does not repeat').click()`);
+await sleep(350);
+eq('does not repeat ends the flow there', await ev(
+  `[document.querySelector('#fpop').hidden,
+    !!document.querySelector('#f-rows [data-field="recurrence"] .ftap.unset')]`), [true, true]);
 
 // ---- the when, and the flow that sets it ----------------------------------------------------
 // The row reads `WD, DD.MM.YY HH:MM`, in halves, and each half is the way into the flow at the
@@ -602,22 +677,24 @@ eq('and goes plain again', allday.includes('@'), false);
 await click(0);                                   // task
 await sleep(300);
 const asTask = await ev(FLAGS);
-eq('a task row carries the two', asTask.map(label), ['All-day', 'Stage', 'Important']);
-eq('and reads 24h and !', await ev(words('#f-rows .flags')), ['24h', '!']);
+eq('a task row gains the stage, and only the stage', asTask.map(label),
+  ['All-day', 'Stage', 'Important', 'Category', 'Repeat', 'Alerts', 'Hide the field names']);
+eq('and reads 24h and !', await ev(words('#f-rows .quick')), ['24h', '!']);
 eq('the field rows do not reshuffle', (await ev(FIELD_ROWS)).map(r => r.field),
   ['group', 'recurrence', 'alerts', 'location', 'participants']);
 ok('a new task starts at todo', !!badge(asTask[1]), 'the stage icon carries its colour');
 // Nothing on the row opens an editor: there is no estimate to type any more, so a tap on any of
 // the three is the whole edit and the popup grows no field popup of its own.
-eq('and nothing on it opens a field popup', await ev(
-  `[...document.querySelectorAll('#f-rows .flags .ib')].some(b => b.dataset.field)`), false);
+eq('and the three flags on it open nothing', await ev(
+  `[...document.querySelectorAll('#f-rows .quick .ib')].slice(0, 3)
+    .some(b => b.dataset.field)`), false);
 
 const stages = [];
 for (let i = 0; i < 3; i++) { await flag(1); await sleep(220); stages.push(badge((await ev(FLAGS))[1])); }
 ok('stage cycles through three colours', new Set(stages).size === 3, stages.join(' '));
 // A ticked square filled with the stage's colour, not three columns with a dot on the corner.
 eq('and is drawn as a ticked square with the tick knocked out', await ev(
-  `(() => { const p = document.querySelector('#f-rows .flags .ib:nth-child(2) svg path');
+  `(() => { const p = document.querySelector('#f-rows .quick .ib:nth-child(2) svg path');
     return [p.getAttribute('fill'), p.getAttribute('fill-rule')]; })()`),
   ['currentColor', 'evenodd']);
 ok('and returns to where it started', stages[2] === badge(asTask[1]), `${stages[2]} vs ${badge(asTask[1])}`);
@@ -634,7 +711,107 @@ await sleep(300);
 // The stage is a task's and goes with it; important is not, and stays - the thing a filter
 // narrows a calendar view down to is what matters, and half of what matters is a meeting.
 eq('an event drops the stage and keeps important',
-  (await ev(FLAGS)).map(label), ['All-day', 'Important']);
+  (await ev(FLAGS)).map(label).slice(0, 2), ['All-day', 'Important']);
+
+// ---- 2c. the quick row, and the chevron that names it ----------------------------------------
+// Six icons and no names, with the three fields among them opening exactly what their lines
+// open. The checks above run with the names showing, because they are about the rows; these run
+// both ways, because the point of the row is that the two are the same controls.
+
+await closeForm();
+await open();
+await newEntry();
+await click(0);                                   // a task, so the row is at its fullest
+await sleep(250);
+await expand(false);
+
+const quick = await ev(`(() => {
+  const bar = document.querySelector('#f-rows .quick');
+  return {
+    icons: [...bar.querySelectorAll('.ib')].map(b => b.getAttribute('aria-label').split(':')[0]),
+    fields: [...bar.querySelectorAll('[data-field]')].map(b => b.dataset.field),
+    names: [...document.querySelectorAll('#f-rows .frow')].map(r => r.dataset.field || 'chips'),
+    glyphs: [...bar.querySelectorAll('.glyph')].map(g => g.textContent),
+    oneLine: new Set([...bar.querySelectorAll('.ib')]
+      .map(b => Math.round(b.getBoundingClientRect().top))).size
+  };
+})()`);
+eq('the row is the two flags, the stage and the three fields, then the chevron', quick.icons,
+  ['All-day', 'Stage', 'Important', 'Category', 'Repeat', 'Alerts', 'Show the field names']);
+eq('the three fields are the ones an icon can stand in for', quick.fields,
+  ['group', 'recurrence', 'alerts']);
+eq('and the rows left are the three it cannot, the body among them', quick.names,
+  ['title', 'when', 'location', 'participants']);
+eq('all on one line', quick.oneLine, 1);
+
+// Lit when the field holds something, plain when it does not: with the name gone, that is what
+// is left to say so, and the value itself is in the label.
+const lit = () => ev(`(() => {
+  const b = document.querySelector('#f-rows .quick [data-field="alerts"]');
+  return [getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)',
+          b.getAttribute('aria-label')]; })()`);
+eq('an unset field icon is plain, and named', await lit(), [false, 'Alerts']);
+
+// A tap on an icon is the tap on its row: the same popup, anchored under the icon that was
+// tapped. The category is the one to read it off, its popup being a list with a value in it.
+await ev(`document.querySelector('#f-rows .quick [data-field="group"]').click()`);
+await sleep(350);
+const fromIcon = await ev(`(() => {
+  const p = document.querySelector('#fpop');
+  const b = document.querySelector('#f-rows .quick [data-field="group"]');
+  return { open: !p.hidden, title: document.querySelector('#fpop-title').textContent,
+           under: p.getBoundingClientRect().top > b.getBoundingClientRect().bottom,
+           groups: p.querySelectorAll('.gpick').length }; })()`);
+ok('tapping an icon opens its field, under that icon', fromIcon.open && fromIcon.under,
+  JSON.stringify(fromIcon));
+eq('and it is the same popup the row opens', [fromIcon.title, fromIcon.groups > 0],
+  ['Category', true]);
+await ev(`document.querySelector('#fpop .gpick').click()`);
+await sleep(300);
+const picked = await ev(`(() => {
+  const b = document.querySelector('#f-rows .quick [data-field="group"]');
+  return [getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)',
+          getComputedStyle(b.querySelector('svg')).color !== getComputedStyle(b).color,
+          b.getAttribute('aria-label')]; })()`);
+eq('a picked category lights its icon and colours its ball', picked.slice(0, 2), [true, true]);
+ok('with the value in the label', /^Category: ./.test(picked[2]), picked[2]);
+
+// The chevron: the same values as lines, in the order the icons are in, with the two toggles
+// sharing the first of them. The icons stay - a field having two ways in is already true of a
+// grid line and a kanban card.
+await expand(true);
+const named = await ev(`(() => ({
+  rows: [...document.querySelectorAll('#f-rows .frow')].map(r =>
+    r.classList.contains('chips') ? 'chips' : r.dataset.field),
+  chips: [...document.querySelectorAll('#f-rows .chips .fchip')]
+    .map(c => c.getAttribute('aria-label')),
+  stage: document.querySelector('#f-rows [data-field="stage"] .ftap').textContent,
+  quick: !!document.querySelector('#f-rows .quick')
+}))()`);
+eq('the chevron shows a line per icon, in the row\'s own order', named.rows,
+  ['title', 'when', 'chips', 'stage', 'group', 'recurrence', 'alerts', 'location',
+    'participants']);
+eq('with all-day and important sharing the first', named.chips, ['All-day', 'Important']);
+eq('the stage line reads its stage as a word', named.stage, 'Todo');
+eq('and the icons are still there', named.quick, true);
+
+await ev(`document.querySelector('#f-rows [data-field="stage"] .ftap').click()`);
+await sleep(300);
+eq('tapping the stage line cycles it, as the icon does',
+  await ev(`document.querySelector('#f-rows [data-field="stage"] .ftap').textContent`), 'Doing');
+
+// Remembered per device, like the board's orientation: someone who wants the names wants them
+// every time. Read from the store and then from a reopened popup.
+eq('the chevron is stored', await kv('calendar.popupExpanded'), true);
+await closeForm();
+await open();
+await newEntry();
+eq('and a popup opened afterwards keeps the names', await ev(
+  `document.querySelector('#f-rows .quick .more').getAttribute('aria-expanded')`), 'true');
+await expand(false);
+eq('and shutting it is stored too', await kv('calendar.popupExpanded'), false);
+await expand(true);
+await closeForm();
 
 // ---- 3. a trashcan is red wherever it appears --------------------------------------------------
 
@@ -1291,7 +1468,7 @@ await ev(`document.querySelector('.khead .kadd').click()`);
 await sleep(450);
 eq('a column + opens a new task in that stage', await ev(`(() => {
   if (document.querySelector('#popup').hidden) return 'no popup';
-  const l = [...document.querySelectorAll('#f-rows .flags .ib')].map(b => b.getAttribute('aria-label'));
+  const l = [...document.querySelectorAll('#f-rows .quick .ib')].map(b => b.getAttribute('aria-label'));
   return l.find(x => /^Stage/.test(x)) || 'no stage';
 })()`), 'Stage: todo');
 await ev(`document.querySelector('#f-icons [aria-label="Close"]').click()`);

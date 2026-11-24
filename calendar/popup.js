@@ -22,7 +22,8 @@ import {
 import { setKV } from '../shared/store.js';
 import { render } from '../shared/markdown.js';
 import {
-  S, $, el, icon, iconBtn, colorOf, labelOf, shortDayLabel, openRowPop, monthDays, STAGE_COLOR
+  S, $, el, icon, iconBtn, colorOf, labelOf, dayLabel, shortDayLabel, openRowPop, monthDays,
+  STAGE_COLOR
 } from './ui.js';
 import { parseDateText, dateTextOf, datePlaceholder } from '../shared/prefs.js';
 
@@ -36,6 +37,7 @@ const FORM_KEYS = ['title', 'type', 'start', 'end', 'stage', 'important',
 let D = null;        // the draft
 let active = null;   // the row holding an inline input: { key }
 let popped = null;   // the key whose anchored popup is open
+let popAnchor = null;    // the selector of the icon or row it hangs off
 let justClosed = null;   // the key a dismissing tap just closed, so that tap cannot reopen it
 
 // ---- the fields behind the icons ------------------------------------------------------------
@@ -49,10 +51,10 @@ const FIELDS = [
     set: v => !!v.trim(), sum: v => v.trim().split('\n').find(Boolean) || '', ed: bodyEditor },
   { k: 'group', ic: 'ball', label: 'Category', empty: '', mode: 'pop',
     set: v => !!v, sum: v => labelOf(v), ed: groupPicker },
-  { k: 'recurrence', ic: 'repeat', label: 'Repeat', empty: '', mode: 'pop',
-    set: v => !!v, sum: v => ruleText(v), ed: recurrenceEditor },
-  { k: 'alerts', ic: 'bell', label: 'Alerts', empty: [], mode: 'inline',
-    set: v => v.length > 0, sum: v => v.map(alertText).join(', '), ed: alertsEditor },
+  { k: 'recurrence', ic: 'repeat', label: 'Repeat', empty: '', mode: 'flow',
+    set: v => !!v, sum: v => ruleText(v), steps: repeatSteps },
+  { k: 'alerts', ic: 'bell', label: 'Alerts', empty: [], mode: 'pop',
+    set: v => v.length > 0, sum: v => alertsText(v), ed: alertPicker },
   { k: 'location', ic: 'pin', label: 'Location', empty: '', mode: 'inline',
     set: v => !!v, sum: v => v, ed: textEditor('Location') },
   { k: 'participants', ic: 'person', label: 'Participants', empty: [], mode: 'inline',
@@ -62,7 +64,14 @@ const FIELDS = [
 const readField = f => D.v[f.k];
 const writeField = (f, v) => { D.v[f.k] = v; };
 
-const alertText = n => n === 0 ? 'at start' : `${n} min before`;
+// The five an entry is ever given, and `none`, which is how an alert is taken off from the icon
+// row - there is no trashcan beside an icon. A file may hold anything, several alerts or a
+// number that is not among these, and that is read, shown and written back as it stands.
+const ALERTS = [[0, 'at start'], [5, '5 min before'], [15, '15 min before'],
+  [60, '1 hour before'], [1440, '1 day before']];
+const alertText = n => (ALERTS.find(([v]) => v === n) || [, `${n} min before`])[1];
+const alertsText = list => list.map(alertText).join(', ');
+const oneOfOurs = list => list.length === 1 && ALERTS.some(([v]) => v === list[0]);
 
 // Only the series carries the rule: an occurrence override must never rewrite it.
 const canRule = () => !D.occ || D.scope === 'series' || !D.occ.seriesId;
@@ -210,9 +219,16 @@ $('#f-rows').addEventListener('keydown', e => {
 // moment something differs from the file without the row being re-rendered under the cursor -
 // and it is what makes closing a row keep what was typed without a save to press.
 
+// The title, the when, the icon row - and then, only when the chevron is open, a line per icon
+// naming what it holds. The location, the participants and the details are lines either way: a
+// pin standing in for an address says only that there is one, which is the thing a row of icons
+// is for and these three are not.
 function fillForm() {
   iconRow();
-  $('#f-rows').replaceChildren(titleRow(), whenRow(), flagsRow(), ...fieldRows(), bodyBlock());
+  const rows = [titleRow(), whenRow(), quickRow()];
+  if (S.prefs.popupExpanded) rows.push(...namedRows());
+  rows.push(...fieldRows(LINE_FIELDS), bodyBlock());
+  $('#f-rows').replaceChildren(...rows);
 }
 
 const is = key => !!active && active.key === key;
@@ -255,19 +271,22 @@ function redraw() {
 // one the tap reaches the row it landed on and opens it. `justClosed` is what keeps that tap from
 // reopening the field it has just closed.
 
-function openFieldPop(f) {
+function openFieldPop(f, sel) {
   closeRow();
   popped = f.k;
+  popAnchor = sel;
   flow = null;
   const ed = f.ed(f.k === 'when' ? null : readField(f));
   if (f.k !== 'when') live(ed.node, () => writeField(f, ed.read()));
   $('#fpop-title').textContent = f.label;
   const head = $('#fpop-title').parentElement;
   $('#fpop-body').replaceChildren(ed.node);
-  // The anchor is looked up rather than passed in: on a dismissing tap the capture-phase
-  // listener below re-renders the rows before the row's handler calls this, so a node passed in
-  // from that handler is already detached and measures as zero.
-  openRowPop($('#fpop'), $(`#f-rows [data-field="${f.k}"]`));
+  // A selector, not the node: on a dismissing tap the capture-phase listener below re-renders
+  // the rows before the row's handler calls this, so a node passed in from that handler is
+  // already detached and measures as zero. It names which of the two opened it, because with
+  // the chevron open a field has both an icon and a row and the popup belongs under the one
+  // that was tapped.
+  openRowPop($('#fpop'), $(popAnchor));
   requestAnimationFrame(() => $('#fpop').querySelector('input, select, textarea')?.focus());
 }
 
@@ -290,11 +309,15 @@ addEventListener('click', e => {
   setTimeout(() => { justClosed = null; }, 0);
 }, true);
 
-// One way in for every row: the popup for the four whose control cannot be a line, the row itself
-// for the three that can.
-function openField(f) {
+// One way in for every field, from its icon or from its row: the popup for those whose control
+// cannot be a line, the row itself for those that can.
+const anchorSel = (key, from) => from === 'quick'
+  ? `#f-rows .quick [data-field="${key}"]` : `#f-rows .frow[data-field="${key}"]`;
+
+function openField(f, from) {
   if (justClosed === f.k) return;    // the tap that closed it must not reopen it
-  if (f.mode === 'pop') openFieldPop(f);
+  if (f.mode === 'flow') startFlow(f.k, anchorSel(f.k, from), f.steps(), 0);
+  else if (f.mode === 'pop') openFieldPop(f, anchorSel(f.k, from));
   else openRow(f.k);
 }
 
@@ -429,14 +452,26 @@ function whenParts() {
   return { start, end, span };
 }
 
-// Five of the six fields are rows; the sixth is the body, at the foot. They are in the canonical
-// order whether they are set or not. They used to be sorted set-first, which moved a row the
-// moment it was filled - so the field just typed into was no longer where it had just been looked
-// for, which is the same complaint the rows that grew answered.
-function fieldRows() {
+// The three the icon row stands in for, and the two it never could. The body is neither: it is
+// drawn at the foot. They are in the canonical order whether they are set or not - sorting them
+// set-first moved a row the moment it was filled, so the field just typed into was no longer
+// where it had just been looked for.
+const ICON_FIELDS = ['group', 'recurrence', 'alerts'];
+const LINE_FIELDS = ['location', 'participants'];
+
+function fieldRows(keys) {
   return FIELDS
-    .filter(f => f.k !== 'body' && (f.k !== 'recurrence' || canRule()))
+    .filter(f => keys.includes(f.k) && (f.k !== 'recurrence' || canRule()))
     .map(f => f.mode === 'inline' && is(f.k) ? inlineRow(f) : closedRow(f));
+}
+
+// What the chevron shows: the same values the icon row holds, as lines with their names, in the
+// order the icons are in. The two toggles share the first line - neither fills one on its own -
+// and the stage reads the word rather than a colour.
+function namedRows() {
+  const out = [chipsRow()];
+  if (D.type === 'task') out.push(stageRow());
+  return [...out, ...fieldRows(ICON_FIELDS)];
 }
 
 // The category's ball is drawn in the colour of the category it holds: a field's icon saying
@@ -455,7 +490,7 @@ function closedRow(f) {
   const set = f.set(readField(f));
   row.append(fieldIcon(f));
   row.append(tap(set ? f.sum(readField(f)) : f.label, !set, '',
-    () => openField(f),
+    () => openField(f, 'row'),
     `${f.label}${set ? `: ${f.sum(readField(f))}` : ''}`));
   if (set) row.append(clearBtn(f));
   return row;
@@ -500,14 +535,88 @@ function clearBtn(f) {
   return b;
 }
 
-// The toggle row, under the when: `24h`, and on a task stage and important. A tap on one of
-// them is the whole edit - into the draft, like everything else.
-function flagsRow() {
-  const bar = el('div', 'iconbar flags');
+// One row of icons under the when, and the whole of the popup's small print: all-day, the
+// stage, important, the category, the repetition and the alerts, with no names beside them.
+// Six icons are one line at 320px where six named rows are most of a screen, and the popup is
+// opened far more often to read an entry than to fill one in.
+//
+// **A tap on an icon is the tap on its row.** The two toggles flip where they stand, the stage
+// cycles, and the three fields open the same popup their line opens - so the chevron below
+// changes what is written down, never what anything does.
+function quickRow() {
+  const bar = el('div', 'iconbar quick');
   bar.append(allDayBtn());
   if (D.type === 'task') bar.append(stageBtn());
   bar.append(bangBtn());
+  for (const f of FIELDS.filter(f => ICON_FIELDS.includes(f.k)
+    && (f.k !== 'recurrence' || canRule()))) bar.append(quickBtn(f));
+  bar.append(el('span', 'spacer'), expandBtn());
   return bar;
+}
+
+// A field as an icon: lit when it holds something, because with the name gone the lit state is
+// all that is left to say so, and the value itself is in the label a screen reader and a hover
+// both read. The ball is the one that says more - it carries its category's colour.
+function quickBtn(f) {
+  const v = readField(f);
+  const set = f.set(v);
+  const b = iconBtn(f.ic, `${f.label}${set ? `: ${f.sum(v)}` : ''}`,
+    set || popped === f.k ? 'on' : '');
+  b.dataset.field = f.k;
+  if (f.k === 'group' && D.v.group) b.querySelector('svg').style.color = colorOf(D.v.group);
+  b.addEventListener('click', () => openField(f, 'quick'));
+  return b;
+}
+
+// The chevron: down for a row of icons, up for the lines. It is remembered per device, like the
+// board's orientation - someone who wants the names wants them every time - and it is both the
+// way out and the way back in, which is the rule every switch in Mine holds to.
+function expandBtn() {
+  const open = S.prefs.popupExpanded;
+  const b = iconBtn('chev', open ? 'Hide the field names' : 'Show the field names',
+    `more${open ? ' open' : ''}`);
+  b.setAttribute('aria-expanded', String(open));
+  b.addEventListener('click', () => {
+    S.prefs.popupExpanded = !open;
+    redraw();
+    setKV('calendar.popupExpanded', !open);
+  });
+  return b;
+}
+
+// All-day and important on one line: two yeses and noes, each an icon and its word, lit when on
+// and plain when off. There is nothing to clear and nothing to open, so the line carries neither
+// a trashcan nor an x - and neither value fills a row of its own.
+function chipsRow() {
+  const row = el('div', 'frow chips');
+  row.append(chip('24h', 'All-day', D.allDay, toggleAllDay),
+    chip('!', 'Important', D.important, () => { D.important = !D.important; redraw(); }));
+  return row;
+}
+
+function chip(glyph, text, on, onClick) {
+  const b = el('button', `fchip${on ? ' on' : ''}`);
+  b.type = 'button';
+  b.setAttribute('aria-pressed', String(on));
+  b.setAttribute('aria-label', text);
+  b.append(el('span', 'glyph', glyph), el('span', '', text));
+  b.addEventListener('click', onClick);
+  return b;
+}
+
+// The stage as a line, reading the stage it is in. Tapping it cycles, exactly as the icon above
+// does: a list of three would be a second way to set one value, and the line is a name for what
+// the colour already says.
+const STAGE_LABEL = { todo: 'Todo', doing: 'Doing', done: 'Done' };
+
+function stageRow() {
+  const row = el('div', 'frow');
+  row.dataset.field = 'stage';
+  const ic = icon('ticked');
+  ic.style.color = STAGE_COLOR[D.stage];
+  row.append(ic, tap(STAGE_LABEL[D.stage], false, '', cycleStage,
+    `Stage: ${STAGE_LABEL[D.stage]}`));
+  return row;
 }
 
 // All-day is a clickable control rather than a checkbox, and it lights with the ordinary enabled
@@ -519,13 +628,15 @@ function flagsRow() {
 function allDayBtn() {
   const b = iconBtn('24h', 'All-day', D.allDay ? 'on' : '');
   b.setAttribute('aria-pressed', String(D.allDay));
-  b.addEventListener('click', () => {
-    D.allDay = !D.allDay;
-    if (D.allDay) { D.startTime = ''; D.endTime = ''; }
-    else { D.startTime = D.startTime || '09:00'; D.endTime = D.endTime || '10:00'; }
-    redraw();
-  });
+  b.addEventListener('click', toggleAllDay);
   return b;
+}
+
+function toggleAllDay() {
+  D.allDay = !D.allDay;
+  if (D.allDay) { D.startTime = ''; D.endTime = ''; }
+  else { D.startTime = D.startTime || '09:00'; D.endTime = D.endTime || '10:00'; }
+  redraw();
 }
 
 // Stage and important are two small values rather than fields with a form each, so they are
@@ -535,11 +646,13 @@ function allDayBtn() {
 function stageBtn() {
   const b = iconBtn('ticked', `Stage: ${D.stage}`);
   b.querySelector('svg').style.color = STAGE_COLOR[D.stage];
-  b.addEventListener('click', () => {
-    D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
-    redraw();
-  });
+  b.addEventListener('click', cycleStage);
   return b;
+}
+
+function cycleStage() {
+  D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
+  redraw();
 }
 
 // A toggle, not a cycle: there is no third state to reach, and no badge, because the lit state
@@ -606,6 +719,10 @@ function bodyRow(f) {
 // start date and walks all four, the end half enters at the end date and walks the last two.
 // The end half is always the end date, even on a single day where it reads a time alone - one
 // rule, and the only way the end side can turn a day into a span.
+//
+// A step is `{ title, kind, get, set }` and nothing else: the kind picks the control, `get` is
+// what it opens on, and `set` writes it. A `set` returning `'end'` closes the flow there, which
+// is how `does not repeat` has no end condition to ask about.
 
 let flow = null;   // { key, sel, steps, i, phase, month, hour, typing }
 
@@ -621,8 +738,16 @@ function startFlow(key, sel, steps, i) {
 function enterStep() {
   const step = flow.steps[flow.i];
   flow.phase = 0;
-  if (step.kind === 'date') flow.month = D[step.key] || D.startDate || todayKey();
+  if (step.kind === 'date')
+    flow.month = step.get() || (step.month ? step.month() : '') || todayKey();
   drawFlow();
+}
+
+// What a picked value does: write it, then walk on - or stop here, where what was picked makes
+// the steps after it meaningless.
+function took(v) {
+  const r = flow.steps[flow.i].set(v);
+  if (r === 'end') closeFieldPop(); else stepNext();
 }
 
 function drawFlow() {
@@ -636,8 +761,10 @@ function drawFlow() {
   }
   $('#fpop-title').textContent = step.title;
   $('#fpop-body').replaceChildren(
-    flow.typing !== null ? typedNode(step)
-      : step.kind === 'date' ? dateNode(step) : timeNode(step));
+    flow.typing !== null && step.kind !== 'list' ? typedNode(step)
+      : step.kind === 'date' ? dateNode(step)
+        : step.kind === 'time' ? timeNode(step)
+          : step.kind === 'count' ? countNode(step) : listNode(step));
   openRowPop($('#fpop'), $(flow.sel));
   requestAnimationFrame(() => $('#fpop').querySelector('input')?.focus());
 }
@@ -680,10 +807,17 @@ function writeWhen(key, value) {
 // An all-day entry has no times to walk: the 24h icon is how all-day is turned off, and two
 // disabled boxes in the middle of a flow would be two taps that do nothing.
 function whenSteps() {
-  const steps = [{ key: 'startDate', title: 'Start date', kind: 'date' }];
-  if (!D.allDay) steps.push({ key: 'startTime', title: 'Start time', kind: 'time' });
-  steps.push({ key: 'endDate', title: 'End date', kind: 'date' });
-  if (!D.allDay) steps.push({ key: 'endTime', title: 'End time', kind: 'time' });
+  const date = (key, title) => ({ key, title, kind: 'date',
+    get: () => D[key], set: v => writeWhen(key, v),
+    // While the end is being picked the start is marked too, so the day the end may not fall
+    // before is in the grid rather than in a rule the picker applies afterwards.
+    highlight: () => (key === 'endDate' ? D.startDate : ''), month: () => D.startDate });
+  const time = (key, title) => ({ key, title, kind: 'time',
+    get: () => timeShown(key), set: v => writeWhen(key, v) });
+  const steps = [date('startDate', 'Start date')];
+  if (!D.allDay) steps.push(time('startTime', 'Start time'));
+  steps.push(date('endDate', 'End date'));
+  if (!D.allDay) steps.push(time('endTime', 'End time'));
   return steps;
 }
 
@@ -698,6 +832,7 @@ function openWhen(which) {
 // head is naming the step, so it has no room for a second pair of arrows.
 function dateNode(step) {
   const wrap = el('div', 'dpick');
+  const highlight = step.highlight ? step.highlight() : '';
   const [y, m] = partsOf(flow.month);
   const page = dir => {
     const b = iconBtn('chev', dir < 0 ? 'Previous month' : 'Next month',
@@ -711,11 +846,7 @@ function dateNode(step) {
     page(1));
   const grid = el('div', 'pick-body days');
   grid.append(...monthDays(y, m - 1, {
-    value: D[step.key] || '',
-    // While the end is being picked the start is marked too, so the day the end may not fall
-    // before is in the grid rather than in a rule the picker applies afterwards.
-    highlight: step.key === 'endDate' ? D.startDate : '',
-    onPick: k => { writeWhen(step.key, k); stepNext(); }
+    value: step.get() || '', highlight, onPick: k => took(k)
   }));
   wrap.append(nav, grid);
   return wrap;
@@ -730,7 +861,7 @@ const timeShown = key => D[key] || (key === 'endTime' && D.startTime
   ? `${pad((+D.startTime.slice(0, 2) + 1) % 24)}:${D.startTime.slice(3)}` : '09:00');
 
 function timeNode(step) {
-  const cur = timeShown(step.key);
+  const cur = step.get();
   if (flow.phase === 0) {
     const grid = el('div', 'hgrid');
     for (let h = 0; h < 24; h++) {
@@ -746,7 +877,7 @@ function timeNode(step) {
     const t = `${flow.hour}:${mm}`;
     const b = el('button', `pk${cur === t ? ' sel' : ''}`, t);
     b.type = 'button';
-    b.addEventListener('click', () => { writeWhen(step.key, t); stepNext(); });
+    b.addEventListener('click', () => took(t));
     row.append(b);
   }
   return row;
@@ -767,11 +898,44 @@ function typedNode(step) {
     e.preventDefault();
     const v = date ? parseDateText(i.value, S.prefs.dateFormat, flow.month) : hhmm(i.value);
     if (!v) {
-      i.value = date ? dateTextOf(D[step.key], S.prefs.dateFormat) : D[step.key] || '';
+      i.value = date ? dateTextOf(step.get(), S.prefs.dateFormat) : step.get() || '';
       return;
     }
-    writeWhen(step.key, v);
-    stepNext(true);
+    const r = step.set(v);
+    if (r === 'end') closeFieldPop(); else stepNext(true);
+  });
+  return i;
+}
+
+// A list of choices, the one the field holds marked: the repetition's rules and its end
+// conditions. A choice the list cannot express is a row that cannot be picked, shown as the
+// file writes it and kept until one that can is chosen.
+function listNode(step) {
+  const cur = step.get();
+  const wrap = el('div', 'glist');
+  for (const [v, text, locked] of step.options()) {
+    const b = el('button', `gpick${v === cur ? ' on' : ''}`);
+    b.type = 'button';
+    b.append(el('span', '', text));
+    if (locked) b.disabled = true;
+    else b.addEventListener('click', () => took(v));
+    wrap.append(b);
+  }
+  return wrap;
+}
+
+// The one step that is a number rather than a choice: how many times a repetition runs.
+function countNode(step) {
+  const i = el('input');
+  i.type = 'number';
+  i.min = '1';
+  i.value = step.get() || '';
+  i.addEventListener('keydown', e => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const n = Number(i.value);
+    if (!Number.isInteger(n) || n < 1) return;
+    took(n);
   });
   return i;
 }
@@ -781,21 +945,20 @@ function typedNode(step) {
 addEventListener('keydown', e => {
   if (!flow || flow.typing !== null || e.metaKey || e.ctrlKey || e.altKey) return;
   if (!/^[0-9]$/.test(e.key)) return;
+  const step = flow.steps[flow.i];
+  if (step.kind === 'count') return;               // already a box, and already answering digits
+  if (step.kind === 'list' && !step.digit) return;
   e.preventDefault();
+  // A number typed at the repetition's end condition is the first character of a date, so the
+  // list gives way to the step that holds one rather than to a box of its own.
+  if (step.kind === 'list') step.digit();
   flow.typing = e.key;
   drawFlow();
 });
 
 // ---- the editors ---------------------------------------------------------------------------
-// Every editor returns the bare control: an inline row puts it in the line, a popup puts it in
-// its body, and only the ones with more than one control of their own wrap them in labels.
-
-function field(labelText, control, hint) {
-  const l = el('label', '', labelText);
-  l.append(control);
-  if (hint) l.append(el('small', '', hint));
-  return l;
-}
+// Every editor returns the bare control: an inline row puts it in the line and a popup puts it
+// in its body. None of them carries a label any more - the popup's head names what it holds.
 
 // A declaration, not a const arrow: FIELDS calls this while the module is still evaluating.
 function textEditor(placeholder) {
@@ -807,16 +970,30 @@ function textEditor(placeholder) {
   };
 }
 
-// A line of minutes, so the row holds it: the placeholder is the format, because `0, 15` is the
-// one of the three that a field name would not have explained. That 0 means at start, and that
-// nothing fires while the app is closed, is in REQUIREMENTS.md - the row has no line to say it on
-// and gaining one is what this change removed.
-function alertsEditor(cur) {
-  const i = el('input');
-  i.inputMode = 'numeric';
-  i.placeholder = '0, 15';
-  i.value = (cur || []).join(', ');
-  return { node: i, read: () => splitList(i.value).map(Number).filter(Number.isFinite) };
+// A list, like the category's: six rows, and picking one is the whole edit. It was a line of
+// minutes typed by hand, which asked for a number in a unit the field never named and let `0,
+// 15` be written where almost nobody wanted two alerts.
+//
+// A file holding something the list cannot express - two alerts, or 30 minutes - shows it at the
+// top as a **custom row that cannot be picked**, and it is written back untouched until one of
+// the six is chosen. That is the treatment a hand-written repetition rule already gets, and the
+// reason is the same: this app is not the only thing that may have written the file.
+function alertPicker(cur) {
+  const list = cur || [];
+  const f = FIELDS.find(x => x.k === 'alerts');
+  const wrap = el('div', 'glist');
+  const add = (text, on, pick) => {
+    const b = el('button', `gpick${on ? ' on' : ''}`);
+    b.type = 'button';
+    b.append(el('span', '', text));
+    if (pick) b.addEventListener('click', pick); else b.disabled = true;
+    wrap.append(b);
+  };
+  const take = v => () => { writeField(f, v); closeFieldPop(); };
+  if (list.length && !oneOfOurs(list)) add(`custom · ${alertsText(list)}`, true, null);
+  add('none', !list.length, take([]));
+  for (const [n, text] of ALERTS) add(text, list.length === 1 && list[0] === n, take([n]));
+  return { node: wrap, read: () => list };
 }
 
 // One line, commas between: splitList already breaks on commas, semicolons and spaces alike, so
@@ -1039,69 +1216,66 @@ function choiceOf(rule, startKey) {
 function ruleText(rule) {
   const { choice, ends } = choiceOf(rule, D ? D.startDate : todayKey());
   const name = choice === 'custom' ? clean(rule) : CHOICES.find(([c]) => c === choice)[1];
-  return ends.kind === 'until' ? `${name}, until ${ends.until}`
+  // The end date in the format every other date on screen is in: the row sits under a when-row
+  // that reads one, and an ISO date is the file's form, not the screen's.
+  return ends.kind === 'until' ? `${name}, until ${dayLabel(ends.until)}`
     : ends.kind === 'count' ? `${name}, ${ends.count} times` : name;
 }
 
-function recurrenceEditor(cur) {
+// Two steps: the rule, then when it stops. The list is the choices themselves rather than a
+// select inside a popup - a dropdown in a popup is two taps to see seven options, and the
+// second step would have had to appear under the first instead of replacing it.
+//
+// The rule is one string and each step writes half of it, so the halves are held here while the
+// flow walks them and the string is rebuilt on every pick: the draft is never a half-written
+// rule, and leaving after the first step leaves a rule that repeats for ever, which is what
+// picking a frequency and nothing else means.
+function repeatSteps() {
   const startKey = D.startDate || todayKey();
-  const { choice, ends } = choiceOf(cur, startKey);
-  const wrap = el('div', 'rec');
-
-  const sel = el('select');
-  if (choice === 'custom') {
-    const o = el('option', '', `custom · ${clean(cur)}`);
-    o.value = 'custom';
-    o.disabled = true;
-    o.selected = true;
-    sel.append(o);
-  }
-  for (const [v, text] of CHOICES) {
-    const o = el('option', '', text);
-    o.value = v;
-    if (v === choice) o.selected = true;
-    sel.append(o);
-  }
-
-  const kind = el('select');
-  for (const [v, text] of [['never', 'never'], ['until', 'on a date'], ['after', 'after n times']]) {
-    const o = el('option', '', text);
-    o.value = v;
-    if ((v === 'after' ? 'count' : v) === ends.kind) o.selected = true;
-    kind.append(o);
-  }
-  const until = el('input');
-  until.type = 'date';
-  until.value = ends.until || '';
-  const count = el('input');
-  count.type = 'number';
-  count.min = '1';
-  count.value = ends.count || '';
-
-  const syncEnds = () => {
-    until.hidden = kind.value !== 'until';
-    count.hidden = kind.value !== 'after';
-    wrap.querySelector('.ends').hidden = sel.value === 'none';
+  let { choice, ends } = choiceOf(D.v.recurrence, startKey);
+  const kept = clean(D.v.recurrence);
+  const write = () => {
+    D.v.recurrence = choice === 'custom' ? kept : buildRule(choice, startKey, ends);
+    syncDisk();
   };
-  kind.addEventListener('change', syncEnds);
-  sel.addEventListener('change', syncEnds);
 
-  const endsRow = el('div', 'ends');
-  endsRow.append(el('span', 'flab', 'Ends'), kind, until, count);
+  // `on a date` and `after n times` need a third step each, and only one of them at a time: the
+  // step list grows the one that was asked for rather than carrying both and skipping one.
+  const untilStep = { title: 'Ends on', kind: 'date',
+    get: () => ends.until || '', month: () => startKey,
+    set: v => { ends = { kind: 'until', until: v }; write(); } };
+  const countStep = { title: 'Ends after', kind: 'count',
+    get: () => ends.count || '',
+    set: n => { ends = { kind: 'count', count: n }; write(); } };
 
-  wrap.append(field('Repeats', sel, choice === 'custom'
-    ? 'This rule was written by hand and the dropdown cannot express it. It is kept exactly as it is; choosing an option above replaces it.'
-    : null), endsRow);
-  syncEnds();
+  const rule = { title: 'Repeat', kind: 'list',
+    get: () => choice,
+    options: () => [
+      ...(choice === 'custom' ? [['custom', `custom · ${kept}`, true]] : []),
+      ...CHOICES
+    ],
+    set: v => {
+      choice = v;
+      if (v === 'none') { ends = { kind: 'never' }; write(); return 'end'; }
+      write();
+    } };
 
-  return {
-    node: wrap,
-    read: () => sel.value === 'custom' ? clean(cur) : buildRule(sel.value, startKey, {
-      kind: kind.value === 'after' ? 'count' : kind.value,
-      until: until.value,
-      count: Number(count.value)
-    })
-  };
+  const until = { title: 'Repeat until', kind: 'list',
+    get: () => (ends.kind === 'count' ? 'count' : ends.kind),
+    options: () => [['never', 'never'], ['until', 'on a date'], ['count', 'after n times']],
+    set: v => {
+      if (v === 'never') { ends = { kind: 'never' }; write(); return 'end'; }
+      ends = { ...ends, kind: v === 'count' ? 'count' : 'until' };
+      flow.steps = [rule, until, v === 'count' ? countStep : untilStep];
+    },
+    digit: () => {
+      ends = { ...ends, kind: 'until' };
+      flow.steps = [rule, until, untilStep];
+      flow.i = 2;
+      flow.month = ends.until || startKey;
+    } };
+
+  return [rule, until];
 }
 
 // ---- saving --------------------------------------------------------------------------------

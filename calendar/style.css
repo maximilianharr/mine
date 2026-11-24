@@ -369,9 +369,24 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   padding-bottom: .5rem; margin-bottom: .5rem; border-bottom: 1px solid var(--line);
 }
 .iconbar .spacer { flex: 1; }
-/* The toggle row, under start and end: `24h` alone on an event, with stage and important on a
-   task. */
-.flags { padding: .5rem 0 .2rem; margin: 0; border: 0; }
+/* The quick row, under the when: every small value as an icon and no names, with a chevron at
+   its end that shows the names as lines beneath it. It does not wrap - six icons and the
+   chevron are one line at 320px - and it carries no border of its own, the rows below having
+   one each. */
+.quick { padding: .5rem 0 .2rem; margin: 0; border: 0; flex-wrap: nowrap; }
+.quick .more svg { transform: rotate(-90deg); }
+.quick .more.open svg { transform: rotate(90deg); }
+
+/* All-day and important on one line, each an icon and its word: a yes or no is not a field, so
+   neither carries a trashcan, and neither fills a row on its own. */
+.chips { gap: .45rem; }
+.fchip {
+  display: flex; align-items: center; gap: .4rem; margin: 0; padding: .4rem .7rem;
+  font: inherit; font-size: .85rem; color: var(--fg); background: none;
+  border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
+}
+.fchip.on { background: var(--soft); border-color: var(--muted); font-weight: 600; }
+.fchip .glyph { font-size: .8rem; font-weight: 700; }
 .btngroup { display: flex; margin: .7rem 0 0; }
 .seg {
   flex: 1; width: auto; margin: 0; padding: .55rem .4rem; font-size: .85rem; font-weight: 500;
@@ -469,9 +484,6 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   z-index: 14; width: min(24rem, calc(100vw - 1.5rem)); max-height: 84dvh;
   border-radius: .8rem;
 }
-.rec .ends { display: flex; align-items: center; gap: .4rem; margin-top: .7rem; }
-.rec .ends .flab { flex: none; font-size: .85rem; color: var(--muted); }
-.rec .ends select, .rec .ends input { flex: 1; width: auto; margin: 0; }
 .glist { display: flex; flex-direction: column; gap: .1rem; }
 .gpick {
   display: flex; align-items: center; gap: .55rem; width: 100%; margin: 0;
@@ -479,6 +491,9 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   color: var(--fg); background: none; border: 0; border-radius: .4rem;
 }
 .gpick.on { background: var(--soft); }
+/* The one row of a picker that cannot be picked: a value in the file that the list cannot
+   express, shown as it is written and kept until one that can is chosen. */
+.gpick:disabled { color: var(--muted); cursor: default; }
 
 /* ---- the group manager's rows ---- */
 .grow { display: flex; align-items: center; gap: .5rem; padding: .25rem 0; }

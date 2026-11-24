@@ -318,7 +318,8 @@ if (!await getConfig()) {
     showWeeks: !!(await getKV('calendar.showWeeks')),
     confirmDiscard: (await getKV('calendar.confirmDiscard')) ?? true,
     timeZone: (await getKV('calendar.timeZone')) || '',
-    boardOrientation: (await getKV('calendar.boardOrientation')) || 'horz'
+    boardOrientation: (await getKV('calendar.boardOrientation')) || 'horz',
+    popupExpanded: !!(await getKV('calendar.popupExpanded'))
   };
   setZone(S.prefs.timeZone);
   S.hidden = new Set(await getKV('calendar.hiddenGroups') || []);
