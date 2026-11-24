@@ -1,0 +1,139 @@
+/grill-me Your task is to implement these features for the calendar / task app
+
+
+```
+
+in Kanban/event view
+- when clicking on hamburger symbol show 'filter' and 'settings'
+- then open filter and settings popup if user clicks on them
+
+system-wide
+- Use 24 h format
+
+in Kanban/event popup:
+- When user clicks on a row to edit, then the general popup size and row should not change to much as it confuses the user. e.g. the user wants to create a task, he clicks on the 'repeat' row, then the row changes complete with 'repeat' title, then 'repeats' in second row and repeat dropdown selection. He has to change his focus and search for the field again. Thus, your task is for all the rows to keep it to one row so that the user does not have to search again. e.g. in repeat or category a small popup with the repeat intervals or category is shown. For location and other text fields the 'location' tag is removed and user can directly insert text at this line without the main popup size increasing etc
+```
+
+---
+
+<task-notification>
+<task-id>bds4dig7v</task-id>
+<tool-use-id>toolu_01K7SdShYvfmc44fN7DrFbeA</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bds4dig7v.output</output-file>
+<status>completed</status>
+<summary>Background command "Fix the category pick tests and rerun" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>btqcartxu</task-id>
+<tool-use-id>toolu_01X18qyCvKzFPCfRPxEd31VM</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/btqcartxu.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the suite again" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bdigv5kek</task-id>
+<tool-use-id>toolu_019HeWvWD1Rp6PNWxTHHsLMg</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bdigv5kek.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the browser checks to report" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bq00dyw6m</task-id>
+<tool-use-id>toolu_01BcmCzZmkULi23nXRFPAXgC</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bq00dyw6m.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the suite and capture the stack" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bnn75jqr2</task-id>
+<tool-use-id>toolu_01NcvDUtGagnHwRC2jS3bL3f</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bnn75jqr2.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite cleanly" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bw6tof0jy</task-id>
+<tool-use-id>toolu_01F9442SxL8rmK4nuFXXnAnS</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bw6tof0jy.output</output-file>
+<status>completed</status>
+<summary>Monitor "test/run.sh completion and failures" stream ended</summary>
+<event>passes: 362  fails: 0
+Error: TypeError: Cannot read properties of null (reading 'click')
+exit=1</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b7defdcvs</task-id>
+<tool-use-id>toolu_01VV3umg9LCPdbLcYRGuhJno</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b7defdcvs.output</output-file>
+<status>completed</status>
+<summary>Background command "Wait for the clean run and report" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>br5my70wj</task-id>
+<tool-use-id>toolu_01W53rfzhjqXcFM7RkRhzM3x</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/br5my70wj.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full suite again" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b7jvf3pyx</task-id>
+<tool-use-id>toolu_01YYqTtNUE9xLbb9EjCaubkE</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/b7jvf3pyx.output</output-file>
+<status>completed</status>
+<summary>Monitor "test/run.sh third run result" stream ended</summary>
+<event>passes: 393  fails: 1
+FAIL  and so does Escape  — got false, want true
+exit=1</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>beeqbv6us</task-id>
+<tool-use-id>toolu_01Uio1ffroxnvLCCABEaErwq</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/beeqbv6us.output</output-file>
+<status>completed</status>
+<summary>Background command "Update docs and rerun the suite" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bpmqr87bz</task-id>
+<tool-use-id>toolu_01YLpcCCkD4DsfTVEQ1mVYg8</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/ce618124-3173-4bde-bef4-3cf0bd48005d/tasks/bpmqr87bz.output</output-file>
+<status>completed</status>
+<summary>Monitor "test/run.sh fourth run result" stream ended</summary>
+<event>passes: 394  fails: 0
+all unit checks passed
+all checks passed
+exit=0</event>
+</task-notification>
+
+---
+
+Great work. Now commit and push. I will test it on my desktop and android and provide feedback.
