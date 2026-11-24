@@ -41,7 +41,9 @@
   </div>
 
   <div class="view" id="view"></div>
-  <p class="sync" id="sync"></p>
+  <!-- the sync line reports and is pressed: it is what you are looking at when you want to
+       know why it says what it says -->
+  <button class="sync" id="sync" type="button" title="Open the logs"></button>
 </main>
 
 <!-- dropdown date picker: a month at a time, a 9-year grid, or a list of sprints -->
@@ -114,9 +116,19 @@
   <div id="sub-body"></div>
 </div>
 
-<!-- the hamburger's two errands, named before either is opened -->
+<!-- the hamburger's three errands, named before any is opened -->
 <div class="pop" id="menu-pop" hidden>
   <div id="menu-body"></div>
+</div>
+
+<!-- the logs: what the last sync attempt did, what is still waiting, and the way to retry it or
+     give up on it. Centred, like the settings: it is read rather than read past. -->
+<div class="centred panel" id="logs-panel" hidden>
+  <div class="pop-head">
+    <h2>Logs</h2><span class="spacer"></span>
+    <button class="ib" id="logs-close" type="button" title="Close" aria-label="Close"></button>
+  </div>
+  <div id="logs-body"></div>
 </div>
 
 <!-- the filter: a dropdown off the hamburger, because the view it narrows has to stay in sight -->

@@ -12,7 +12,7 @@ import {
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
 import { escapeEntry } from './popup.js';
-import { openFilter, openPanel, renderFilter } from './settings.js';
+import { openFilter, openPanel, openLogs, renderFilter } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
@@ -134,16 +134,19 @@ $('#next').addEventListener('click', () => step(1));
 
 for (const [id, name] of [['#home', 'house'], ['#zoom-btn', 'zoom'], ['#menu-btn', 'menu'],
   ['#day-add', 'plus'], ['#day-close', 'x'], ['#sub-close', 'x'], ['#settings-close', 'x'],
-  ['#filter-close', 'x'], ['#fpop-close', 'x']])
+  ['#filter-close', 'x'], ['#fpop-close', 'x'], ['#logs-close', 'x']])
   $(id).append(icon(name));
 
 // ---- the hamburger's menu ------------------------------------------------------------------
-// Two errands behind one button, each named before it is opened and each opening on its own. The
-// button used to open both at once in a single panel, where a heading was the only thing telling
-// a group you hide this afternoon from the week's first day, and the filter had no room to list
-// its groups without pushing the settings off the screen.
-
-const MENU = [['filter', 'filter', openFilter], ['gear', 'settings', openPanel]];
+// Three errands behind one button, each named before it is opened and each opening on its own.
+// The first two used to open at once in a single panel, where a heading was the only thing
+// telling a group you hide this afternoon from the week's first day, and the filter had no room
+// to list its groups without pushing the settings off the screen.
+//
+// The third is the one you reach for when the sync line says something you did not expect: what
+// the last attempt did, what is still waiting, and the two ways out of it.
+const MENU = [['filter', 'filter', openFilter], ['gear', 'settings', openPanel],
+  ['logs', 'logs', openLogs]];
 
 function openMenu() {
   if (!$('#menu-pop').hidden) return closePops();
@@ -161,6 +164,12 @@ function openMenu() {
 $('#menu-btn').addEventListener('click', openMenu);
 $('#filter-close').addEventListener('click', closePops);
 $('#settings-close').addEventListener('click', closePops);
+$('#logs-close').addEventListener('click', closePops);
+
+// The sync line is the thing you are looking at when you want to know why, so it is the way in
+// as well as the report. Reaching the panel through the hamburger only helps once you know it
+// is there.
+$('#sync').addEventListener('click', openLogs);
 
 // ---- the dropdown date picker --------------------------------------------------------------
 // A month at a time, a 9-year grid, or - in the kanban - a list of sprints.
@@ -289,33 +298,52 @@ async function showSync() {
 }
 
 // Every write reaches the local mirror first, so the view is already right and the push can run
-// behind it. One drain at a time, and failures and conflicts are reported here rather than in
-// the popup the user has already left.
+// behind it. One at a time, because the queue is shared and two drains over it would build two
+// commits out of the same items. Failures and conflicts are reported on the sync line rather
+// than in the popup the user has already left - and the reason is also written to the record, so
+// it is still there after the reload that wipes this line.
 let chain = Promise.resolve();
+const serial = fn => (chain = chain.then(fn).catch(() => {}));
+
 function push(message) {
-  chain = chain.then(async () => {
-    status('pushing…');
-    try {
-      const r = await drain(message);
-      if (r.conflicts?.length)
-        status(`${r.conflicts.length} change(s) kept beside the remote version as .conflict files — review them`, true);
-      else await showSync();
-    } catch (err) {
-      status(`not pushed: ${err.message}`, true);
-    }
-  });
+  serial(async () => { status('pushing…'); await attempt(message); });
 }
 
-async function refresh() {
-  if (await queuedCount()) return showSync();
-  status('checking…');
+async function attempt(message) {
   try {
-    const r = await pull();                    // whole repo: the mirror and the ETag are shared
-    if (!r.unchanged) { S.model = await loadModel(); render(); }
-    status(r.empty ? 'repo is empty' : r.unchanged ? 'in sync' : `in sync — ${r.changed} file(s) updated`);
+    const r = await drain(message);
+    if (r.conflicts?.length) {
+      status(`${r.conflicts.length} change(s) kept beside the remote version as .conflict files — review them`, true);
+      return false;
+    }
+    await showSync();
+    return true;
   } catch (err) {
-    status(err.message, true);
+    status(`not pushed: ${err.message} — tap for details`, true);
+    return false;
   }
+}
+
+// On open and on focus. A queue goes first and is retried unconditionally: a queue nothing ever
+// retries is a queue that never empties, which is how a browser ends up reporting a count it
+// cannot explain or clear. The pull waits for it, and runs only if the drain got through -
+// anything that fails a drain (the token, the network) fails a pull too, and pulling over a
+// dirty queue rewrites the mirror underneath the changes still in it.
+function refresh() {
+  return serial(async () => {
+    if (await queuedCount()) {
+      status('pushing…');
+      if (!await attempt()) return;            // it already said why, and said where to look
+    }
+    status('checking…');
+    try {
+      const r = await pull();                  // whole repo: the mirror and the ETag are shared
+      if (!r.unchanged) { S.model = await loadModel(); render(); }
+      status(r.empty ? 'repo is empty' : r.unchanged ? 'in sync' : `in sync — ${r.changed} file(s) updated`);
+    } catch (err) {
+      status(`${err.message} — tap for details`, true);
+    }
+  });
 }
 
 // ---- boot ----------------------------------------------------------------------------------
@@ -323,6 +351,7 @@ async function refresh() {
 S.render = render;
 S.status = status;
 S.push = push;
+S.refresh = refresh;
 S.reload = loadModel;
 wireView();
 

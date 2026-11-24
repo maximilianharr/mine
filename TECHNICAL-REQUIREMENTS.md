@@ -78,6 +78,10 @@ way, and everything after drains normally once a history exists.
 Run on app open and on window focus. Background Sync does not exist in Safari, so all syncing is
 foreground.
 
+**A queue is drained first and the pull waits for it**, and the pull runs only if the drain got
+through: whatever fails a drain — the token, the network — fails a pull too, and pulling over a
+dirty queue rewrites the mirror underneath the changes still in it.
+
 ## Writes — one commit per drain
 
 Queue each change locally with the blob SHA it was based on, then drain the whole queue as one
@@ -91,10 +95,39 @@ API has no rename — cannot be half-applied, and a 20-item offline backlog is o
 A rejected ref update means someone pushed elsewhere: pull, rebuild on the new base, retry. This
 succeeds, because nearly every write is a create at a freshly generated path.
 
-**True conflict** = a queued change whose base SHA no longer matches the remote blob. Remote keeps
-the canonical path; the local version is committed beside it as `<name>.conflict-<yyyymmdd>.md`
-with `conflictOf:`. Nothing is discarded and the queue never jams. On 401/403, pause and send the
-user to settings.
+**True conflict** = a queued change whose base SHA no longer matches the remote blob **and whose
+text differs from it**. Remote keeps the canonical path; the local version is committed beside it
+as `<name>.conflict-<yyyymmdd>.md` with `conflictOf:`. Nothing is discarded and the queue never
+jams.
+
+**A matching text is a receipt, not a conflict.** A drain that died between the ref update and
+the queue being cleared leaves items behind whose base SHA no longer matches — because the remote
+now holds our own commit. Those are dropped, not forked: the blob is fetched in that branch
+anyway, so comparing it costs no request, and without the comparison the app forks its own
+committed work into `.conflict` files on the next attempt.
+
+**Every attempt is retried.** The queue is never a reason to skip a drain, including on 401/403:
+the error is reported and recorded, and the next open or focus tries again. The user needs one
+thing from a failure, which is to be told what it was.
+
+## The sync record
+
+One row in `kv` under `sync.last`, written inside `drain()` and `pull()` so that every caller is
+covered — both apps' refreshes, the calendar's background push — and so the reason outlives the
+status line, which the next focus overwrites.
+
+`{ at, lastAt, count, app, op, outcome, status, detail }`. A repeat of the same op, outcome and
+status bumps `count` and `lastAt` rather than appending, because a wedged queue is retried on
+every window focus and twenty copies of one 403 would bury the pull that explains it. A 304 pull
+is not an attempt at anything and is not recorded. It is one row and not a history: what is worth
+knowing is what is failing and for how long.
+
+Queued items carry `at`, the time they were queued, so a backlog can be told from a jam.
+
+**Discarding the queue repairs the mirror.** `discardQueue()` clears it, forgets the local copy
+of every path it held, and drops the ETag — the next pull then restores exactly what GitHub
+holds. Forgetting the queue alone would leave unpushable text in the mirror filed under the blob
+SHA it was based on, which every later pull would compare as equal and skip forever.
 
 ## Service worker
 

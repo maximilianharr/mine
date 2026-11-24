@@ -412,6 +412,19 @@ This is the check that holds the file format to
 [calendar/TECHNICAL-REQUIREMENTS.md](calendar/TECHNICAL-REQUIREMENTS.md), and it reads the file
 back out of the local mirror rather than trusting the form.
 
+**The logs panel, over a queue that cannot drain.** The fake token makes every push fail, which
+is the state the panel exists for, so the checks seed fourteen items into the queue and reload:
+that opening **retries the queue** rather than reporting a count at it, that the sync line is a
+**button** that says the push failed and where to look, and that pressing it opens the panel
+naming the count, the two actions, what the last attempt failed with, and one line per queued
+change with its kind, path and age. That the panel **fits 320 px with a backlog in it**. That
+`push now` **counts a repeat rather than appending** a second record. And that `discard all` —
+with `window.confirm` stubbed over CDP — empties the queue, **drops the ETag** so the next pull
+restores those paths, and leaves the panel reading `in sync`.
+
+The one thing this cannot check is the drain succeeding, because that needs a real token. What it
+does check is the half that used to be unreachable: what the app says when the drain does not.
+
 ## A check must be able to fail
 
 Before trusting a new check, break the thing it covers and watch it go red. A fit check written

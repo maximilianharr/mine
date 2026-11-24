@@ -30,6 +30,7 @@ export const S = {
   render: () => {},
   status: () => {},
   push: () => {},
+  refresh: async () => {},
   reload: async () => S.model
 };
 
@@ -115,6 +116,10 @@ const ICON = {
   // meaning details and no icon means two things.
   zoom:   { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 },
   menu:   { d: 'M2.4 4.4h11.2M2.4 8h11.2M2.4 11.6h11.2', stroke: 1.6 },
+  // A clock face for the logs: the panel's subject is when the last attempt ran and how long
+  // the queue has been waiting. `lines` already means details and may not come to mean two
+  // things, and a stack of lines would read as one anyway.
+  logs:   { d: 'M8 2.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 8 2.6zM8 5.1V8.3l2.5 1.6', stroke: 1.5 },
   gear:   { d: 'M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM7.1 1.4h1.8l.3 1.7 1.2.5 1.4-1 1.3 1.3-1 1.4.5 1.2 1.7.3v1.8l-1.7.3-.5 1.2 1 1.4-1.3 1.3-1.4-1-1.2.5-.3 1.7H7.1l-.3-1.7-1.2-.5-1.4 1-1.3-1.3 1-1.4-.5-1.2-1.7-.3V7.1l1.7-.3.5-1.2-1-1.4 1.3-1.3 1.4 1 1.2-.5z', stroke: 1.2 }
 };
 
@@ -182,7 +187,8 @@ export function openRowPop(pop, anchor) {
   place(pop, anchor, 'left');
 }
 
-const POPS = ['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#settings-panel'];
+const POPS = ['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#settings-panel',
+  '#logs-panel'];
 
 export function closePops() {
   for (const id of [...POPS, '#scrim']) $(id).hidden = true;

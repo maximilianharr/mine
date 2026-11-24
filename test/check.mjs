@@ -265,7 +265,7 @@ const typeWhen = async (i, value, blur) => {
   await sleep(200);
   return ev(`document.querySelectorAll('#fpop input')[${i}].value`);
 };
-// The hamburger names its two errands before either opens: one tap to show them, one to pick.
+// The hamburger names its three errands before any opens: one tap to show them, one to pick.
 const menu = async which => {
   await ev(`document.querySelector('#menu-btn').click()`);
   await sleep(350);
@@ -729,21 +729,22 @@ await closeForm();
 
 // ---- 4. the filter and the top pane ------------------------------------------------------------
 
-// The hamburger names its two errands and opens neither: one tap shows `filter` and `settings`,
-// a second opens the one that was meant. There is still no gear and no filter button in the pane,
-// because both are behind this one button.
+// The hamburger names its three errands and opens none: one tap shows `filter`, `settings` and
+// `logs`, a second opens the one that was meant. There is still no gear and no filter button in
+// the pane, because all three are behind this one button.
 await viewport(900);
 await open();
 eq('there is no gear and no filter button in the pane',
   await ev(`document.querySelectorAll('#gear, #filter-btn').length`), 0);
 await menu();
-eq('the hamburger opens a menu naming its two errands', await ev(
+eq('the hamburger opens a menu naming its three errands', await ev(
   `(() => { const p = document.querySelector('#menu-pop');
     return !p.hidden && [...p.querySelectorAll('.mrow')].map(b => b.textContent); })()`),
-  ['filter', 'settings']);
-eq('and opens neither of them yet', await ev(
+  ['filter', 'settings', 'logs']);
+eq('and opens none of them yet', await ev(
   `[document.querySelector('#filter-pop').hidden,
-    document.querySelector('#settings-panel').hidden]`), [true, true]);
+    document.querySelector('#settings-panel').hidden,
+    document.querySelector('#logs-panel').hidden]`), [true, true, true]);
 eq('the menu hangs off the hamburger, within its right edge', await ev(
   `(() => { const b = document.querySelector('#menu-btn').getBoundingClientRect();
     const p = document.querySelector('#menu-pop').getBoundingClientRect();
@@ -1703,6 +1704,124 @@ eq('and turning it back on restores it', await ev(
   `!document.querySelector('#ask').hidden`), true);
 await ev(`document.querySelector('#ask-discard').click()`);
 await sleep(300);
+
+// ---- 7. the logs ---------------------------------------------------------------------------
+// A queue that cannot drain was the one state the app could not explain: the count was the whole
+// of what it said, and the reason was written to that same line and overwritten by the next
+// focus. The fake token means every drain in here fails, which is the state to check.
+
+const kv = key => ev(`(async () => {
+  const db = await new Promise(res => {
+    const r = indexedDB.open('mine', 1);
+    r.onsuccess = () => res(r.result);
+  });
+  return new Promise(res => {
+    const q = db.transaction('kv', 'readonly').objectStore('kv').get('${key}');
+    q.onsuccess = () => res(q.result === undefined ? null : q.result);
+  });
+})()`);
+
+const queueSize = () => ev(`(async () => {
+  const db = await new Promise(res => {
+    const r = indexedDB.open('mine', 1);
+    r.onsuccess = () => res(r.result);
+  });
+  return new Promise(res => {
+    const q = db.transaction('queue', 'readonly').objectStore('queue').count();
+    q.onsuccess = () => res(q.result);
+  });
+})()`);
+
+const seedQueue = n => ev(`(async () => {
+  const db = await new Promise(res => {
+    const r = indexedDB.open('mine', 1);
+    r.onsuccess = () => res(r.result);
+  });
+  await new Promise((res, rej) => {
+    const t = db.transaction(['queue', 'kv'], 'readwrite');
+    t.objectStore('queue').clear();
+    t.objectStore('kv').delete('sync.last');
+    // An ETag to be dropped: without one seeded, the check that discarding drops it reads null
+    // either way and cannot fail.
+    t.objectStore('kv').put('W/\"seeded-for-the-check\"', 'commitEtag');
+    for (let i = 0; i < ${n}; i++)
+      t.objectStore('queue').add({
+        op: i ? 'put' : 'del',
+        path: 'calendar/2026/04/2026-04-' + String(i % 28 + 1).padStart(2, '0') + '-0900-q' + i + '.md',
+        text: '---\\ntitle: queued ' + i + '\\n---\\n',
+        baseOid: null,
+        at: Date.now() - i * 3600000
+      });
+    t.oncomplete = res;
+    t.onerror = () => rej(t.error);
+  });
+  return true;
+})()`);
+
+await viewport(320);
+await seedQueue(14);
+await open();                                  // the queue is retried by the boot itself
+
+const line = await ev(`(() => { const s = document.querySelector('#sync');
+  return [s.tagName, s.textContent, s.classList.contains('bad')]; })()`);
+eq('the sync line is a button', line[0], 'BUTTON');
+ok('opening with a queue retries it rather than just reporting a count',
+  /not pushed/.test(line[1]), `the line reads "${line[1]}"`);
+ok('and says where to look', /tap for details/.test(line[1]), line[1]);
+ok('and reads as an error', line[2]);
+
+await ev(`document.querySelector('#sync').click()`);
+await sleep(400);
+const logs = await ev(`(() => {
+  const p = document.querySelector('#logs-panel');
+  if (p.hidden) return 'hidden';
+  const l = p.querySelector('.lline');
+  const r = p.querySelector('.lrow');
+  return {
+    state: p.querySelector('.srow .slab').textContent,
+    actions: [...p.querySelectorAll('.srow .link')].map(b => b.textContent),
+    head: l ? l.textContent : 'no line',
+    bad: !!p.querySelector('.lline.bad'),
+    rows: p.querySelectorAll('.lrow').length,
+    cells: r ? [...r.children].map(c => c.className.split(' ')[0]) : [],
+    age: p.querySelector('.lage') ? p.querySelector('.lage').textContent : ''
+  };
+})()`);
+ok('the sync line opens the logs', logs !== 'hidden', 'the panel stayed hidden');
+eq('which name what is pending', logs.state, '14 change(s) pending');
+eq('and offer the two ways out', logs.actions, ['push now', 'discard all']);
+ok('the last attempt says what it failed with', /failed/.test(logs.head), logs.head);
+ok('and reads as an error', logs.bad);
+eq('one line per queued change', logs.rows, 14);
+eq('each one its kind, its path and its age', logs.cells, ['lop', 'lpath', 'lage']);
+ok('with a real age on it', /^(just now|\d+[mhd])$/.test(logs.age), `the age reads "${logs.age}"`);
+const overLogs = await ev(
+  `document.documentElement.scrollWidth - document.documentElement.clientWidth`);
+ok('the panel fits a 320px phone with a backlog in it', overLogs === 0, `overflows by ${overLogs}px`);
+await shoot('logs');
+
+// One row, not a history: the same failure repeated is counted, because it is retried on every
+// window focus and twenty copies of one 403 would bury the attempt that explains it.
+const before = await kv('sync.last');
+await ev(`[...document.querySelectorAll('#logs-panel .link')]
+  .find(b => b.textContent === 'push now').click()`);
+await sleep(2500);
+const after = await kv('sync.last');
+eq('push now retries, and a repeat is counted rather than appended',
+  [after.op, after.outcome, after.count > before.count], ['drain', 'failed', true]);
+
+// The one control in Mine that can lose work. It also has to repair the mirror: the queued text
+// sits in `files` under the blob SHA it was based on, which a later pull would compare as equal
+// and skip forever, so the paths are forgotten and the ETag dropped.
+await ev(`window.confirm = () => true; true`);
+await ev(`[...document.querySelectorAll('#logs-panel .link')]
+  .find(b => b.textContent === 'discard all').click()`);
+await sleep(2500);
+eq('discard all empties the queue', await queueSize(), 0);
+eq('and drops the ETag, so the next pull restores those paths', await kv('commitEtag'), null);
+eq('and the panel says so, with nothing left waiting', await ev(
+  `[document.querySelector('#logs-panel .srow .slab').textContent,
+    document.querySelectorAll('#logs-panel .lrow').length]`), ['in sync', 0]);
 
 console.log(failures ? `\n${failures} check(s) failed` : '\nall checks passed');
 ws.close();

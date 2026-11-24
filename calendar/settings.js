@@ -1,9 +1,11 @@
-// The hamburger's two errands, each its own overlay. The filter is a dropdown off the hamburger,
+// The hamburger's three errands, each its own overlay. The filter is a dropdown off the hamburger,
 // because it is the half you open often and the view it narrows has to stay in sight while you
 // narrow it; the settings are the nine rows that change once, so they are a centred panel. One
 // panel held both until the two were told apart by a heading alone - which is a weak way to
 // separate a thing you open daily from a thing you open twice, and it cost the filter the room
-// to show its groups.
+// to show its groups. The logs are a centred panel too, and they exist because a queue that
+// could not drain had nowhere to say so: the count went to the sync line and the reason went to
+// the same line, where the next focus overwrote it.
 //
 // Everything here is stored on the device except the groups, the sprint length and the first
 // sprint date: those three are data and live in the repo, because the sprint a task belongs to
@@ -15,7 +17,8 @@
 // select, a text box, a checkbox and a date field each started wherever its own label happened
 // to end. The groups are behind a button rather than listed, because a list grew with the repo
 // and pushed the nine settings that never change below the fold.
-import { setKV } from '../shared/store.js';
+import { setKV, queued } from '../shared/store.js';
+import { lastSync, discardQueue } from '../shared/github.js';
 import { saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
@@ -31,6 +34,12 @@ export function openPanel() {
   closePops();
   build();
   openCentred($('#settings-panel'));
+}
+
+export function openLogs() {
+  closePops();
+  openCentred($('#logs-panel'));
+  renderLogs();
 }
 
 // ---- the filter ----------------------------------------------------------------------------
@@ -228,4 +237,92 @@ async function mine(key, value) {
   await setPref(key, value);
   if (key === 'theme') applyTheme(value);
   S.render();
+}
+
+// ---- the logs ------------------------------------------------------------------------------
+// What the last sync attempt did, what is still waiting, and the two ways out: push it again, or
+// give up on it. The sync line used to say `14 change(s) pending` and nothing else: the reason
+// was written to that same line by whichever push failed and overwritten by the next focus, so a
+// browser could sit on a queue it could neither explain nor clear. The record behind this panel
+// is written in shared/github.js, which is where every drain and every pull goes through.
+
+async function renderLogs() {
+  const items = await queued();
+  const last = await lastSync();
+  const body = $('#logs-body');
+
+  const kids = [row(items.length ? `${items.length} change(s) pending` : 'in sync',
+    actions(items.length))];
+
+  kids.push(el('h3', 'lhead', 'last attempt'));
+  if (!last) kids.push(el('p', 'lnote', 'Nothing recorded on this device yet.'));
+  else {
+    kids.push(el('p', `lline${last.outcome === 'ok' ? '' : ' bad'}`, headline(last)));
+    if (last.detail) kids.push(el('p', 'lnote', last.detail));
+    kids.push(el('p', 'lnote', seen(last)));
+  }
+
+  if (items.length) {
+    kids.push(el('h3', 'lhead', 'waiting'));
+    for (const it of items) {
+      const r = el('div', 'lrow');
+      r.append(el('span', `lop ${it.op}`, it.op), el('span', 'lpath', it.path),
+        el('span', 'lage', age(it.at)));
+      kids.push(r);
+    }
+  }
+
+  body.replaceChildren(...kids);
+}
+
+function actions(n) {
+  const v = el('div', 'sval end');
+
+  const now = el('button', 'link', 'push now');
+  now.type = 'button';
+  now.disabled = !n;
+  now.addEventListener('click', async () => { await S.refresh(); renderLogs(); });
+
+  // The one button in Mine that can lose work, so it confirms the way the other one does -
+  // `forget this device` on the home screen - rather than through the calendar's own prompt,
+  // whose `don't ask again` would switch this guard off along with the one it belongs to.
+  const drop = el('button', 'link bad', 'discard all');
+  drop.type = 'button';
+  drop.disabled = !n;
+  drop.addEventListener('click', async () => {
+    if (!confirm(`Discard ${n} queued change(s)? They are not in GitHub and will be lost. `
+      + `The repo itself is untouched.`)) return;
+    await discardQueue();
+    await renderLogs();
+    await S.refresh();                 // restores the discarded paths from the remote
+    renderLogs();
+  });
+
+  v.append(now, drop);
+  return v;
+}
+
+const what = l => (l.op === 'drain' ? 'push' : 'pull');
+
+function headline(l) {
+  if (l.outcome === 'ok') return `${what(l)} succeeded`;
+  if (l.outcome === 'conflict') return `${what(l)} finished with conflicts`;
+  if (l.outcome === 'discarded') return 'queue discarded';
+  return `${what(l)} failed${l.status ? ` — HTTP ${l.status}` : ''}`;
+}
+
+const stamp = t => new Date(t).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' });
+
+// Counted rather than listed: the same failure repeats on every window focus, so what tells you
+// anything is how long it has been failing, not twenty copies of it.
+const seen = l => (l.count > 1
+  ? `${l.count}× in a row, first ${stamp(l.at)}, last ${stamp(l.lastAt)}`
+  : stamp(l.lastAt)) + (l.app ? ` · from ${l.app}` : '');
+
+// Changes queued before this version carry no time, and are not going to grow one.
+function age(at) {
+  if (!at) return '—';
+  const m = Math.round((Date.now() - at) / 60000);
+  return m < 1 ? 'just now' : m < 60 ? `${m}m` : m < 1440 ? `${Math.floor(m / 60)}h`
+    : `${Math.floor(m / 1440)}d`;
 }

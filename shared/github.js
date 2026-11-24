@@ -47,6 +47,33 @@ const encode = s => {
 const decode = b64 =>
   new TextDecoder().decode(Uint8Array.from(atob(b64.replace(/\s/g, '')), c => c.charCodeAt(0)));
 
+// ---- the sync record ----------------------------------------------------------------------
+// One row, not a history: what the last attempt did, and how many times in a row it has done
+// it. Written in here rather than in app code so that every caller is covered without having to
+// remember to - the calendar's push, both refreshes, and the home screen, which drains the same
+// queue - and so the reason survives the reload that used to wipe it off the status line.
+//
+// A repeat of the same outcome bumps the count rather than appending, because a wedged queue is
+// retried on every window focus and twenty copies of one 403 would bury the pull that explains
+// it. A 304 pull is not an attempt at anything and is not recorded at all.
+
+// Which screen made the attempt, read when it is written rather than when this module loads:
+// data.js imports this file and the node unit checks import data.js, where there is no
+// `location` at all.
+const appName = () => globalThis.location?.pathname.includes('/calendar/') ? 'calendar' : 'mine';
+
+async function record(op, outcome, status, detail) {
+  const app = appName();
+  const prev = await getKV('sync.last');
+  const now = Date.now();
+  const same = prev && prev.op === op && prev.outcome === outcome && prev.status === status;
+  await setKV('sync.last', same
+    ? { ...prev, lastAt: now, count: prev.count + 1, app, detail }
+    : { at: now, lastAt: now, count: 1, app, op, outcome, status: status ?? null, detail });
+}
+
+export const lastSync = () => getKV('sync.last');
+
 export async function testConnection(config) {
   const repo = await ok(await rest(`/repos/${config.owner}/${config.repo}`, { config }), 'repo read');
   return { name: repo.full_name, private: repo.private, empty: repo.size === 0 };
@@ -56,6 +83,18 @@ export async function testConnection(config) {
 // Also the first mirror: with no stored ETag it fetches the tree and every blob in it.
 
 export async function pull(prefix = '') {
+  try {
+    const r = await pullNow(prefix);
+    if (!r.unchanged)
+      await record('pull', 'ok', null, r.empty ? 'repo is empty' : `${r.changed} file(s) updated`);
+    return r;
+  } catch (err) {
+    await record('pull', 'failed', err.status ?? null, err.message);
+    throw err;
+  }
+}
+
+async function pullNow(prefix) {
   const c = await auth();
   const etag = await getKV('commitEtag');
   const r = await rest(`/repos/${c.owner}/${c.repo}/commits/${c.branch}`,
@@ -90,17 +129,32 @@ export async function pull(prefix = '') {
 export async function write(path, text) {
   const existing = await getFile(path);
   await putFile({ path, text, oid: existing?.oid });
-  await enqueue({ op: 'put', path, text, baseOid: existing?.oid ?? null });
+  await enqueue({ op: 'put', path, text, baseOid: existing?.oid ?? null, at: Date.now() });
 }
 
 export async function remove(path) {
   const existing = await getFile(path);
   await delFile(path);
-  await enqueue({ op: 'del', path, baseOid: existing?.oid ?? null });
+  await enqueue({ op: 'del', path, baseOid: existing?.oid ?? null, at: Date.now() });
 }
 
 export async function drain(message, retry = true) {
-  const items = await queued();
+  try {
+    const r = await drainNow(message, retry);
+    if (r.committed || r.conflicts.length)
+      await record('drain', r.conflicts.length ? 'conflict' : 'ok', null,
+        r.conflicts.length
+          ? `${r.conflicts.length} change(s) kept beside the remote version as .conflict files`
+          : `${r.committed} change(s) committed as ${r.commit?.slice(0, 7)}`);
+    return r;
+  } catch (err) {
+    await record('drain', 'failed', err.status ?? null, err.message);
+    throw err;
+  }
+}
+
+async function drainNow(message, retry) {
+  let items = await queued();
   if (!items.length) return { committed: 0, conflicts: [] };
   const c = await auth();
 
@@ -113,9 +167,15 @@ export async function drain(message, retry = true) {
   baseTree = (await ok(await rest(
     `/repos/${c.owner}/${c.repo}/git/commits/${parent}`, { config: c }), 'commit read')).tree.sha;
 
-  // A queued change whose base SHA no longer matches the remote blob is a real conflict:
-  // remote keeps the path, ours is committed beside it. Nothing is discarded.
-  const conflicts = [];
+  // A queued change whose base SHA no longer matches the remote blob, and whose text differs
+  // from it, is a real conflict: remote keeps the path, ours is committed beside it. Nothing is
+  // discarded.
+  //
+  // A matching text is a receipt instead. A drain that died between the ref update and the queue
+  // being cleared leaves items behind whose base SHA no longer matches - because the remote now
+  // holds our own commit - and forking those into .conflict files is the app fighting its own
+  // work. The blob is fetched here either way, so comparing it costs no request.
+  const conflicts = [], done = [];
   {
     const tree = await ok(await rest(
       `/repos/${c.owner}/${c.repo}/git/trees/${c.branch}?recursive=1`, { config: c }), 'tree read');
@@ -125,7 +185,9 @@ export async function drain(message, retry = true) {
       const live = remote.get(it.path);
       if (!it.baseOid || !live || live === it.baseOid) continue;
       const blob = await ok(await rest(`/repos/${c.owner}/${c.repo}/git/blobs/${live}`, { config: c }), 'blob read');
-      await putFile({ path: it.path, text: decode(blob.content), oid: live });  // theirs wins the path
+      const theirs = decode(blob.content);
+      await putFile({ path: it.path, text: theirs, oid: live });  // theirs wins the path
+      if (it.op === 'put' && theirs === it.text) { done.push(it); continue; }
       const original = it.path;
       it.path = original.replace(/\.md$/, `.conflict-${stamp}.md`);
       if (it.op === 'put') {
@@ -134,6 +196,8 @@ export async function drain(message, retry = true) {
       }
       conflicts.push({ path: original, keptAs: it.path });
     }
+    items = items.filter(it => !done.includes(it));
+    if (!items.length) { await clearQueue(); return { committed: 0, conflicts }; }
   }
 
   const entries = [];
@@ -161,7 +225,7 @@ export async function drain(message, retry = true) {
     if (!r.ok) {
       // Rejected: someone pushed elsewhere. Rebase onto the new base and retry once -
       // this succeeds because nearly every write is a create at a fresh path.
-      if (retry && (r.status === 422 || r.status === 409)) { await pull(); return drain(message, false); }
+      if (retry && (r.status === 422 || r.status === 409)) { await pullNow(''); return drainNow(message, false); }
       await ok(r, 'ref update');
     }
   }
@@ -176,6 +240,19 @@ export async function drain(message, retry = true) {
 }
 
 const strip = ({ _text, ...e }) => e;
+
+// Giving up on the queue is not just forgetting it. The mirror still holds the text that could
+// not be pushed, filed under the blob SHA it was based on, and a pull compares SHAs - so the
+// path would match the remote forever and the divergent text would never be reconciled. Forget
+// those files too and drop the ETag: the next pull restores exactly what GitHub holds.
+export async function discardQueue() {
+  const items = await queued();
+  await clearQueue();
+  for (const path of new Set(items.map(i => i.path))) await delFile(path);
+  await setKV('commitEtag', null);
+  await record('drain', 'discarded', null, `${items.length} change(s) discarded unsent`);
+  return items.length;
+}
 
 // A repo with no commits rejects the Git Data API outright: POST /git/blobs answers
 // 409 "Git Repository is empty". Only the Contents API can create the first commit, so the
@@ -201,6 +278,6 @@ async function initialise(c, items, message, retry) {
   if (!rest_.length) return { committed: 1, commit: res.commit.sha, conflicts: [] };
 
   for (const it of rest_) await enqueue(it);
-  const more = await drain(message, retry);
+  const more = await drainNow(message, retry);
   return { ...more, committed: more.committed + 1, commit: more.commit || res.commit.sha };
 }

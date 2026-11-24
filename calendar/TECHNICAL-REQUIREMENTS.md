@@ -252,14 +252,16 @@ calendar/ui.js        DOM helpers, the icon set, and the state every view reads
 calendar/views.js     year, month, week, day, and the day preview
 calendar/kanban.js    the board
 calendar/popup.js     the one entry popup: its rows, their inline editors, their writes
-calendar/settings.js  the filter dropdown and the settings panel, the hamburger's two errands
+calendar/settings.js  the filter dropdown, the settings panel and the logs panel: the hamburger's
+                      three errands
 calendar/app.js       the top pane, navigation, the picker, the zoom, the menu, the sync line
 shared/prefs.js       theme and date format, which belong to Mine rather than to one app
 ```
 
-`ui.js` holds the state in one object with `render`, `status`, `push` and `reload` as slots the
-shell fills in, so a view can ask for a redraw or a background push without importing `app.js`
-back and making an import cycle.
+`ui.js` holds the state in one object with `render`, `status`, `push`, `refresh` and `reload` as
+slots the shell fills in, so a view can ask for a redraw or a background push without importing
+`app.js` back and making an import cycle. The logs panel's `push now` goes through `refresh`,
+which is the same serialised drain-then-pull the app runs on open and on focus.
 
 `FIELDS` in `popup.js` is built while the module is still evaluating, so anything it calls must
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.

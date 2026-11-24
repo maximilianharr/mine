@@ -67,9 +67,19 @@ async function home() {
   await refresh();
 }
 
+// The queue is shared with every app, so it drains from whichever screen is open - and it is
+// retried here for the same reason the calendar retries it: a queue nothing ever pushes again is
+// a queue that never empties. The pull waits for it and runs only if it got through. The
+// calendar's logs panel is where the reason is read; this screen just stops being a dead end.
 async function refresh() {
-  const pending = await queuedCount();
-  if (pending) return status(`${pending} change(s) pending`);
+  if (await queuedCount()) {
+    status('pushing…');
+    try {
+      await drain();
+    } catch (err) {
+      return status(`not pushed: ${err.message}`, true);
+    }
+  }
   status('checking…');
   try {
     const r = await pull();

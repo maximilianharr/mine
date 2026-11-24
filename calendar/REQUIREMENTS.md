@@ -113,10 +113,10 @@ or lets one wrap away.
   they are, and a gesture doing what a visible button does is the same second mechanism this
   document refuses a card on a desktop. So no sideways gesture does anything, in any view, and
   nothing ever has to be told apart from a card drag on the board or from a scroll in a grid.
-- **Rightmost, the two ways out.** A **hamburger** button that names its two errands — `filter`
-  and `settings` — and opens whichever is tapped, and a home icon back to the Mine tile screen. A
-  house rather than an arrow, because a third arrow beside the two that step through periods reads
-  as another way to move inside the calendar.
+- **Rightmost, the two ways out.** A **hamburger** button that names its three errands — `filter`,
+  `settings` and `logs` — and opens whichever is tapped, and a home icon back to the Mine tile
+  screen. A house rather than an arrow, because a third arrow beside the two that step through
+  periods reads as another way to move inside the calendar.
 
 ### The zoom
 
@@ -677,12 +677,12 @@ column widths. Stacked, all three stages are on screen by design and this says n
 Cards are not reordered by hand; their order comes from importance and start — the important ones
 first, each block by start date.
 
-## The filter and the settings
+## The filter, the settings and the logs
 
-**One button, two errands, named before either opens.** The hamburger opens a short dropdown
-reading `filter` and `settings`, and opens neither of them; a second tap opens the one that was
-meant. One button still covers both, so the pane stays at four controls and the phone's first row
-does not gain a fifth — but the button no longer decides which of the two you came for.
+**One button, three errands, named before any opens.** The hamburger opens a short dropdown
+reading `filter`, `settings` and `logs`, and opens none of them; a second tap opens the one that
+was meant. One button still covers them all, so the pane stays at four controls and the phone's
+first row does not gain a fifth — but the button no longer decides which of them you came for.
 
 They were one panel for a while, under a heading each. A heading is a weak way to separate a thing
 you open daily from a thing you open twice, and it cost the filter the room to show its groups:
@@ -696,10 +696,35 @@ sight while it is narrowed, which a centred card over the middle of the screen c
 **The settings are a centred panel**, titled `Settings`, whose top right has an `x` to close.
 They are the nine rows that change once, so they may take the middle of the screen.
 
+**The logs are a centred panel too**, titled `Logs`, and they are the answer to a sync line that
+says something unexpected. The line `14 change(s) pending` used to be the whole of what the app
+would say about a queue that could not drain: the reason was written to that same line by
+whichever push failed and overwritten by the next focus, so a browser could sit on a count it
+could neither explain nor clear. The panel holds three things —
+
+- **the state**, with `push now` and `discard all` beside it;
+- **the last attempt**: whether it was a push or a pull, what it failed with, how many times in a
+  row, and since when;
+- **what is waiting**: one line per queued change — `put` or `del`, its path, and how long it has
+  been there.
+
+`push now` is the same drain the app runs on open and on focus, so the panel adds no second way
+to sync. `discard all` is the one control in Mine that can lose work, so it confirms through the
+browser's own prompt, the way *forget this device* does on the tile screen, rather than through
+the calendar's discard prompt — whose **don't ask again** would switch this guard off along with
+the one it belongs to. Discarding also forgets the local copy of every path it held and drops the
+ETag, so the next pull restores exactly what GitHub holds; forgetting the queue alone would leave
+text in the mirror that no later pull would ever reconcile.
+
+**The sync line is a button.** It is what you are looking at when you want to know why it says
+what it says, and reaching the panel through the hamburger only helps once you know the panel is
+there.
+
 | overlay | holds |
 | --- | --- |
 | Filter (a dropdown) | a checkbox per group; on the board also **important only** and an **assignee** |
 | Settings (a centred panel) | the nine rows below |
+| Logs (a centred panel) | the last sync attempt, the changes still queued, `push now`, `discard all` |
 
 **The groups are listed, not folded behind a dropdown.** One checkbox per group, each showing its
 colour, straight away — one tap to hide a group instead of two. The fold existed for one reason,

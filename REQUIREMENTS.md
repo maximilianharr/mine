@@ -90,8 +90,12 @@ wrong with hand-rolling it — for this, nothing.
 ## Using it
 
 - Changes appear instantly and are queued for GitHub in the background.
-- A sync indicator shows: in sync / pending / error.
-- Offline, the queue is kept and sent when you are back online or reopen the app.
+- A sync indicator shows: in sync / pending / error. It is also a button: pressing it opens the
+  calendar's `logs`, which says what the last attempt did and what is still waiting.
+- Offline, the queue is kept and sent when you are back online or reopen the app. **Every open
+  and every window focus retries it**, whatever went wrong last time, because a queue nothing
+  retries is a queue that never empties — a browser left reporting a count it can neither
+  explain nor clear.
 - Editing the same entry on two devices never loses either version: the other device's version
   keeps the file, yours is kept beside it and flagged, and the sync indicator tells you there is
   something to review. Nothing is discarded and nothing is silently overwritten — but the app

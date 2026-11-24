@@ -51,7 +51,17 @@ body { max-width: none; padding: 0; padding-bottom: env(safe-area-inset-bottom);
 #period-label { overflow: hidden; text-overflow: ellipsis; }
 
 .view { flex: 1; min-height: 0; }
-.sync { padding: .4rem .7rem; margin: 0; font-size: .75rem; }
+/* The line reports and is pressed. Nothing is drawn on it, so hover and press are what say it
+   is a button - the same affordance the period label uses. `.bad` needs the second class to beat
+   this rule's own colour, which the plain `.bad` in the Mine stylesheet is now behind. */
+.sync {
+  width: 100%; padding: .4rem .7rem; margin: 0; font: inherit; font-size: .75rem;
+  text-align: left; color: inherit; background: none; border: 0; border-radius: .4rem;
+  cursor: pointer;
+}
+.sync:hover { background: var(--soft); }
+.sync:active { background: var(--line); }
+.sync.bad { color: var(--bad); }
 
 /* ---- month ---- */
 .weekhead {
@@ -557,6 +567,28 @@ select {
 .grow .gpick { flex: 1; width: auto; }
 .grow input { flex: 1; margin: 0; padding: .45rem; }
 .grow input[type="color"] { flex: none; width: 2.2rem; height: 2.1rem; padding: 0; }
+
+/* ---- the logs ---- */
+/* The state line takes the settings' two-half row, so `push now` and `discard all` sit in the
+   same column every other control in a panel does. Everything under it is read, not operated:
+   one line per queued change, the path allowed to wrap rather than pushing the panel sideways. */
+.sval.end { justify-content: flex-end; gap: .2rem; }
+.lhead {
+  margin: .9rem 0 .2rem; font-size: .7rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.lline { margin: .1rem 0; font-size: .85rem; font-weight: 600; }
+.lnote { margin: .1rem 0; font-size: .75rem; color: var(--muted); overflow-wrap: anywhere; }
+.lrow {
+  display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: baseline;
+  gap: .4rem; padding: .3rem 0; border-top: 1px solid var(--line); font-size: .75rem;
+}
+.lop { font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: .65rem; }
+.lop.del { color: var(--bad); }
+.lpath { min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.lage { color: var(--muted); font-variant-numeric: tabular-nums; }
+.link.bad { color: var(--bad); }
+.link:disabled { color: var(--muted); opacity: .5; cursor: default; }
 
 /* ---- desktop ---- */
 @media (min-width: 600px) {
