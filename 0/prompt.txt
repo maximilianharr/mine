@@ -1,0 +1,1 @@
+implement these as well so I can continue after your changes with my next PWA. Commit where it makes sense and push. I will then do a final review on my laptop/android and create a stable release.
