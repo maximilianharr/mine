@@ -1,3 +1,4 @@
+import { APPS } from './apps.js';
 import { getConfig, getKV, setKV, getFile, putFile, delFile, allFiles,
          enqueue, queued, dequeue } from './store.js';
 import { parse, serialize } from './md.js';
@@ -58,9 +59,16 @@ const decode = b64 =>
 // it. A 304 pull is not an attempt at anything and is not recorded at all.
 
 // Which screen made the attempt, read when it is written rather than when this module loads:
-// data.js imports this file and the node unit checks import data.js, where there is no
-// `location` at all.
-const appName = () => globalThis.location?.pathname.includes('/calendar/') ? 'calendar' : 'mine';
+// an app's data module imports this file and the node unit checks import that, where there is
+// no `location` at all.
+//
+// The last path segment that is not a file is the app's folder, which is its slug - so an app
+// added tomorrow names itself here without this line being touched. The root app has no such
+// segment and is `mine`.
+const appName = () => {
+  const parts = (globalThis.location?.pathname ?? '').split('/').filter(p => p && !p.includes('.'));
+  return APPS.some(a => a.slug === parts.at(-1)) ? parts.at(-1) : 'mine';
+};
 
 async function record(op, outcome, status, detail) {
   const app = appName();

@@ -1,19 +1,37 @@
+/* Mine's shared base: everything used by more than one app.
+ *
+ * The tokens, the form primitives, and the chrome every app builds its screens out of - icon
+ * buttons, the three overlay mechanisms, the settings row, the logs panel and a rendered
+ * markdown body. An app's own stylesheet loads after this one and holds only what is its own.
+ *
+ * The tile screen's presentation is not in here: it is one app among the others and its rules
+ * live in home.css, which only the root index.html loads. A full-width filled button is a
+ * choice the tile screen makes, and every app page had to undo it.
+ */
+
 :root {
   --bg: #fff; --fg: #1f2933; --muted: #6b7280; --line: #e4e7eb;
   --accent: #1f2933; --bad: #c0392b; --good: #0a7b3e; --soft: #f5f7fa;
+  /* The one blue: a link, and a rendered body's links. An app that highlights something of its
+     own - the calendar's today - names that colour itself. */
+  --link: #1f66d0;
 }
 /* Mine's theme setting is "system" by default, so the device decides; light and dark are the
    two overrides, and the attribute is what carries them. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --bg: #15191e; --fg: #e8eaed; --muted: #9aa5b1; --line: #2b3138;
-    --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; }
+    --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; --link: #6ea8ff; }
 }
 :root[data-theme="dark"] { --bg: #15191e; --fg: #e8eaed; --muted: #9aa5b1; --line: #2b3138;
-    --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; }
+    --accent: #e8eaed; --bad: #ff8a7a; --good: #5bd48b; --soft: #1d2229; --link: #6ea8ff; }
+
+/* An id or class rule for display beats the UA stylesheet's [hidden], so a screen and a modal
+   would both render while still carrying the attribute. */
+[hidden] { display: none !important; }
+
 * { box-sizing: border-box; }
 body {
-  margin: 0; padding: 16px max(16px, env(safe-area-inset-left)) 24px;
-  max-width: 44rem; margin-inline: auto;
+  margin: 0;
   font: 16px/1.5 system-ui, -apple-system, sans-serif;
   color: var(--fg); background: var(--bg);
 }
@@ -21,60 +39,171 @@ header { display: flex; align-items: center; justify-content: space-between; gap
 h1 { font-size: 1.4rem; margin: .2rem 0 .6rem; }
 .lede { color: var(--muted); margin-top: 0; }
 
+/* ---- form primitives ---- */
+
 label { display: block; margin: .9rem 0; font-size: .85rem; color: var(--muted); }
 input {
   display: block; width: 100%; margin-top: .3rem; padding: .75rem;
   font: inherit; color: var(--fg); background: var(--bg);
   border: 1px solid var(--line); border-radius: .5rem;
 }
+select {
+  display: block; width: 100%; margin-top: .3rem; padding: .7rem; font: inherit;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem;
+}
+/* Neutral: a button carries the page's own type and nothing else, and every class below says
+   what it looks like. The tile screen's filled, full-width button is in home.css. */
 button {
-  width: 100%; padding: .9rem; margin: .4rem 0; font: inherit; font-weight: 600;
-  color: var(--bg); background: var(--accent);
-  border: 0; border-radius: .6rem; cursor: pointer;
+  margin: 0; padding: 0; font: inherit; font-weight: 600; cursor: pointer;
+  color: var(--fg); background: none; border: 0; border-radius: .6rem;
 }
 button[disabled] { opacity: .5; }
 button.danger { color: var(--bad); background: none; border: 1px solid var(--line); }
-.icon-btn {
-  width: auto; padding: .4rem .7rem; font-size: 1.1rem; line-height: 1;
-  color: var(--fg); background: none; border: 1px solid var(--line);
-  border-radius: .5rem; text-decoration: none;
-}
-
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: .8rem; margin: 1rem 0; }
-.tile {
-  display: flex; flex-direction: column; align-items: center; gap: .5rem;
-  padding: 1.2rem .5rem; text-decoration: none; color: var(--fg);
-  background: var(--soft); border-radius: .8rem;
-}
-.tile img { width: 2.2rem; height: 2.2rem; }
-.tile span { font-size: .85rem; }
-
-dl { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1rem; margin: 1rem 0; font-size: .9rem; }
-dt { color: var(--muted); }
-dd { margin: 0; word-break: break-word; }
 
 .status, .msg { font-size: .85rem; color: var(--muted); }
 .bad { color: var(--bad); }
-.banner {
-  padding: .7rem .9rem; margin: .6rem 0; font-size: .85rem;
-  background: var(--soft); border-left: 3px solid var(--bad); border-radius: .3rem;
-}
-.banner.update {
-  position: fixed; inset: auto 1rem 1rem; display: flex; align-items: center;
-  justify-content: space-between; gap: 1rem; border-left-color: var(--good);
-  box-shadow: 0 2px 12px rgb(0 0 0 / .18);
-}
-.banner.update button { width: auto; padding: .45rem .9rem; }
 
-.steps { padding-left: 1.2rem; font-size: .85rem; color: var(--muted); }
-.steps li { margin: .35rem 0; }
-.steps li.done { color: var(--good); }
-.steps li.bad { color: var(--bad); }
+/* ---- icon buttons ---- */
+.ib {
+  display: inline-flex; align-items: center; justify-content: center; flex: none;
+  width: 2.1rem; height: 2.1rem; margin: 0; padding: 0;
+  color: var(--fg); background: none; border: 0; border-radius: .45rem; cursor: pointer;
+}
+.ib svg { width: 1.05rem; height: 1.05rem; display: block; }
+.ib .glyph { font-size: .9rem; font-weight: 700; line-height: 1; }
+.ib[disabled] { opacity: .3; }
+/* An icon whose field is set reads as enabled: darker in light mode, brighter in dark. */
+.ib.on { color: var(--bg); background: var(--accent); }
+/* A save is a green disk and a trashcan is a red trashcan - both glyphs on no background.
+   Nothing in Mine is a filled green button. */
+.ib.save { color: var(--good); }
+.ib.bad { color: var(--bad); }
+.ib.next svg { transform: rotate(180deg); }
 
-/* The two settings that belong to Mine rather than to one app. */
-.prefs { margin: 1rem 0; }
-.prefrow { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px solid var(--line); }
-.prefrow span { flex: 1; font-size: .85rem; }
-.prefrow select { width: auto; min-width: 8rem; margin: 0; padding: .5rem; font: inherit;
-  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem; }
-.prefs .note { margin: .5rem 0 0; font-size: .75rem; color: var(--muted); }
+/* ---- overlays ---- */
+/* Two mechanisms and no third. `.pop` is a dropdown positioned under the button that opened it
+   by openPop(). Everything else carries `.centred`: a preview, a field's own popup and a
+   settings panel, each reached with either thumb and none of them pretending to be a drawer
+   that can be dragged. */
+.scrim { position: fixed; inset: 0; z-index: 8; background: rgb(0 0 0 / .35); }
+.scrim.sub-scrim { z-index: 13; }
+.pop {
+  position: fixed; z-index: 10; width: min(20rem, calc(100vw - 1.5rem));
+  padding: .7rem; background: var(--bg);
+  border: 1px solid var(--line); border-radius: .7rem; box-shadow: 0 8px 30px rgb(0 0 0 / .25);
+}
+.pop-head { display: flex; align-items: center; gap: .3rem; margin-bottom: .4rem; }
+.pop-head h2 { margin: 0; font-size: 1rem; }
+.pop-head .spacer { flex: 1; }
+.pop-title { width: auto; margin: 0; padding: .3rem .4rem; font-weight: 600; color: var(--fg); background: none; border: 0; }
+.link { width: auto; margin: 0; padding: .25rem .4rem; font-size: .78rem; font-weight: 500; color: var(--link); background: none; border: 0; }
+.link.bad { color: var(--bad); }
+.link:disabled { color: var(--muted); opacity: .5; cursor: default; }
+
+.centred {
+  position: fixed; inset: 50% auto auto 50%; transform: translate(-50%, -50%);
+  max-height: 86dvh; overflow-y: auto;
+}
+/* A panel brings its own width and padding; the rest it takes from .centred. */
+.panel {
+  z-index: 11; width: min(30rem, calc(100vw - 1.5rem)); padding: .8rem 1rem 1rem;
+  background: var(--bg); border-radius: .9rem; box-shadow: 0 8px 30px rgb(0 0 0 / .3);
+}
+
+/* A modal opens in the middle of the screen, on a phone as much as on a desktop. */
+.modal {
+  position: fixed; inset: 0; z-index: 12; display: flex; align-items: center; justify-content: center;
+  background: rgb(0 0 0 / .4); overflow-y: auto; overscroll-behavior: contain;
+}
+.card {
+  width: min(32rem, calc(100% - 1.5rem)); max-height: 92dvh; overflow-y: auto;
+  padding: .7rem 1rem 1rem;
+  background: var(--bg); border-radius: .9rem;
+}
+.card label { margin: .7rem 0 0; }
+.card small { display: block; margin-top: .25rem; font-size: .7rem; color: var(--muted); }
+
+/* A row in a menu: an icon and the name of the errand behind it. */
+.mrow {
+  display: flex; align-items: center; gap: .55rem;
+  width: 100%; margin: 0; padding: .6rem .5rem;
+  font-size: .9rem; font-weight: 500; text-align: left;
+  color: var(--fg); background: none; border: 0; border-radius: .45rem; cursor: pointer;
+}
+.mrow:hover { background: var(--soft); }
+.mrow svg { flex: none; width: 1.05rem; height: 1.05rem; }
+
+/* ---- settings rows ---- */
+/* Every row is two halves: the label in the left, its control in the right. A grid rather than
+   a flex row, so the controls' left edges agree down the whole panel however long a label is -
+   which is the one thing a panel where each control began where its label ended did not do.
+   The suffix shares the right half with its control. */
+.srow {
+  display: grid; grid-template-columns: 1fr 1fr; align-items: center;
+  gap: .3rem .6rem; padding: .5rem 0; border-top: 1px solid var(--line);
+}
+.slab { font-size: .85rem; }
+.srow > :nth-child(2) { justify-self: start; width: 100%; }
+.sval { display: flex; align-items: center; gap: .4rem; }
+.sval input { flex: 1; min-width: 0; }
+.ssuf { flex: none; font-size: .75rem; color: var(--muted); }
+.srow select, .srow input { width: 100%; min-width: 0; margin: 0; padding: .45rem; }
+.srow input[type="checkbox"] { width: 1.2rem; height: 1.2rem; }
+.srow .link { padding: .45rem 0; text-align: left; }
+
+/* ---- the logs ---- */
+/* The state line takes the settings' two-half row, so `push now` and `discard all` sit in the
+   same column every other control in a panel does. Everything under it is read, not operated:
+   one line per queued change, the path allowed to wrap rather than pushing the panel sideways. */
+.sval.end { justify-content: flex-end; gap: .2rem; }
+.lhead {
+  margin: .9rem 0 .2rem; font-size: .7rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .04em;
+}
+.lline { margin: .1rem 0; font-size: .85rem; font-weight: 600; }
+.lnote { margin: .1rem 0; font-size: .75rem; color: var(--muted); overflow-wrap: anywhere; }
+.lrow {
+  display: grid; grid-template-columns: 2.2rem 1fr auto; align-items: baseline;
+  gap: .4rem; padding: .3rem 0; border-top: 1px solid var(--line); font-size: .75rem;
+}
+.lop { font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: .65rem; }
+.lop.del { color: var(--bad); }
+.lpath { min-width: 0; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.lage { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+/* ---- a rendered markdown body ---- */
+/* One renderer for every app in Mine, so one set of rules for what it returns: a body that
+   looked right in the calendar and wrong in the diary would be the plainest sign that these
+   files are not as portable as the whole idea claims.
+   `#` is an h3: a body must not out-shout the title it belongs to. A paragraph keeps its own
+   newlines, because a body typed as lines is read as lines. */
+.md-h { margin: .8rem 0 .3rem; font-size: 1rem; line-height: 1.3; }
+.md-h:first-child { margin-top: 0; }
+.md-p { margin: .4rem 0; font-size: .9rem; line-height: 1.5; white-space: pre-wrap; }
+.md-list { margin: .4rem 0; padding-left: 1.3rem; font-size: .9rem; line-height: 1.5; }
+.md-list li { margin: .15rem 0; }
+/* Rendered, not operated: ticking a box is an edit of the text like any other. */
+.md-task { list-style: none; margin-left: -1.3rem; }
+.md-task input { width: auto; margin: 0 .45rem 0 0; vertical-align: -.1em; }
+.md-code {
+  padding: .05rem .25rem; font: .85em ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--soft); border-radius: .25rem;
+}
+.md-a { color: var(--link); }
+
+/* ---- the discard prompt ---- */
+/* Above the popup it is asking about, because it is asking about the popup. */
+.ask { z-index: 16; }
+.ask .card { width: min(20rem, calc(100% - 1.5rem)); padding: 1rem; }
+.ask-q { margin: 0 0 .6rem; font-size: .95rem; font-weight: 600; }
+.ask-never { display: flex; align-items: center; gap: .45rem; margin: 0; font-size: .8rem; }
+.ask-never input { width: auto; margin: 0; }
+.askrow { display: flex; gap: .5rem; margin-top: .9rem; }
+.askrow button { flex: 1; margin: 0; padding: .6rem .4rem; font-size: .85rem; }
+.askrow .ghost { color: var(--fg); background: none; border: 1px solid var(--line); }
+
+/* ---- desktop ---- */
+@media (min-width: 600px) {
+  .card { max-height: 88dvh; }
+  .panel { max-height: 88dvh; }
+}

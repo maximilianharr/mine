@@ -21,6 +21,7 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 
 ```
 /index.html /manifest.json /sw.js
+/style.css  the shared base      /home.css  the tile screen's own
 /shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
@@ -40,6 +41,28 @@ written by hand on purpose: `install` uses `cache.addAll`, which rejects as a wh
 404s, so a wrong entry fails loudly at install. A *missing* one fails silently, which is how
 `shared/markdown.js` stayed out of the shell while `popup.js` imported it — an app installed and
 taken offline before an entry was ever opened could not draw a details body.
+
+## Stylesheets
+
+`style.css` is the **shared base**: the tokens, the form primitives, and the chrome every app
+builds its screens out of - the icon button, the three overlay mechanisms, the settings row, the
+logs panel and a rendered markdown body. Each app's own stylesheet loads after it and holds only
+what is its own.
+
+`home.css` is the tile screen's own, loaded by the root `index.html` alone. It is there because
+the tile screen is one app among the others: a full-width filled button and a 44rem body are its
+choices, and while they sat in the base every app page had to undo them.
+
+A rule in the base is a rule an app can no longer forget. `[hidden] { display: none !important }`
+is the clearest case - a class rule setting `display` beats the UA stylesheet's `[hidden]`, so a
+screen or a banner renders while still carrying the attribute. The calendar carried that rule and
+the tile screen did not, which is why the root app showed "Update ready - reload" permanently.
+The `.md-*` rules are the second case: `shared/markdown.js` is one renderer for every app, and
+its stylesheet has to be shared with it or the second app renders a body unstyled.
+
+Moving `.ib` into the base changed one thing on purpose. The kanban's `.knav` and `.kadd` carry
+`.ib` and declare their own sizes; `.ib` used to come later in the same sheet and win, so those
+sizes were dead. They apply now, which is what they were written to do.
 
 `shared/md.js` and `shared/markdown.js` are two different jobs and stay two files. `md.js` is the
 file envelope — it parses and serialises frontmatter and is imported by the paths that read and

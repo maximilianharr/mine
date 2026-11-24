@@ -1,0 +1,54 @@
+/* The tile screen, the setup form and Mine's own settings. Loaded only by the root index.html:
+ * these are one app's presentation among the others, and every app page used to have to undo
+ * them - a full-width filled button and a 44rem body are choices this screen makes.
+ */
+
+body { padding: 16px max(16px, env(safe-area-inset-left)) 24px; max-width: 44rem; margin-inline: auto; }
+
+/* The screen's own button: filled, full width, one per decision. */
+button {
+  width: 100%; padding: .9rem; margin: .4rem 0;
+  color: var(--bg); background: var(--accent);
+}
+.icon-btn {
+  width: auto; padding: .4rem .7rem; font-size: 1.1rem; line-height: 1;
+  color: var(--fg); background: none; border: 1px solid var(--line);
+  border-radius: .5rem; text-decoration: none;
+}
+
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: .8rem; margin: 1rem 0; }
+.tile {
+  display: flex; flex-direction: column; align-items: center; gap: .5rem;
+  padding: 1.2rem .5rem; text-decoration: none; color: var(--fg);
+  background: var(--soft); border-radius: .8rem;
+}
+.tile img { width: 2.2rem; height: 2.2rem; }
+.tile span { font-size: .85rem; }
+
+dl { display: grid; grid-template-columns: auto 1fr; gap: .4rem 1rem; margin: 1rem 0; font-size: .9rem; }
+dt { color: var(--muted); }
+dd { margin: 0; word-break: break-word; }
+
+.banner {
+  padding: .7rem .9rem; margin: .6rem 0; font-size: .85rem;
+  background: var(--soft); border-left: 3px solid var(--bad); border-radius: .3rem;
+}
+.banner.update {
+  position: fixed; inset: auto 1rem 1rem; display: flex; align-items: center;
+  justify-content: space-between; gap: 1rem; border-left-color: var(--good);
+  box-shadow: 0 2px 12px rgb(0 0 0 / .18);
+}
+.banner.update button { width: auto; padding: .45rem .9rem; }
+
+.steps { padding-left: 1.2rem; font-size: .85rem; color: var(--muted); }
+.steps li { margin: .35rem 0; }
+.steps li.done { color: var(--good); }
+.steps li.bad { color: var(--bad); }
+
+/* The two settings that belong to Mine rather than to one app. */
+.prefs { margin: 1rem 0; }
+.prefrow { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px solid var(--line); }
+.prefrow span { flex: 1; font-size: .85rem; }
+.prefrow select { width: auto; min-width: 8rem; margin: 0; padding: .5rem; font: inherit;
+  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem; }
+.prefs .note { margin: .5rem 0 0; font-size: .75rem; color: var(--muted); }

@@ -17,7 +17,8 @@ calendar, zettelkasten, diary — so it stays portable and free of vendor lock-i
 ## Layout
 
 ```
-index.html app.js style.css sw.js manifest.json   the main app
+style.css                                         the shared base: tokens and chrome
+index.html app.js home.css sw.js manifest.json    the main app
 shared/   apps.js store.js github.js md.js        used by every app
           markdown.js prefs.js vendor/
 calendar/                                         one folder per app
