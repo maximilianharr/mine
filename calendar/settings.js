@@ -17,11 +17,11 @@
 // the nine settings that never change below the fold.
 import { setKV } from '../shared/store.js';
 import { renderLogs } from '../shared/sync.js';
-import { saveSettings, setZone, getZone } from './data.js';
+import { STAGES, saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
 import {
-  S, $, el, closePops, openPop, openCentred, colorOf, labelOf,
+  S, $, el, closePops, openPop, openCentred, colorOf, labelOf, STAGE_COLOR, STAGE_LABEL,
   row, choose, toggle, numberField, dateField
 } from './ui.js';
 
@@ -68,7 +68,7 @@ export function renderFilter() {
   const kids = [];
 
   for (const [name, label] of names) {
-    const lab = el('label', 'glab');
+    const lab = el('label', 'glab grp');
     const box = el('input');
     box.type = 'checkbox';
     box.checked = !S.hidden.has(name);
@@ -83,20 +83,41 @@ export function renderFilter() {
     kids.push(lab);
   }
 
-  // Importance and assignee narrow the board, where a sprint can hold more cards than fit. One
-  // switch, now that importance is a yes or no rather than three tiers to pick between.
-  if (S.view.mode === 'K') {
-    const chip = el('button', `chip${S.kfilter.importantOnly ? ' on' : ''}`, '!');
-    chip.type = 'button';
-    chip.title = 'Important only';
-    chip.setAttribute('aria-label', 'Important only');
-    chip.setAttribute('aria-pressed', String(S.kfilter.importantOnly));
-    chip.addEventListener('click', () => {
-      S.kfilter.importantOnly = !S.kfilter.importantOnly;
+  // The stages and importance narrow **every** view, not only the board: a month with the done
+  // ones out of it is as much a thing to want as a board of them, and importance is on an event
+  // now. Both are remembered per device, like the groups - a filter that empties a month is one
+  // you want to find still on after a reload, and the hamburger's count says it is.
+  kids.push(el('div', 'fsep'));
+  for (const stage of STAGES) {
+    const lab = el('label', 'glab stg');
+    const box = el('input');
+    box.type = 'checkbox';
+    box.checked = !S.hiddenStages.has(stage);
+    box.addEventListener('change', async () => {
+      if (box.checked) S.hiddenStages.delete(stage); else S.hiddenStages.add(stage);
+      await setKV('calendar.hiddenStages', [...S.hiddenStages]);
       S.render();
     });
-    kids.push(row('Important only', chip));
+    const sw = el('span', 'swatch');
+    sw.style.background = STAGE_COLOR[stage];
+    lab.append(box, sw, el('span', '', STAGE_LABEL[stage]));
+    kids.push(lab);
+  }
 
+  const imp = el('label', 'glab imp');
+  const impBox = el('input');
+  impBox.type = 'checkbox';
+  impBox.checked = S.kfilter.importantOnly;
+  impBox.addEventListener('change', async () => {
+    S.kfilter.importantOnly = impBox.checked;
+    await setKV('calendar.importantOnly', impBox.checked);
+    S.render();
+  });
+  imp.append(impBox, el('span', 'glyph', '!'), el('span', '', 'important only'));
+  kids.push(imp);
+
+  // The assignee stays the board's own: a card is the one place a name is read off an entry.
+  if (S.view.mode === 'K') {
     const people = [...new Set([...S.model.dated, ...S.model.rules]
       .flatMap(e => [].concat(e.data.participants ?? []).map(String)))].sort();
     kids.push(row('Assignee', choose([['', 'anyone'], ...people.map(p => [p, p])],
@@ -104,6 +125,25 @@ export function renderFilter() {
   }
 
   $('#filter-body').replaceChildren(...kids);
+  renderFilterCount();
+}
+
+// A filter that is on says so on the hamburger, which is otherwise the one button in the pane
+// that looks the same whatever it is doing. The count is **one per kind of narrowing** - the
+// groups, the stages, importance, the assignee - rather than one per switched-off thing: a repo
+// with twenty groups and fifteen hidden would read 16, which is a true number nobody can act
+// on, where 4 says there are four things to look at in the one place that lists them.
+export function filterCount() {
+  return (S.hidden.size ? 1 : 0) + (S.hiddenStages.size ? 1 : 0)
+    + (S.kfilter.importantOnly ? 1 : 0) + (S.kfilter.assignee ? 1 : 0);
+}
+
+export function renderFilterCount() {
+  const n = filterCount();
+  $('#menu-btn').querySelector('.fcount')?.remove();
+  $('#menu-btn').setAttribute('aria-label',
+    n ? `Filter and settings — ${n} filter${n > 1 ? 's' : ''} on` : 'Filter and settings');
+  if (n) $('#menu-btn').append(el('span', 'fcount', String(n)));
 }
 
 // Nine rows and nothing after them: there is no paragraph explaining what is stored where,

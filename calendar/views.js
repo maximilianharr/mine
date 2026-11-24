@@ -12,12 +12,20 @@ import {
 import { openEntry, openNew } from './popup.js';
 import { weekdayName } from '../shared/prefs.js';
 
-// What the range holds, honouring the group filter, recorded for click handling.
+// What the range holds, narrowed by the filter, recorded for click handling. The three
+// narrowings are applied here rather than per view, so the month, the week, the day, the year
+// and the board all answer to the same switches - the board adds only its assignee.
+//
+// A stage switched off hides tasks and nothing else: an event has no stage to judge it by.
+// `important only` hides whatever is not marked, events included, because that is what the
+// words say and a month of what matters is the thing worth having.
 export function collect(from, to) {
   const out = [];
   S.visible = new Map();
   for (const o of occurrences(S.model, from, to)) {
     if (S.hidden.has(o.group || '')) continue;
+    if (o.type === 'task' && S.hiddenStages.has(o.stage)) continue;
+    if (S.kfilter.importantOnly && !o.important) continue;
     S.visible.set(o.key, o);
     out.push(o);
   }

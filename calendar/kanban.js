@@ -82,13 +82,9 @@ function pager(dir) {
   return b;
 }
 
-// The group filter is applied by collect(); these two are the board's own.
-function passes(o) {
-  const f = S.kfilter;
-  if (f.importantOnly && !o.important) return false;
-  if (f.assignee && !o.participants.includes(f.assignee)) return false;
-  return true;
-}
+// The group, the stages and importance are applied by collect(), for every view; the assignee
+// is the board's own, a card being the one place a name is read off an entry.
+const passes = o => !S.kfilter.assignee || o.participants.includes(S.kfilter.assignee);
 
 function card(o) {
   const c = el('div', 'kcard');

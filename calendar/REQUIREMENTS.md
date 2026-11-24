@@ -856,9 +856,25 @@ there.
 
 | overlay | holds |
 | --- | --- |
-| Filter (a dropdown) | a checkbox per group; on the board also **important only** and an **assignee** |
+| Filter (a dropdown) | a checkbox per group, one per stage, and **important only**; on the board also an **assignee** |
 | Settings (a centred panel) | the nine rows below |
 | Logs (a centred panel) | the last sync attempt, the changes still queued, `push now`, `discard all` |
+
+**The stages and importance narrow every view, not only the board.** Under the groups, a line,
+then a checkbox per stage — `Todo`, `Doing`, `Done`, each with its colour — and `important only`.
+A month with the done ones out of it is as much a thing to want as a board of them.
+
+A stage switched off hides **tasks** and nothing else: an event has no stage to be judged by.
+`important only` hides whatever is not marked, **events included**, because that is what the
+words say and a month of what matters is the thing worth having. Both are remembered per device,
+like the groups: a filter that empties a month is one you want to find still on after a reload —
+and the hamburger says it is.
+
+**A filter that is on says so on the hamburger**: a small count at its top right, in a circle.
+It counts **one per kind of narrowing** — the groups, the stages, importance, the assignee — so
+it never passes four. One per switched-off thing would read `16` in a repo with twenty groups
+and fifteen hidden, which is a true number nobody can act on; `3` says there are three things to
+look at in the one place that lists them.
 
 **The groups are listed, not folded behind a dropdown.** One checkbox per group, each showing its
 colour, straight away — one tap to hide a group instead of two. The fold existed for one reason,

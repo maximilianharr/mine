@@ -23,7 +23,7 @@ import { setKV } from '../shared/store.js';
 import { render } from '../shared/markdown.js';
 import {
   S, $, el, icon, iconBtn, colorOf, labelOf, dayLabel, shortDayLabel, openRowPop, monthDays,
-  STAGE_COLOR
+  STAGE_COLOR, STAGE_LABEL
 } from './ui.js';
 import { parseDateText, dateTextOf, datePlaceholder } from '../shared/prefs.js';
 
@@ -607,8 +607,6 @@ function chip(glyph, text, on, onClick) {
 // The stage as a line, reading the stage it is in. Tapping it cycles, exactly as the icon above
 // does: a list of three would be a second way to set one value, and the line is a name for what
 // the colour already says.
-const STAGE_LABEL = { todo: 'Todo', doing: 'Doing', done: 'Done' };
-
 function stageRow() {
   const row = el('div', 'frow');
   row.dataset.field = 'stage';

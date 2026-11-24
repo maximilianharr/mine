@@ -25,7 +25,8 @@ export const S = {
   prefs: { weekStart: 1, showWeeks: false, confirmDiscard: true, timeZone: '',
            theme: 'system', dateFormat: 'auto', boardOrientation: 'horz', popupExpanded: false },
   hidden: new Set(),                 // group names switched off in the filter
-  kfilter: { importantOnly: false, assignee: '' },   // kanban only
+  hiddenStages: new Set(),           // stages switched off in the filter
+  kfilter: { importantOnly: false, assignee: '' },   // the assignee is the board's alone
   visible: new Map(),                // occurrence key -> occurrence, for what is on screen
   render: () => {},
   status: () => {},
@@ -37,6 +38,9 @@ export const S = {
 // The kanban's column colours. In ui.js rather than kanban.js because the entry popup's stage
 // button carries the same three, and one table is the only way they cannot drift apart.
 export const STAGE_COLOR = { todo: '#c0392b', doing: '#e0a500', done: '#27ae60' };
+// The stage as a word, for the places that read it rather than colour it: the popup's line and
+// the filter's rows. The board draws the bare key, which is the column's own name.
+export const STAGE_LABEL = { todo: 'Todo', doing: 'Doing', done: 'Done' };
 
 export const colorOf = g => groupColor(S.model.groups, g);
 export const labelOf = g => groupLabel(S.model.groups, g);

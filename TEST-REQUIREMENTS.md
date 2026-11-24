@@ -289,6 +289,13 @@ That the timed span is in the **top strip on both its days and in the hour grid 
 reading its start on the first and its end **arrowed** on the last, and that the strip's corner
 no longer says `all-day`. That the day preview for a day in the **middle** of a span lists it.
 
+**The filter, and the count on the hamburger.** That the dropdown lists the groups, then the
+three stages and `important only`. That switching a stage off **hides those tasks from the month
+view** and leaves every event where it was; that `important only` keeps what is marked, **events
+included**, and drops what is not. That the hamburger carries **one per kind of narrowing** — two
+switches on reads `2`, not the number of things hidden — that it is empty when nothing is
+filtered, and that **both survive a reload**, which is what the per-device storage is for.
+
 **That the `x` is the rightmost control in every popup**: the entry popup, each active row, each
 field popup, the day preview, the filter dropdown and the settings panel. Resolved from the buttons' left edges, so a row that reads
 correctly but was built in the old order cannot pass — and a check that only counted three

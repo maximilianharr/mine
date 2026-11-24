@@ -12,7 +12,7 @@ import {
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
 import { escapeEntry } from './popup.js';
-import { openFilter, openPanel, openLogs, renderFilter } from './settings.js';
+import { openFilter, openPanel, openLogs, renderFilter, renderFilterCount } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
@@ -33,6 +33,7 @@ function render() {
   else renderView($('#view'));
   renderZoom();
   renderFilter();
+  renderFilterCount();
 }
 
 // The pane has to fit a phone, so every label is short. The month name is the device locale's
@@ -323,6 +324,8 @@ if (!await getConfig()) {
   };
   setZone(S.prefs.timeZone);
   S.hidden = new Set(await getKV('calendar.hiddenGroups') || []);
+  S.hiddenStages = new Set(await getKV('calendar.hiddenStages') || []);
+  S.kfilter.importantOnly = !!(await getKV('calendar.importantOnly'));
   S.model = await loadModel();
   S.view.anchor = todayKey();
   S.view.sprint = currentSprint();

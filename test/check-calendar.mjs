@@ -964,17 +964,18 @@ ok('and hangs off the hamburger rather than being centred', await ev(
 // nine settings rows below the fold, and the settings are not in here any more.
 const groups = await ev(`({
   drop: document.querySelectorAll('#filter-body .gdrop').length,
-  shown: document.querySelectorAll('#filter-body .glab').length,
-  swatches: document.querySelectorAll('#filter-body .glab .swatch').length
+  shown: document.querySelectorAll('#filter-body .glab.grp').length,
+  swatches: document.querySelectorAll('#filter-body .glab.grp .swatch').length
 })`);
 eq('the groups are listed, not folded behind a dropdown', groups.drop, 0);
 ok('a checkbox per group, straight away', groups.shown >= 3, `${groups.shown} checkboxes`);
 eq('each showing its colour', groups.swatches, groups.shown);
-await ev(`document.querySelectorAll('#filter-body .glab input')[0].click()`);
+await ev(`document.querySelectorAll('#filter-body .glab.grp input')[0].click()`);
 await sleep(500);
-const ticks = await ev(`[...document.querySelectorAll('#filter-body .glab input')].map(i => i.checked)`);
+const ticks = await ev(
+  `[...document.querySelectorAll('#filter-body .glab.grp input')].map(i => i.checked)`);
 eq('unticking one leaves the rest on', [ticks[0], ticks.slice(1).every(Boolean)], [false, true]);
-await ev(`document.querySelectorAll('#filter-body .glab input')[0].click()`);
+await ev(`document.querySelectorAll('#filter-body .glab.grp input')[0].click()`);
 await sleep(500);
 await ev(`document.querySelector('#scrim').click()`);
 await sleep(250);
@@ -1001,10 +1002,11 @@ await viewport(900);
 await open('K');
 await menu('filter');
 const boardFilter = await ev(`({
-  chips: [...document.querySelectorAll('#filter-body .chip')].map(c => c.textContent),
+  important: [...document.querySelectorAll('#filter-body .glab.imp')].map(c => c.textContent),
   selects: document.querySelectorAll('#filter-body select').length
 })`);
-eq('the board filter has one important toggle, not four chips', boardFilter.chips, ['!']);
+eq('the board filter has one important switch, not four chips', boardFilter.important,
+  ['!important only']);
 ok('and still an assignee', boardFilter.selects >= 1, 'no assignee select on the board filter');
 await ev(`document.querySelector('#scrim').click()`);
 await sleep(250);
@@ -1012,8 +1014,11 @@ await sleep(250);
 await viewport(900);
 await open();
 await menu('filter');
-eq('and neither is in a calendar view', await ev(
-  `document.querySelectorAll('#filter-body .chip, #filter-body select').length`), 0);
+// The assignee is the board's own; importance is not any more, so only the select goes.
+eq('and the assignee is not in a calendar view', await ev(
+  `document.querySelectorAll('#filter-body select').length`), 0);
+eq('while important only is', await ev(
+  `document.querySelectorAll('#filter-body .glab.imp').length`), 1);
 await ev(`document.querySelector('#scrim').click()`);
 await sleep(250);
 
@@ -1253,6 +1258,63 @@ for (const mode of ['M', 'W', 'D', 'Y', 'K']) {
 // The step above left another month on screen: the checks below want the fixture's own.
 await viewport(900);
 await open();
+
+// ---- 4b. the filter narrows every view, and says so on the hamburger ---------------------------
+// The groups were always applied everywhere; the stages and importance were the board's alone
+// and were forgotten on a reload. All three are one switch each now, applied in one place, and
+// a filter that is on is visible from the pane without opening anything.
+
+await viewport(900);
+await open('M');
+await menu('filter');
+const rows = await ev(`[...document.querySelectorAll('#filter-body .glab')]
+  .map(l => l.textContent.trim())`);
+eq('the filter lists the groups, then the three stages and important only',
+  rows.slice(-4), ['Todo', 'Doing', 'Done', '!important only']);
+
+const countOn = () => ev(`(() => { const b = document.querySelector('#menu-btn .fcount');
+  return b ? b.textContent : ''; })()`);
+eq('and nothing is on it while nothing is filtered', await countOn(), '');
+
+const tick = async text => {
+  await ev(`[...document.querySelectorAll('#filter-body .glab')]
+    .find(l => l.textContent.trim().endsWith(${JSON.stringify(text)}))
+    .querySelector('input').click()`);
+  await sleep(450);
+};
+const titles = () => ev(`[...document.querySelectorAll('.eline .what')].map(t => t.textContent)`);
+
+const all = await titles();
+await tick('Done');
+const noDone = await titles();
+ok('a stage switched off hides those tasks from the month',
+  noDone.length < all.length && !noDone.includes('Weekly shop'), JSON.stringify(noDone));
+ok('and leaves every event where it was',
+  noDone.includes('Sprint planning') && noDone.includes('Dentist'), JSON.stringify(noDone));
+eq('the hamburger says one filter is on', await countOn(), '1');
+
+await tick('important only');
+const onlyImportant = await titles();
+ok('important only keeps what is marked, events included',
+  onlyImportant.includes('Review the open pull requests')
+    && onlyImportant.includes('Submit the expenses'), JSON.stringify(onlyImportant));
+ok('and drops everything that is not',
+  !onlyImportant.includes('Dentist') && !onlyImportant.includes('Standup'),
+  JSON.stringify(onlyImportant));
+eq('and the count is one per kind of narrowing, not one per thing', await countOn(), '2');
+
+// Remembered per device: a filter that empties a month is one you want to find still on.
+await open('M');
+eq('the filter survives a reload', await countOn(), '2');
+eq('and the month is still narrowed', (await titles()).includes('Dentist'), false);
+
+await menu('filter');
+await tick('important only');
+await tick('Done');
+eq('switching them back off clears the count', await countOn(), '');
+eq('and puts everything back', (await titles()).length, all.length);
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(250);
 
 // ---- 5. the month cell and the year view -------------------------------------------------------
 
