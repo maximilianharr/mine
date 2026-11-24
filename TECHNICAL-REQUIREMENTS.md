@@ -22,7 +22,8 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 ```
 /index.html /manifest.json /sw.js
 /style.css  the shared base      /home.css  the tile screen's own
-/shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js  vendor/
+/shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js
+          ui.js  sync.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
 /test/    run.sh  unit.mjs  serve.py  check.mjs
@@ -35,8 +36,23 @@ The checks in `test/` hold to the same rule: `run.sh` drives a headless Chromium
 DevTools protocol with nothing installed, and what it covers — and the two mistakes that make
 it lie to you — are in [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md).
 
-`shared/apps.js` exports the app list and is imported by both the tile screen and `sw.js`, so
-adding an app means editing one array, and its `files` are what the worker precaches. The list is
+`shared/ui.js` is the chrome every app builds its screens out of: the DOM helpers, the icon set,
+the three overlay mechanisms and the settings row. `shared/sync.js` is the sync line and the logs
+panel. Both exist because both apps had their own copy: the drain-then-pull sequence was written
+twice, the icon set and the overlays sat in `calendar/ui.js`, and the logs panel - which reports
+on a queue shared by every app - was reachable only from the calendar.
+
+Two couplings were cut to get them out of the calendar. `closePops()` took its list of overlays
+from a literal naming the calendar's; it now takes it from `registerPops()`, which an app calls
+once at boot, and the `aria-expanded` it resets is tracked by `openPop()` rather than named. The
+icon set is shared for the verbs and the two conventions REQUIREMENTS.md states for all of Mine -
+a green disk saves, a red trashcan deletes - and an app merges its own subjects in with
+`addIcons()`; a second app drawing its own trashcan is how those conventions would quietly stop
+being conventions.
+
+`shared/apps.js` exports the app list and is imported by the tile screen, `sw.js` and
+`github.js`, so adding an app means editing one array, and its `files` are what the worker
+precaches. The list is
 written by hand on purpose: `install` uses `cache.addAll`, which rejects as a whole if any URL
 404s, so a wrong entry fails loudly at install. A *missing* one fails silently, which is how
 `shared/markdown.js` stayed out of the shell while `popup.js` imported it — an app installed and
@@ -159,8 +175,11 @@ thing from a failure, which is to be told what it was.
 ## The sync record
 
 One row in `kv` under `sync.last`, written inside `drain()` and `pull()` so that every caller is
-covered — both apps' refreshes, the calendar's background push — and so the reason outlives the
-status line, which the next focus overwrites.
+covered — every app's refresh and every background push — and so the reason outlives the status
+line, which the next focus overwrites.
+
+`app` is the folder the attempt was made from, read off the path and checked against `APPS`. It
+used to be a literal test for `/calendar/`, which would have named every later app `mine`.
 
 `{ at, lastAt, count, app, op, outcome, status, detail }`. A repeat of the same op, outcome and
 status bumps `count` and `lastAt` rather than appending, because a wedged queue is retried on

@@ -1,16 +1,17 @@
 import { APPS } from './shared/apps.js';
-import { getConfig, setConfig, persist, queuedCount } from './shared/store.js';
+import { getConfig, setConfig, persist } from './shared/store.js';
 import { THEMES, DATE_FORMATS, loadPrefs, setPref, applyTheme } from './shared/prefs.js';
 import { testConnection, pull, write, drain } from './shared/github.js';
+import { createSync } from './shared/sync.js';
 import { serialize } from './shared/md.js';
 
 const $ = s => document.querySelector(s);
 const show = id => document.querySelectorAll('section').forEach(s => s.hidden = s.id !== id);
-const status = (text, bad) => {
-  const el = $('#status');
-  el.textContent = text;
-  el.classList.toggle('bad', !!bad);
-};
+
+// The same sequence every screen in Mine runs, and for the same reason: the queue is shared, so
+// whichever screen is open is the one that has to push what the other one left behind. This
+// screen has no model to reload and no logs panel to send you to, so it takes neither.
+const sync = createSync({ line: $('#status') });
 
 // ---- setup ----
 
@@ -64,34 +65,10 @@ async function home() {
   }
 
   show('home');
-  await refresh();
+  await sync.refresh();
 }
 
-// The queue is shared with every app, so it drains from whichever screen is open - and it is
-// retried here for the same reason the calendar retries it: a queue nothing ever pushes again is
-// a queue that never empties. The pull waits for it and runs only if it got through. The
-// calendar's logs panel is where the reason is read; this screen just stops being a dead end.
-async function refresh() {
-  if (await queuedCount()) {
-    status('pushing…');
-    try {
-      await drain();
-    } catch (err) {
-      return status(`not pushed: ${err.message}`, true);
-    }
-  }
-  status('checking…');
-  try {
-    const r = await pull();
-    status(r.empty ? 'repo is empty'
-      : r.unchanged ? 'in sync'
-      : `in sync — ${r.changed} file(s) updated`);
-  } catch (err) {
-    status(err.message, true);
-  }
-}
-
-addEventListener('focus', () => { if (!$('#home').hidden) refresh(); });
+addEventListener('focus', () => { if (!$('#home').hidden) sync.refresh(); });
 
 // ---- settings ----
 

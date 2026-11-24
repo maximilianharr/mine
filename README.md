@@ -20,7 +20,8 @@ calendar, zettelkasten, diary — so it stays portable and free of vendor lock-i
 style.css                                         the shared base: tokens and chrome
 index.html app.js home.css sw.js manifest.json    the main app
 shared/   apps.js store.js github.js md.js        used by every app
-          markdown.js prefs.js vendor/
+          markdown.js prefs.js ui.js sync.js
+          vendor/
 calendar/                                         one folder per app
 spike/                                            on-device platform checks
 test/                                             the checks: test/run.sh

@@ -1,13 +1,13 @@
 // The shell: the top pane, navigation, the date picker, the zoom, the hamburger's menu, the sync
 // line, and which view the big calendar window holds.
-import { getConfig, getKV, setKV, queuedCount } from '../shared/store.js';
-import { pull, drain } from '../shared/github.js';
+import { getConfig, getKV, setKV } from '../shared/store.js';
+import { createSync } from '../shared/sync.js';
 import {
   loadModel, todayKey, addDays, addMonths, partsOf, monthGrid, weekStartOf, isoWeek, setZone,
   sprintRange, sprintOf
 } from './data.js';
 import {
-  S, $, el, phone, dayLabel, icon, weekLetters, currentSprint, openPop, closePops
+  S, $, el, phone, dayLabel, icon, weekLetters, currentSprint, openPop, closePops, registerPops
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
@@ -285,75 +285,30 @@ addEventListener('keydown', e => {
 matchMedia('(min-width: 600px)').addEventListener('change', () => { closePops(); render(); });
 
 // ---- sync ----------------------------------------------------------------------------------
+// The sequence - drain the queue, then pull, and report on one line - is in ../shared/sync.js,
+// because the queue and the mirror are shared and every screen in Mine runs it. The line here
+// is a button to the logs, so a failure says where to look.
 
-function status(text, bad) {
-  const s = $('#sync');
-  s.textContent = text;
-  s.classList.toggle('bad', !!bad);
-}
-
-async function showSync() {
-  const n = await queuedCount();
-  status(n ? `${n} change(s) pending` : 'in sync');
-}
-
-// Every write reaches the local mirror first, so the view is already right and the push can run
-// behind it. One at a time, because the queue is shared and two drains over it would build two
-// commits out of the same items. Failures and conflicts are reported on the sync line rather
-// than in the popup the user has already left - and the reason is also written to the record, so
-// it is still there after the reload that wipes this line.
-let chain = Promise.resolve();
-const serial = fn => (chain = chain.then(fn).catch(() => {}));
-
-function push(message) {
-  serial(async () => { status('pushing…'); await attempt(message); });
-}
-
-async function attempt(message) {
-  try {
-    const r = await drain(message);
-    if (r.conflicts?.length) {
-      status(`${r.conflicts.length} change(s) kept beside the remote version as .conflict files — review them`, true);
-      return false;
-    }
-    await showSync();
-    return true;
-  } catch (err) {
-    status(`not pushed: ${err.message} — tap for details`, true);
-    return false;
-  }
-}
-
-// On open and on focus. A queue goes first and is retried unconditionally: a queue nothing ever
-// retries is a queue that never empties, which is how a browser ends up reporting a count it
-// cannot explain or clear. The pull waits for it, and runs only if the drain got through -
-// anything that fails a drain (the token, the network) fails a pull too, and pulling over a
-// dirty queue rewrites the mirror underneath the changes still in it.
-function refresh() {
-  return serial(async () => {
-    if (await queuedCount()) {
-      status('pushing…');
-      if (!await attempt()) return;            // it already said why, and said where to look
-    }
-    status('checking…');
-    try {
-      const r = await pull();                  // whole repo: the mirror and the ETag are shared
-      if (!r.unchanged) { S.model = await loadModel(); render(); }
-      status(r.empty ? 'repo is empty' : r.unchanged ? 'in sync' : `in sync — ${r.changed} file(s) updated`);
-    } catch (err) {
-      status(`${err.message} — tap for details`, true);
-    }
-  });
-}
+const sync = createSync({
+  line: $('#sync'),
+  hint: ' — tap for details',
+  onPulled: async () => { S.model = await loadModel(); render(); }
+});
 
 // ---- boot ----------------------------------------------------------------------------------
 
 S.render = render;
-S.status = status;
-S.push = push;
-S.refresh = refresh;
+S.status = sync.status;
+S.push = sync.push;
+S.refresh = sync.refresh;
 S.reload = loadModel;
+S.sync = sync;              // the logs panel pushes and retries through it
 wireView();
+
+// The overlays this app closes together. closePops() takes them from here rather than from a
+// list of its own, so it can live in ../shared/ui.js without knowing what the calendar has.
+registerPops(['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#settings-panel',
+  '#logs-panel']);
 
 const minePrefs = await loadPrefs();
 applyTheme(minePrefs.theme);
@@ -376,6 +331,6 @@ if (!await getConfig()) {
   S.view.anchor = todayKey();
   S.view.sprint = currentSprint();
   render();
-  await refresh();
-  addEventListener('focus', refresh);
+  await sync.refresh();
+  addEventListener('focus', sync.refresh);
 }
