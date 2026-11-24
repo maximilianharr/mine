@@ -11,7 +11,7 @@ import {
   dowOf, sprintRange, sprintOf
 } from './data.js';
 import { formatDate, weekdayName } from '../shared/prefs.js';
-import { addIcons } from '../shared/ui.js';
+import { addIcons, el } from '../shared/ui.js';
 
 export {
   $, el, phone, icon, iconBtn, openPop, openRowPop, openCentred, closePops, registerPops,
@@ -81,6 +81,30 @@ export const weekLetters = () => {
 };
 
 export const currentSprint = () => sprintOf(todayKey(), S.model.settings) || 1;
+
+// ---- a month of days -----------------------------------------------------------------------
+// The weekday letters and six rows of day buttons, drawn once for the three places that pick a
+// date: the pane's dropdown, the when's date steps and the repetition's end date. Today is
+// marked, so is the day the picker is set to, and `highlight` marks one more - the start date,
+// while the end date is being chosen, so the day the end may not fall before is visible in the
+// grid itself.
+//
+// It returns the cells rather than a box of its own, because `.pick-body` is the grid and a div
+// between it and its cells would collapse the layout. The caller owns the month it is looking
+// at and pages it: the pane's dropdown pages from the head it already has, a field's popup from
+// a line in its body, and neither can be the other's.
+export const monthDays = (y, m, { value, highlight, onPick }) => [
+  ...weekLetters().map(([n]) => el('span', 'wh', n)),
+  ...monthGrid(y, m, S.prefs.weekStart).map(k => {
+    const [, mm, dd] = partsOf(k);
+    const b = el('button', ['pk', mm !== m + 1 ? 'out' : '', k === value ? 'sel' : '',
+      k === highlight ? 'hl' : '', k === todayKey() ? 'now' : ''].filter(Boolean).join(' '),
+      String(dd));
+    b.type = 'button';
+    b.addEventListener('click', () => onPick(k));
+    return b;
+  })
+];
 
 // ---- the calendar's icons ------------------------------------------------------------------
 // Its own subjects, drawn on the same 16x16 box and merged into the shared set at load. The

@@ -278,6 +278,10 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 }
 .pk.wide { padding: .5rem .5rem; font-size: .78rem; text-align: left; }
 .pk.out { color: var(--muted); opacity: .55; }
+/* In a field's date picker: the day the field already holds, and - while the end date is
+   being picked - the start date, so the day the end may not fall before is in the grid. */
+.pk.sel { background: var(--accent); color: var(--bg); font-weight: 700; }
+.pk.hl { box-shadow: inset 0 0 0 2px var(--accent); }
 .pk.now { color: #fff; background: var(--today); font-weight: 700; }
 /* The sprint today falls in: brighter than the rest in dark mode, darker in light. */
 .pk.cur { background: var(--accent); color: var(--bg); }

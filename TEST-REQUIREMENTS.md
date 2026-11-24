@@ -356,6 +356,11 @@ reason the second row exists, so a layout that splits the pane but leaves the la
 not done the job. That **no horizontal swipe does anything**: the same gesture on the label, on a
 grid and on the board leaves the period, the sprint and the layout exactly as they were.
 
+**The dropdown's month of days.** That it draws seven weekday letters and a month of day
+buttons with **today marked once**, and that picking a day moves the period and closes the
+dropdown. That grid is drawn by the same `monthDays` the when's date steps and the repetition's
+end date use, so this is the check that the shared one is wired at all.
+
 **The period group's spacing and its arrows.** On a desktop, that the gap between `‹` and the
 label and between the label and `›` is **about half an arrow glyph** — measured as the distance
 between their bounding boxes, against the arrow's own font size, within a reasonable tolerance —

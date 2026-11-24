@@ -736,6 +736,28 @@ for (const mode of ['M', 'W', 'D', 'Y']) {
   await sleep(200);
 }
 
+// The month of days in that dropdown is the grid a field's date picker draws too, so the one
+// check that it is wired at all belongs here: today is marked, and picking a day moves the
+// period to it and closes the dropdown.
+await open('M');
+await ev(`document.querySelector('#period').click()`);
+await sleep(350);
+const grid = await ev(`(() => {
+  const body = document.querySelector('#pick-body');
+  return { letters: body.querySelectorAll('.wh').length, days: body.querySelectorAll('.pk').length,
+           today: body.querySelectorAll('.pk.now').length }; })()`);
+eq('the dropdown draws a week of letters and a month of days',
+  [grid.letters, grid.days >= 28, grid.today], [7, true, 1]);
+const wasLabel = await periodLabel();
+await ev(`[...document.querySelectorAll('#pick-body .pk')]
+  .filter(b => !b.classList.contains('out') && !b.classList.contains('now'))[0].click()`);
+await sleep(400);
+eq('picking a day moves the period and closes the dropdown',
+  [(await periodLabel()) !== null, await ev(`document.querySelector('#picker').hidden`)],
+  [true, true]);
+ok('and the day it picked is the one the view is anchored on', await ev(
+  `document.querySelector('.day.today, .grid') !== null`), 'the month view is gone');
+
 await open('K');
 await ev(`document.querySelector('#period').click()`);
 await sleep(350);

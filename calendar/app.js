@@ -3,11 +3,11 @@
 import { getConfig, getKV, setKV } from '../shared/store.js';
 import { createSync } from '../shared/sync.js';
 import {
-  loadModel, todayKey, addDays, addMonths, partsOf, monthGrid, weekStartOf, isoWeek, setZone,
+  loadModel, todayKey, addDays, addMonths, partsOf, weekStartOf, isoWeek, setZone,
   sprintRange, sprintOf
 } from './data.js';
 import {
-  S, $, el, phone, dayLabel, icon, weekLetters, currentSprint, openPop, closePops, registerPops
+  S, $, el, phone, dayLabel, icon, monthDays, currentSprint, openPop, closePops, registerPops
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
@@ -256,22 +256,17 @@ function renderPicker() {
   $('#pick-label').textContent =
     new Date(pick.y, pick.m, 1, 12).toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
   body.className = 'pick-body days';
-  body.replaceChildren(
-    ...weekLetters().map(([n]) => el('span', 'wh', n)),
-    ...monthGrid(pick.y, pick.m, S.prefs.weekStart).map(k => {
-      const [, mm, dd] = partsOf(k);
-      const b = el('button', `pk${mm !== pick.m + 1 ? ' out' : ''}${k === todayKey() ? ' now' : ''}`,
-        String(dd));
-      b.type = 'button';
-      b.addEventListener('click', () => {
-        closePops();
-        S.view.anchor = k;
-        render();
-        // Picking a date in a view that cannot show the day's entries in place opens the preview.
-        if (S.view.mode === 'Y' || (S.view.mode === 'M' && phone())) openDayPop(k);
-      });
-      return b;
-    }));
+  // The grid is ../calendar/ui.js's, shared with the when's date steps and the repetition's end
+  // date; the head above it is this picker's, because the year and sprint grids page from it too.
+  body.replaceChildren(...monthDays(pick.y, pick.m, {
+    onPick: k => {
+      closePops();
+      S.view.anchor = k;
+      render();
+      // Picking a date in a view that cannot show the day's entries in place opens the preview.
+      if (S.view.mode === 'Y' || (S.view.mode === 'M' && phone())) openDayPop(k);
+    }
+  }));
 }
 
 $('#scrim').addEventListener('click', closePops);
