@@ -196,6 +196,65 @@ eq('a derived group name is a slug', groupName('Sport & Doctor', []), 'sport-doc
 eq('a taken name gains a suffix', groupName('Work', ['work']), 'work-2');
 eq('and keeps counting', groupName('Work', ['work', 'work-2']), 'work-3');
 
+// ---- the days an entry covers -----------------------------------------------------------------
+// An entry has a last day as well as a first, and the range query is an overlap rather than a
+// test of where it starts: a trip that began last month is on screen all the way through this
+// one. An all-day `end` is the **last day itself**, not the day after it - a documented
+// divergence from RFC 5545, where an .ics export has to add the day back.
+
+// Which day an instant falls in is the viewer's question, so the zone is pinned while these
+// run - on a machine in Berlin, 22:00Z is already tomorrow.
+setZone('UTC');
+
+const span = (start, end, extra = {}) => ({
+  path: 'calendar/x.md', data: { title: 'x', type: 'event', start, end, ...extra }, body: ''
+});
+const oneOf = files => ({ groups: {}, dated: files, rules: [], overrides: new Map(),
+  settings: { anchor: '2026-01-05', interval: 2 } });
+const days = (file, from, to) => occurrences(oneOf([file]), from, to)
+  .map(o => [o.dayKey, o.endDayKey]);
+
+eq('an all-day end is the last day, inclusive',
+  days(span('2026-04-18', '2026-04-20'), '2026-04-01', '2026-04-30'),
+  [['2026-04-18', '2026-04-20']]);
+eq('a timed end at midnight ends the day before - 22:00-00:00 is one evening',
+  days(span('2026-04-18T22:00:00Z', '2026-04-19T00:00:00Z'), '2026-04-01', '2026-04-30'),
+  [['2026-04-18', '2026-04-18']]);
+eq('a timed end past midnight covers both days',
+  days(span('2026-04-18T22:00:00Z', '2026-04-19T06:00:00Z'), '2026-04-01', '2026-04-30'),
+  [['2026-04-18', '2026-04-19']]);
+eq('an end before its start is no end at all',
+  days(span('2026-04-18', '2026-04-10'), '2026-04-01', '2026-04-30'),
+  [['2026-04-18', '2026-04-18']]);
+eq('an entry with no end covers its own day',
+  days({ path: 'calendar/y.md', data: { title: 'y', start: '2026-04-18' }, body: '' },
+    '2026-04-01', '2026-04-30'),
+  [['2026-04-18', '2026-04-18']]);
+
+// The query is the point of the two keys: a range that touches only the middle of a span still
+// holds it, and one that touches neither end nor middle does not.
+eq('a range inside a span holds it',
+  days(span('2026-04-10', '2026-04-20'), '2026-04-14', '2026-04-15').length, 1);
+eq('a range ending the day it starts holds it',
+  days(span('2026-04-10', '2026-04-20'), '2026-04-01', '2026-04-10').length, 1);
+eq('a range beginning the day it ends holds it',
+  days(span('2026-04-10', '2026-04-20'), '2026-04-20', '2026-04-28').length, 1);
+eq('and a range past it does not',
+  days(span('2026-04-10', '2026-04-20'), '2026-04-21', '2026-04-28').length, 0);
+
+// A repeating span: the window the rule is expanded over has to reach back by the length of one
+// occurrence, or an occurrence that began before the range is never generated at all.
+const weekly = { id: 'r1', path: 'calendar/recurring/r1.md', body: '',
+  data: { title: 'r', type: 'event', start: '2026-04-06', end: '2026-04-09',
+          recurrence: 'FREQ=WEEKLY' } };
+eq('a repeating span that began before the range is still in it',
+  occurrences({ groups: {}, dated: [], rules: [weekly], overrides: new Map(),
+    settings: { anchor: '2026-01-05', interval: 2 } }, '2026-04-08', '2026-04-08')
+    .map(o => [o.dayKey, o.endDayKey]),
+  [['2026-04-06', '2026-04-09']]);
+
+setZone('');
+
 // ---- what a write puts in the repo ------------------------------------------------------------
 // Empty keys are omitted, never written as `None`, which a parser hands back as the text "None".
 

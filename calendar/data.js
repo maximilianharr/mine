@@ -124,6 +124,18 @@ function keyOf(start) {
   return `${p.year}-${p.month}-${p.day}`;
 }
 
+// The last day an entry covers. An all-day `end` is **inclusive** - it is the last day itself,
+// not the day after it, which is where this calendar differs from RFC 5545 and why an .ics
+// export has to add a day. A timed end at midnight ends the day before: 22:00-00:00 is one
+// evening, not two days. An end before its start is no end at all.
+function endKeyOf(data) {
+  const start = String(data.start ?? '');
+  const end = data.end == null ? '' : String(data.end);
+  if (!end) return keyOf(start);
+  const k = !isAllDay(end) && minutesOf(end) === 0 ? addDays(keyOf(end), -1) : keyOf(end);
+  return k < keyOf(start) ? keyOf(start) : k;
+}
+
 // Minutes from midnight in the configured zone, or null for an all-day item (which sorts first).
 function minutesOf(start) {
   const s = String(start);
@@ -216,11 +228,15 @@ export function sprintRange(n, s) {
 // ---- rendering a range ------------------------------------------------------------------
 // fromKey/toKey are inclusive 'YYYY-MM-DD'.
 
+// Everything the range **touches**, not everything that begins in it: a trip that began last
+// month is on screen all the way through this one.
+export const covers = (o, fromKey, toKey) => o.dayKey <= toKey && o.endDayKey >= fromKey;
+
 export function occurrences(model, fromKey, toKey) {
   const out = [];
   for (const e of model.dated) {
-    const k = keyOf(e.data.start);
-    if (k >= fromKey && k <= toKey) out.push(occurrence(e, { data: e.data, body: e.body }));
+    if (keyOf(e.data.start) <= toKey && endKeyOf(e.data) >= fromKey)
+      out.push(occurrence(e, { data: e.data, body: e.body }));
   }
   for (const r of model.rules) expandRule(r, model.overrides, fromKey, toKey, out);
   out.sort(byStart);
@@ -263,6 +279,7 @@ function occurrence(file, { data, body, base = null, series = null, recId = null
     start,
     end: data.end == null ? '' : String(data.end),
     dayKey: keyOf(start),
+    endDayKey: endKeyOf(data),
     minutes: minutesOf(start)
   };
 }
@@ -274,9 +291,13 @@ function expandRule(rule, overrides, fromKey, toKey, out) {
   if (!rr) return;
 
   // The range is days in the configured zone; rrule answers in UTC. A day of padding either
-  // side covers the offset, and the dayKey test below drops whatever falls outside after
-  // conversion.
-  const from = new Date(Date.parse(`${fromKey}T00:00:00Z`) - 86400000);
+  // side covers the offset, and the test below drops whatever falls outside after conversion.
+  // The left edge is pushed back by the length of one occurrence as well: a week-long series
+  // that began before the range is still in it.
+  const dur = durationOf(rule.data);
+  const spanDays = dur == null ? 0
+    : isAllDay(seriesStart) ? Math.max(0, dur) : Math.ceil(Math.max(0, dur) / 86400000);
+  const from = new Date(Date.parse(`${fromKey}T00:00:00Z`) - (1 + spanDays) * 86400000);
   const to = new Date(Date.parse(`${toKey}T00:00:00Z`) + 2 * 86400000);
   if (isNaN(from) || isNaN(to)) return;
 
@@ -285,7 +306,6 @@ function expandRule(rule, overrides, fromKey, toKey, out) {
   // An exdate may be written as a bare date even for a timed series; that skips the day.
   const ex = new Set(list(rule.data.exdate).map(String));
 
-  const dur = durationOf(rule.data);
   for (const id of ids) {
     if (ex.has(id) || ex.has(id.slice(0, 10))) continue;
     const ov = overrides.get(`${rule.id}|${id}`);
@@ -303,7 +323,7 @@ function expandRule(rule, overrides, fromKey, toKey, out) {
       body: ov && ov.body.trim() ? ov.body : rule.body,
       series: rule, recId: id, override: ov || null
     });
-    if (o.dayKey >= fromKey && o.dayKey <= toKey) out.push(o);
+    if (covers(o, fromKey, toKey)) out.push(o);
   }
 }
 

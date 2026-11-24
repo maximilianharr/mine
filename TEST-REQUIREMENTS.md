@@ -273,6 +273,22 @@ them **as two chips on one line**, that the stage line reads `Todo`, `Doing` or 
 **cycles when tapped**, and that the state **survives a reload** — it is stored per device, like
 the board's orientation. That the row fits 320px with every icon on it.
 
+**An entry that lasts days.** In the model, in node: that an all-day `end` is the **last day,
+inclusive**; that a timed end at midnight ends the **day before**, so `22:00`–`00:00` is one
+evening and not two days; that an end before its start is no end at all; and that the range
+query is an **overlap** — a range inside a span, one ending the day it starts and one beginning
+the day it ends all hold it, and a range past it does not. That a **repeating** span that began
+before the range is still generated, which is the check for a rule expanded over a window that
+does not reach back far enough. The zone is pinned for these, since which day an instant falls
+in is the viewer's question.
+
+In the browser, against a fixture carrying one all-day span across three days and one timed span
+across midnight: that the month shows the span **on all three days**, **rounded where it starts
+and ends and flat where it goes on**, **first in each cell**, with its **title on every day**.
+That the timed span is in the **top strip on both its days and in the hour grid on neither**,
+reading its start on the first and its end **arrowed** on the last, and that the strip's corner
+no longer says `all-day`. That the day preview for a day in the **middle** of a span lists it.
+
 **That the `x` is the rightmost control in every popup**: the entry popup, each active row, each
 field popup, the day preview, the filter dropdown and the settings panel. Resolved from the buttons' left edges, so a row that reads
 correctly but was built in the old order cannot pass — and a check that only counted three

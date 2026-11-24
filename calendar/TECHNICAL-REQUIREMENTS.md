@@ -37,7 +37,7 @@ parser hands back the text `"None"`.
 | `title` | both | required |
 | `type` | both | `event` or `task` |
 | `start` | both | `DTSTART`. A bare date (`2026-04-18`) is all-day; a timestamp (`2026-04-18T14:00:00Z`) is an instant |
-| `end` | both | same value types as `start`; omitted when a single all-day item |
+| `end` | both | same value types as `start`; omitted when a single all-day item. **Inclusive**: an all-day `end` is the last day, not the day after |
 | `group` | both | a name, resolved through `groups.md` |
 | `stage` | `task` only | `todo` / `doing` / `done` |
 | `important` | both | `true` when important; absent otherwise, never `false`. Ours, no RFC 5545 equivalent |
@@ -52,6 +52,18 @@ parser hands back the text `"None"`.
 | `conflictOf` | conflict file | written by sync |
 
 No `duration` key — it is `end - start`.
+
+`end` is **inclusive**, which is the one place the format departs from RFC 5545: there an
+all-day `DTEND` is exclusive, so a Monday-to-Wednesday trip ends on the Thursday. Here it ends on
+the Wednesday — the file says what the popup asked for and what a person reading the repo by hand
+would mean — and an `.ics` export is the place that adds the day back. A timed `end` at midnight
+is read as the end of the day before, so `22:00`–`00:00` covers one evening rather than two days.
+
+An occurrence therefore carries two day keys: `dayKey`, the day it starts, and `endDayKey`, the
+last day it covers. The range query is an **overlap** — `dayKey <= to && endDayKey >= from` —
+rather than a test of where it starts, and a recurring entry's rule is expanded over a window
+widened by the length of one occurrence, or an occurrence that began before the range would
+never be generated at all.
 
 There is no `priority` key. It was RFC 5545 `PRIORITY` and a scale of 1 to 3; importance is a
 yes or no, so the scale had nothing to say. A file carrying one is not read for it, and the key

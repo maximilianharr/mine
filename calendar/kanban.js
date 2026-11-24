@@ -16,7 +16,12 @@ const vertical = () => S.prefs.boardOrientation === 'vert';
 
 export function renderKanban(host) {
   const range = sprintRange(S.view.sprint, S.model.settings);
-  const tasks = collect(range.start, range.end).filter(o => o.type === 'task' && passes(o));
+  // Started in this sprint, not merely overlapping it: a task's sprint is whichever range its
+  // start falls in, so a long one is on exactly one board and the card cannot be dragged from a
+  // sprint it does not belong to. The grids show the span; a card carries its date as text.
+  const tasks = collect(range.start, range.end)
+    .filter(o => o.type === 'task' && o.dayKey >= range.start && o.dayKey <= range.end
+      && passes(o));
   const vert = vertical();
 
   const board = el('div', `kb${vert ? ' vert' : ''}`);

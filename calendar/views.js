@@ -3,7 +3,7 @@
 // be visible.
 import {
   occurrences, timeLabel, todayKey, isoWeek, monthGrid, addDays, partsOf, weekStartOf,
-  isAllDay, patchOccurrence, byStart, pad
+  isAllDay, patchOccurrence, byStart, covers, pad
 } from './data.js';
 import {
   S, $, el, phone, colorOf, labelOf, inkOn, longDayLabel, viewRange, isWeekend, weekLetters,
@@ -24,18 +24,40 @@ export function collect(from, to) {
   return out;
 }
 
-const groupByDay = items => {
+// An entry is listed under **every day it covers**, not only the day it starts: a trip is on
+// screen in the middle of itself, which is the whole of what a span is for. The same occurrence
+// object is listed under each day - one entry, one key, one click - and the day it is being
+// drawn for is passed to whatever draws it.
+const spans = o => o.endDayKey > o.dayKey;
+
+// Spans first in a day, so a run of them reads as one band across the cells, then all-day, then
+// by time - the order byStart already gives.
+const bySpan = (a, b) => (spans(b) ? 1 : 0) - (spans(a) ? 1 : 0) || byStart(a, b);
+
+const groupByDay = (items, from, to) => {
   const m = new Map();
   for (const o of items) {
-    if (!m.has(o.dayKey)) m.set(o.dayKey, []);
-    m.get(o.dayKey).push(o);
+    const first = o.dayKey < from ? from : o.dayKey;
+    const last = o.endDayKey > to ? to : o.endDayKey;
+    for (let k = first; k <= last; k = addDays(k, 1)) {
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(o);
+    }
   }
+  for (const list of m.values()) list.sort(bySpan);
   return m;
 };
 
+// What a day shows of an entry's time: the start on the day it starts, the end on the day it
+// ends - with an arrow, because `17:00` alone on the third day of a trip reads as its start -
+// and nothing on the days between.
+const dayTime = (o, key) => o.allDay ? ''
+  : o.dayKey === key ? timeLabel(o.start)
+    : o.endDayKey === key && o.end && !isAllDay(o.end) ? `\u2192${timeLabel(o.end)}` : '';
+
 export function renderView(host) {
   const [from, to] = viewRange();
-  const byDay = groupByDay(collect(from, to));
+  const byDay = groupByDay(collect(from, to), from, to);
   const mode = S.view.mode;
   host.className = `view v${mode}`;
   if (mode === 'Y') host.replaceChildren(yearGrid(byDay));
@@ -67,7 +89,8 @@ function monthView(byDay) {
     // Sunday-start row holds one day of one ISO week and six of the next; the fourth day is in
     // the second either way, which is the number the row reads as.
     if (gut) grid.append(el('span', 'wk', String(isoWeek(addDays(cells[i], 3)))));
-    for (const k of cells.slice(i, i + 7)) grid.append(monthCell(k, m, byDay.get(k) || [], cap));
+    for (const k of cells.slice(i, i + 7))
+      grid.append(monthCell(k, m, byDay.get(k) || [], cap));
   }
   return [head, grid];
 }
@@ -80,7 +103,7 @@ function monthCell(key, month, items, cap) {
   cell.append(el('span', 'num', String(d)));
   const rows = el('div', 'rows');
   // No done-rectangle in the month view: that width goes to the title instead.
-  for (const o of items.slice(0, cap)) rows.append(entryLine(o, false));
+  for (const o of items.slice(0, cap)) rows.append(entryLine(o, key, false));
   if (items.length > cap) rows.append(el('div', 'more', `+${items.length - cap}`));
   cell.append(rows);
   return cell;
@@ -88,13 +111,21 @@ function monthCell(key, month, items, cap) {
 
 // A small line carrying the title on the group's background colour. `tick` is false in the
 // month view, where the width goes to the title; everywhere else a task keeps its one-tap done.
-function entryLine(o, tick = true) {
-  const r = el('div', `eline${o.stage === 'done' ? ' done' : ''}`);
+//
+// A line for a day the entry only passes through is **flat on the side it continues**, so a run
+// of cells reads as one bar with two rounded ends. The title is repeated on every day rather
+// than drawn once across them: on a phone a true bar shows its title in the first column only,
+// and the middle of a trip is exactly where you look to find out what it is.
+function entryLine(o, key, tick = true) {
+  const r = el('div', ['eline', o.stage === 'done' ? 'done' : '',
+    o.dayKey < key ? 'from-before' : '', o.endDayKey > key ? 'goes-on' : '']
+    .filter(Boolean).join(' '));
   r.dataset.key = o.key;
   const c = colorOf(o.group);
   r.style.background = c;
   r.style.color = inkOn(c);
-  if (!o.allDay) r.append(el('span', 'when', timeLabel(o.start)));
+  const when = dayTime(o, key);
+  if (when) r.append(el('span', 'when', when));
   r.append(el('span', 'what', o.title));
   if (tick && o.type === 'task') r.append(tickButton(o));
   return r;
@@ -176,13 +207,18 @@ function timeGrid(keys, byDay) {
     }
   }
 
+  // The top row holds the all-day entries **and the spans**, timed or not: an entry that runs
+  // past midnight has no place in a column of hours, and a bar continued across the strip is
+  // where a span is read in every other view too. The corner is bare now - the row is no longer
+  // the all-day row alone.
   const strip = el('div', 'tg-allday');
-  strip.append(el('span', 'tcorner', 'all-day'));
+  strip.append(el('span', 'tcorner'));
   for (const k of keys) {
     const c = el('div', `adcell${isWeekend(k) ? ' we' : ''}`);
     c.dataset.day = k;
     c.dataset.allday = '1';
-    for (const o of (byDay.get(k) || []).filter(o => o.allDay)) c.append(entryLine(o));
+    for (const o of (byDay.get(k) || []).filter(o => o.allDay || spans(o)))
+      c.append(entryLine(o, k));
     strip.append(c);
   }
 
@@ -193,7 +229,7 @@ function timeGrid(keys, byDay) {
   for (const k of keys) {
     const col = el('div', `tcol${isWeekend(k) ? ' we' : ''}`);
     col.dataset.day = k;
-    for (const o of (byDay.get(k) || []).filter(o => !o.allDay))
+    for (const o of (byDay.get(k) || []).filter(o => !o.allDay && !spans(o)))
       col.append(timeBlock(o, keys.length === 1));
     body.append(col);
   }
@@ -239,7 +275,7 @@ export function openDayPop(key) {
 
 function fillDayPop(key) {
   $('#day-title').textContent = longDayLabel(key);
-  const items = [...S.visible.values()].filter(o => o.dayKey === key).sort(byStart);
+  const items = [...S.visible.values()].filter(o => covers(o, key, key)).sort(bySpan);
   const list = $('#day-list');
   if (!items.length) return list.replaceChildren(el('p', 'day-empty', 'Nothing on this day.'));
   list.replaceChildren(...items.map(o => {
@@ -248,8 +284,9 @@ function fillDayPop(key) {
     const bar = el('span', 'bar');
     bar.style.background = colorOf(o.group);
     const mid = el('div', 'mid');
-    mid.append(el('span', 'dt', [o.allDay ? 'all-day' : timeLabel(o.start), labelOf(o.group),
-      o.type === 'task' ? o.stage : '', o.seriesId ? 'repeats' : ''].filter(Boolean).join(' · ')));
+    mid.append(el('span', 'dt', [o.allDay ? 'all-day' : dayTime(o, key) || 'continues',
+      labelOf(o.group), o.type === 'task' ? o.stage : '',
+      o.seriesId ? 'repeats' : ''].filter(Boolean).join(' · ')));
     mid.append(el('span', 'dn', o.title));
     row.append(bar, mid);
     if (o.type === 'task') row.append(tickButton(o));

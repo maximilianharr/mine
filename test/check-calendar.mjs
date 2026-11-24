@@ -1386,6 +1386,84 @@ await sleep(500);
 eq('a month name zooms into that month', await periodLabel(), `${await month(4)}/${YY}`);
 eq('and lands in the month view', await ev(`!!document.querySelector('.grid')`), true);
 
+// ---- 5b. a span is on every day it covers ------------------------------------------------------
+// The fixture carries two: an all-day conference across three days, and a night shift across
+// midnight. Both are top-row entries in every view - a bar continued across the cells, flat on
+// the side it goes on, with its title repeated so the middle of a trip says what it is.
+
+await viewport(900);
+await open('M');
+const spanCells = await ev(`(() => {
+  const cells = [...document.querySelectorAll('.day')].filter(c =>
+    [...c.querySelectorAll('.eline .what')].some(w => w.textContent === 'Berlin conference'));
+  return cells.map(c => {
+    const line = [...c.querySelectorAll('.eline')]
+      .find(l => l.querySelector('.what').textContent === 'Berlin conference');
+    return { day: c.dataset.day,
+      from: line.classList.contains('from-before'), on: line.classList.contains('goes-on'),
+      first: c.querySelector('.rows').firstElementChild === line,
+      when: line.querySelector('.when') ? line.querySelector('.when').textContent : '' };
+  });
+})()`);
+eq('the month shows a three-day span on all three days', spanCells.length, 3);
+eq('rounded where it starts and ends, flat where it goes on',
+  spanCells.map(c => `${c.from ? '<' : '|'}${c.on ? '>' : '|'}`), ['|>', '<>', '<|']);
+eq('and it is the first line in each of those cells', spanCells.map(c => c.first),
+  [true, true, true]);
+eq('an all-day span carries no time on any day', spanCells.map(c => c.when), ['', '', '']);
+ok('the title is on every day, not only the first',
+  await ev(`[...document.querySelectorAll('.eline .what')]
+    .filter(w => w.textContent === 'Berlin conference').length`) === 3, 'the title is drawn once');
+
+// A timed span leaves the hour grid for the top strip: an entry running past midnight has no
+// place in a column of 24 hours, and the strip is where a span is read in every other view.
+await open('W');
+const night = () => ev(`(() => {
+  const cells = [...document.querySelectorAll('.adcell')].filter(c =>
+    [...c.querySelectorAll('.what')].some(w => w.textContent === 'Night shift'));
+  return { strip: cells.map(c => { const l = [...c.querySelectorAll('.eline')]
+      .find(x => x.querySelector('.what').textContent === 'Night shift');
+      return l.querySelector('.when') ? l.querySelector('.when').textContent : ''; }),
+    grid: [...document.querySelectorAll('.tev .what')]
+      .filter(w => w.textContent === 'Night shift').length };
+})()`);
+// Collected across the weeks of the month rather than read off one: a span across midnight is
+// a span across a week boundary whenever it starts on the last day of a week, and then each of
+// the two weeks holds one of its days - which is right, and not something to assert around.
+await ev(`for (let i = 0; i < 5; i++) document.querySelector('#prev').click()`);
+await sleep(500);
+const seen = { strip: [], grid: 0 };
+for (let i = 0; i < 11; i++) {
+  const r = await night();
+  seen.strip.push(...r.strip);
+  seen.grid += r.grid;
+  await ev(`document.querySelector('#next').click()`);
+  await sleep(300);
+}
+eq('a timed span is in the top strip on both its days', seen.strip.length, 2);
+eq('and in the hour grid on neither', seen.grid, 0);
+eq('reading its start on the first day and its end, arrowed, on the last',
+  seen.strip.map(t => t.replace(/\d\d:\d\d/, 'HH:MM')), ['HH:MM', '\u2192HH:MM']);
+// The strip is no longer the all-day row alone, so its corner no longer says it is.
+eq('the strip\'s corner is bare', await ev(`document.querySelector('.tg-allday .tcorner')
+  .textContent`), '');
+
+// The day preview lists what a day holds, which includes what began before it. On a phone,
+// where tapping a month cell opens the preview rather than a new entry.
+await viewport(360);
+await open('M');
+const mid = spanCells[1].day;
+await ev(`document.querySelector('.day[data-day="${mid}"] .num').click()`);
+await sleep(400);
+eq('a day in the middle of a span lists it, and says it continues', await ev(
+  `(() => { const r = [...document.querySelectorAll('.dentry')]
+    .find(d => d.querySelector('.dn').textContent === 'Berlin conference');
+    return r ? r.querySelector('.dt').textContent.split(' · ')[0] : 'missing'; })()`),
+  'all-day');
+await ev(`document.querySelector('#day-close').click()`);
+await sleep(250);
+await viewport(900);
+
 // ---- 6. the board on a phone -------------------------------------------------------------------
 
 await viewport(360);

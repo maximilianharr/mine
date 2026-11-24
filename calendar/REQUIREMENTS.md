@@ -206,6 +206,40 @@ selected sprint. In the year view it is the day preview's `+`, as everywhere els
   pane names none of them.
 - **Kanban** — below.
 
+### An entry that lasts days
+
+**A span is on every day it covers, in every view.** An entry from Monday to Wednesday is in
+Monday's cell, Tuesday's and Wednesday's — not in Monday's alone, which is where it used to be
+and which left the middle of a trip looking like an empty week.
+
+It is drawn as **a bar continued across the cells**: rounded where it starts and where it ends,
+**flat on the side it goes on**, so a run of days reads as one bar with two ends. The **title is
+repeated on every day** rather than drawn once across the row. A single bar spanning columns
+shows its title in the first column only, and on a phone, where a week is seven narrow cells, the
+middle of a trip is exactly where you look to find out what it is.
+
+**The time is on the days that have one**: the start on the day it starts, the end on the day it
+ends — written `→17:00`, because `17:00` alone on the third day reads as a start — and nothing on
+the days between.
+
+**A span rides the top row**, which is the all-day strip in the week and day views. A **timed**
+span goes there too: an entry running from Saturday evening to Sunday morning has no place in a
+column of 24 hours, and the strip is where a span is read in every other view. That row is no
+longer the all-day row alone, so its corner no longer says `all-day`.
+
+In a month cell a span is the **first line**, above that day's timed entries, so the bars of a
+week line up. It counts against the cell's two or four lines like any other: a long trip is the
+thing worth seeing in that cell.
+
+**The board is the exception, and deliberately.** A task's sprint is whichever range its *start*
+falls in — that is what keeps the number from contradicting the date — so a task crossing a
+sprint boundary is on **one** board, not two, and the card carries its date as text anyway.
+
+**An all-day `end` is the last day of the entry, not the day after it.** A Monday-to-Wednesday
+trip is written `start: 2026-04-20`, `end: 2026-04-22`. This is a deliberate divergence from RFC
+5545, where an all-day `DTEND` is exclusive: the file says what the popup asked for and what a
+person reading the repo by hand would mean, and an `.ics` export adds the day back.
+
 Groups switched off in the filter are not shown in any view.
 
 ### The day preview
@@ -300,8 +334,8 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
   to type one word rearranged itself and the eye had to find the field again. Every row is the
   height of the tallest thing a row can hold — its trashcan and its `x`, which a set row already
   carries shut — and nothing a row opens is taller than that.
-- **A field whose control fits a line holds it in the line.** The title, the location, the alerts
-  and the participants become an input where their value was, at the same size, **with the field's
+- **A field whose control fits a line holds it in the line.** The title, the location and the
+  participants become an input where their value was, at the same size, **with the field's
   name as the placeholder rather than a heading above it**: a heading was the line the row grew
   by, and it named what the icon beside it already said. The trashcan and the `x` stay at the
   right of that same line, where the closed row's trashcan already was, so the way out of a row is
@@ -346,9 +380,11 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
 
 **Five of the six fields are rows**, in this canonical order:
 
-- a ball for **category**;
+- a ball for **category**, **drawn in that category's colour** — the one thing a field's icon
+  can say that its name cannot. Unset it is the row's ink like every other icon: a grey ball
+  would be indistinguishable from a group somebody coloured grey;
 - circular arrows for **repetition**;
-- a bell for **alerts**;
+- a bell for **alerts**, a list of the five an entry is ever given;
 - a pin for **location**;
 - a person for **participants**.
 
@@ -439,13 +475,33 @@ four boxes were standing in for was four questions asked at once.
 The when-line no longer repeats the stage and the importance as words. The toggle row shows both,
 live, directly beneath it.
 
-### The toggle row
+### The quick row, and the chevron
 
-One row of icons directly under the when. These are not fields with an editor each: they are
-small values, edited in the row itself with a single tap, and each **shows its value** rather
-than merely whether it has one.
+**One row of icons directly under the when, carrying everything small the entry holds**: `24h`,
+the stage, `!`, the category, the repetition and the alerts — six icons, no names, one line at
+320px. Six named rows are most of a phone screen, and the popup is opened to read an entry far
+more often than to fill one in.
 
-**A tap on one of them is the whole edit**, into the draft like everything else — there is
+Location, participants and details are **not** in it. A pin standing in for an address says only
+that there is one, which is what a row of icons is for and what those three are not; they are
+lines whether the chevron is open or shut.
+
+**A tap on an icon is the tap on its row.** All-day and important flip where they stand, the
+stage cycles, and the category, the repetition and the alerts open exactly the popup their line
+opens — anchored under the icon that was tapped. So the chevron changes what is written down,
+never what anything does.
+
+**The chevron at the end of the row shows the names**, as lines beneath it, in the order the
+icons are in: `24h` and `!` as two chips on one line, then the stage reading `Todo`, `Doing` or
+`Done`, then the category, the repetition and the alerts. The icons stay above them — a field
+having two ways in is already true of a grid line and a kanban card, and the row is where the
+chevron lives. **It is remembered per device**, like the board's orientation: someone who wants
+the names wants them every time. It is both the way out and the way back in, which is the rule
+every switch in Mine holds to.
+
+**The two toggles and the stage are not fields with an editor each**: they are small values,
+edited where they stand with a single tap, and each **shows its value** rather than merely
+whether it has one. A tap is the whole edit, into the draft like everything else — there is
 nothing in these three to type, so there is nothing for a row's `x` to put back and no editor to
 open. The disk appears on the first tap, as it does for any other change.
 
@@ -456,8 +512,12 @@ open. The disk appears on the first tap, as it does for any other change.
   changes its name: the strip in the week and day grids still reads `all-day`, and so does this
   document, because the word is the clearer one in prose and the button is the one place with no
   room for it.
-- three small columns for **stage** — cycles `todo` → `doing` → `done` on each tap, its badge in
-  that stage's kanban colour: red, yellow, green. There is no stage popup.
+- a **ticked square with the tick knocked out** for **stage** — cycles `todo` → `doing` → `done`
+  on each tap, drawn in that stage's kanban colour: red, yellow, green. It is the type marker's
+  ticked square *filled in*, so colour and fill tell the two apart rather than a second drawing;
+  the badge it replaces was a 9px dot on a 16px corner carrying the one thing the icon can carry
+  itself. There is no stage popup — a list of three would be a second way to set one value — and
+  its line under the chevron reads the word and cycles too.
 - a `!` for **important** — a straight toggle, lit when the task is important and plain when it
   is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
   not already said, which is what made the old flag need a digit and this one not.
@@ -556,25 +616,51 @@ popup, the question is still asked once, and the disk is still the one thing tha
 entry is never half-written to the repo, and a row left open when the disk is pressed is taken
 along with the rest.
 
+### Alerts
+
+**A list of six, not a line of minutes**: `none`, `at start`, `5 min before`, `15 min before`,
+`1 hour before`, `1 day before`. Picking one is the whole edit and it closes the list, exactly as
+the category's does. It was a line typed by hand, which asked for a number in a unit the field
+never named and made `0, 15` as easy to write as the thing almost everybody wanted.
+
+`none` is in the list because the icon row has no trashcan beside an icon — a field reachable
+without its row has to be clearable without its row.
+
+The file format is unchanged: the key is still a list, now of one. **A file holding something
+the list cannot express** — two alerts, or 30 minutes — shows it at the top as a **custom row
+that cannot be picked**, and it is written back untouched until one of the six is chosen. That
+is the treatment a hand-written repetition rule already gets, and for the same reason: this app
+is not the only thing that may have written the file.
+
+Nothing fires while the app is closed. An alert is stored and exported, and that is all it is.
+
 ### Repetition
 
-A dropdown, not an RRULE field:
+**Two steps, in the flow the when uses**, because a rule is a frequency and an ending and asking
+for both at once is what a popup holding a dropdown and an ends row was doing. Tapping the
+repetition drops **the choices themselves** under the row —
 
 ```
 does not repeat · daily · weekly · every 2 weeks ·
 monthly on the x-th · monthly on the x-th weekday · yearly
 ```
 
-below it an **ends** control: never, on a date, or after a number of occurrences. Both sit in
-the repetition row while it is active, and **the row stays open when the dropdown changes** —
-unlike the category's list, which closes on the tap, because a rule is the two controls together
-and `weekly` taken the moment it is chosen would be a rule with no end yet.
+— rather than a `<select>` that would take a tap of its own to open and draw an OS wheel across
+the phone. Picking one writes it and the second step asks **when it ends**: `never`, `on a date`,
+or `after n times`. `does not repeat` ends the flow there, having nothing to end.
 
-Files may be hand-written or imported, so a rule the dropdown cannot express — `the last Friday
-of the month`, `Mondays, Wednesdays and Fridays` — is shown as a non-selectable **custom** state
-displaying the rule as text, with a note that choosing an option will replace it. Saving the entry
-without having touched the dropdown leaves the rule untouched. No hand-written rule is ever
-silently rewritten.
+`on a date` opens **the same month picker the when opens**, and a digit typed at the end
+condition is the first character of a date: the list gives way to the date step with the digit
+in it, as a digit at any other picker does. `after n times` is a number box.
+
+The rule is one string and each step writes half of it, so leaving after the first step leaves a
+rule that repeats for ever — which is what picking a frequency and nothing else means. The row
+reads the whole of it: `weekly, until 28.11.2026`.
+
+Files may be hand-written or imported, so a rule the list cannot express — `the last Friday of
+the month`, `Mondays, Wednesdays and Fridays` — is a non-selectable **custom** row showing the
+rule as text. Choosing any other row replaces it; leaving it alone keeps it, byte for byte. No
+hand-written rule is ever silently rewritten.
 
 ### Category
 

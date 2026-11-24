@@ -112,6 +112,10 @@ body { padding-bottom: env(safe-area-inset-bottom); }
    there is more. */
 .grid .eline .what { text-overflow: clip; }
 .eline.done .what { text-decoration: line-through; opacity: .75; }
+/* A day an entry only passes through: flat on the side it continues, so a run of cells reads as
+   one bar with two rounded ends. */
+.eline.from-before { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+.eline.goes-on { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .more { font-size: .6rem; color: var(--muted); padding-left: .2rem; }
 
 /* The rectangular icon that moves a task straight to done. */

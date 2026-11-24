@@ -17,8 +17,10 @@ PORT = int(sys.argv[1]) if len(sys.argv) > 1 else 8787
 # Weekday offsets within the month, so there is always a Saturday task, a day with more entries
 # than a phone cell shows, all-day items, and the long titles that used to blow the grid open.
 #
-# A task row may carry a sixth item: extra frontmatter lines - `important: true` for the
-# importance checks, a recurrence rule for the repeating ones.
+# A row may carry a sixth item: extra frontmatter lines - `important: true` for the importance
+# checks, a recurrence rule for the repeating ones, an `end:` for the multi-day ones. `{+n}` in
+# one of those is the start day plus n, written out, so a span lands in the month being checked.
+# An explicit `end:` replaces the one a timed row is given automatically.
 ROWS = [
     (1,  "09:00", "Sprint planning",                  "work",   "event"),
     (1,  "14:00", "Review the open pull requests",    "work",   "task",  "todo",
@@ -43,7 +45,21 @@ ROWS = [
     (21, "10:00", "Repaint the hallway",              "home",   "task",  "todo"),
     (24, "13:00", "Doctor",                           "health", "event"),
     (26, "09:00", "Sprint review",                    "work",   "event"),
+    # Two spans: an all-day one across three days, and a timed one across midnight. Both are
+    # top-row entries in every view, and the all-day one covers a day that already has an entry
+    # on it, which is where a span and an ordinary line have to share a cell.
+    (9,  None,    "Berlin conference",               "work",   "event", None, ["end: {+2}"]),
+    (22, "21:00", "Night shift",                     "home",   "event", None,
+     ["end: {+1}T06:00:00Z"]),
 ]
+
+
+def plus(line, today, day):
+    """`{+n}` is the row's own day plus n, as a date in the month being checked."""
+    import re
+    return re.sub(r"\{\+(\d+)\}",
+                  lambda m: "%04d-%02d-%02d" % (today.year, today.month, day + int(m.group(1))),
+                  line)
 
 
 def calendar():
@@ -57,16 +73,19 @@ def calendar():
     for i, row in enumerate(ROWS):
         day, time, title, group, kind = row[:5]
         key = "%04d-%02d-%02d" % (today.year, today.month, day)
+        extra = [plus(x, today, day) for x in (row[6] if len(row) > 6 else [])]
+        ends = any(x.startswith("end:") for x in extra)
         fm = ['title: "%s"' % title, "type: " + kind]
         if time:
             fm.append("start: %sT%s:00Z" % (key, time))
-            fm.append("end: %sT%02d:%s:00Z" % (key, int(time[:2]) + 1, time[3:]))
+            if not ends:
+                fm.append("end: %sT%02d:%s:00Z" % (key, int(time[:2]) + 1, time[3:]))
         else:
             fm.append("start: " + key)
         fm.append("group: " + group)
         if kind == "task":
             fm.append("stage: " + row[5])
-        fm.extend(row[6] if len(row) > 6 else [])
+        fm.extend(extra)
         files.append({
             "path": "calendar/%04d/%02d/%s-%s-%04x.md" % (
                 today.year, today.month, key, (time or "0000").replace(":", ""), i),
