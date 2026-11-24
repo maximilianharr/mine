@@ -1,0 +1,5 @@
+The mine tool is a small set of PWAs. I want to add other PWAs, e.g. where the user can write diary entries (but do not focus on this PWA, just an example). The other PWAs may also need the markdown renderer and/or push to github. This has been implemented in the calender PWA. Your task is to scan and understand the repo and suggest how to smartly prepare or refactor the repo to make this possible. If everything is already fine, then that is ok as well. Do not prompt me unless there are important design decsions.
+
+---
+
+Start with A. If finished commit. Then continue with B. If finished commit. Then push and I will check on my laptop/android. If everythings works I will provide further instructions.
