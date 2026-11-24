@@ -269,8 +269,9 @@ eq('the x is its rightmost control', (await rightmost('#f-icons')).slice(-1), ['
 eq('no letter anywhere in the top row', await ev(glyphs), 0);
 eq('and no pen anywhere in the popup',
   await ev(`document.querySelectorAll('#popup [aria-label^="Edit"]').length`), 0);
-eq('a new entry is an event', (await ev(FLAGS)).map(label), ['All-day']);
-eq('and its toggle row says 24h, not a sun', await ev(words('#f-rows .flags')), ['24h']);
+eq('a new entry is an event, and carries all-day and important',
+  (await ev(FLAGS)).map(label), ['All-day', 'Important']);
+eq('and its toggle row says 24h, not a sun', await ev(words('#f-rows .flags')), ['24h', '!']);
 // An entry must have a title, and that is the only way a new entry differs from an edit.
 eq('the disk is disabled until the title has text',
   await ev(`document.querySelector('#f-icons [aria-label="Save"]').disabled`), true);
@@ -630,7 +631,10 @@ eq('and its icon carries no colour of its own either way', bangs.map(badge), [''
 
 await click(1);                                   // back to an event
 await sleep(300);
-eq('an event drops both', (await ev(FLAGS)).map(label), ['All-day']);
+// The stage is a task's and goes with it; important is not, and stays - the thing a filter
+// narrows a calendar view down to is what matters, and half of what matters is a meeting.
+eq('an event drops the stage and keeps important',
+  (await ev(FLAGS)).map(label), ['All-day', 'Important']);
 
 // ---- 3. a trashcan is red wherever it appears --------------------------------------------------
 
@@ -1430,6 +1434,33 @@ ok('an ordinary task writes no important key', !/important:/.test(plain),
 const marked = await saveTask('Check an important task', true);
 ok('an important task writes important: true', /\nimportant: true\n/.test(marked),
   marked.split('---')[1]);
+
+// An event carries the same key, written by the same control: the `!` is on every entry now,
+// and `important` is no longer one of the keys `type` decides.
+const markedEvent = await (async () => {
+  await open();
+  await newEntry();
+  await flag(1);                                 // on an event the `!` follows all-day
+  await sleep(250);
+  await openRow('title');
+  await typeIn('title', 'Check an important event');
+  await ev(`document.querySelector('#entry-form').requestSubmit()`);
+  await sleep(1200);
+  return ev(`(async () => {
+    const all = await new Promise(r => {
+      const q = indexedDB.open('mine', 1);
+      q.onsuccess = () => {
+        const t = q.result.transaction('files', 'readonly').objectStore('files').getAll();
+        t.onsuccess = () => r(t.result);
+      };
+    });
+    const f = all.find(f => (f.text || '').includes('Check an important event'));
+    return f ? f.text : 'not written';
+  })()`);
+})();
+ok('an important event writes the same key', /\nimportant: true\n/.test(markedEvent),
+  markedEvent.split('---')[1]);
+ok('and no stage with it', !/stage:/.test(markedEvent), markedEvent.split('---')[1]);
 // `important: true` in a file reaches the toggle row lit. Read through the popup rather than
 // off a card, so the check does not depend on which sprint today happens to fall in.
 await viewport(900);

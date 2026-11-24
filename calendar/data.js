@@ -152,8 +152,10 @@ export const list = v => v == null ? [] : Array.isArray(v) ? v : [v];
 // `stage` is a task's only progress field; an unreadable or absent one is `todo`.
 export const stageOf = data => STAGES.includes(data.stage) ? data.stage : 'todo';
 
-// Importance is a yes or no. Only `true` is ever written; a task that is not important carries
-// no key at all. The quoted form is read too, because a file may be written by hand.
+// Importance is a yes or no, and an event may carry it as well as a task: the one thing a
+// filter narrows a calendar view to is what matters, and half the entries in it are events.
+// Only `true` is ever written; an entry that is not important carries no key at all. The quoted
+// form is read too, because a file may be written by hand.
 export const importantOf = data => data.important === true || data.important === 'true';
 
 // ---- the model ---------------------------------------------------------------------------
@@ -254,7 +256,7 @@ function occurrence(file, { data, body, base = null, series = null, recId = null
     type,
     group: data.group ?? '',
     stage: type === 'task' ? stageOf(data) : null,
-    important: type === 'task' ? importantOf(data) : false,
+    important: importantOf(data),
     location: data.location ?? '',
     participants: list(data.participants).map(String),
     allDay: isAllDay(start),

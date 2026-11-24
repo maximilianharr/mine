@@ -13,9 +13,13 @@ alerts, and a free markdown body for the agenda, checklist or notes.
 A task also carries a **stage** — `todo`, `doing` or `done`. An event has none, and stage is the
 only record of a task's progress; there is no separate done flag.
 
+**Important is not a task's alone.** An event can be marked too, because the thing a filter
+narrows a view down to is what matters, and in a calendar half of what matters is a meeting. It
+is the one of the three task fields that was never about progress.
+
 **Important is a plain yes or no, not a scale.** There is no priority 1, 2 and 3. Three tiers
-asked you to decide twice — once whether a task matters and again how much — and the second
-answer never changed what got done first. A task that matters carries `important: true`; a task
+asked you to decide twice — once whether an entry matters and again how much — and the second
+answer never changed what got done first. An entry that matters carries `important: true`; one
 that does not carries no key at all.
 
 A new task starts at `todo`, which is a default and nothing more: it can be changed before
@@ -458,8 +462,9 @@ open. The disk appears on the first tap, as it does for any other change.
   is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
   not already said, which is what made the old flag need a digit and this one not.
 
-On an event, stage and important are not there at all, because an event has neither. They sit
-here so that a task that is not on a board still carries the two fields a kanban card edits.
+On an event the stage is not there at all, because an event has none. `24h` and `!` are on every
+entry, and the stage sits here so that a task that is not on a board still carries what a kanban
+card shows.
 
 Neither lit control — `24h` or `!` — is the disk's green: in all of Mine green is a save and red
 is a trashcan, and a green toggle beside the disk would make the popup look like it offers two

@@ -505,7 +505,8 @@ function clearBtn(f) {
 function flagsRow() {
   const bar = el('div', 'iconbar flags');
   bar.append(allDayBtn());
-  if (D.type === 'task') bar.append(stageBtn(), bangBtn());
+  if (D.type === 'task') bar.append(stageBtn());
+  bar.append(bangBtn());
   return bar;
 }
 
@@ -1119,10 +1120,8 @@ function collect() {
     if (D.endDate || D.endTime)
       data.end = toInstant(D.endDate || D.startDate, D.endTime || D.startTime || '00:00');
   }
-  if (D.type === 'task') {
-    data.stage = STAGES.includes(D.stage) ? D.stage : 'todo';
-    if (D.important) data.important = true;
-  }
+  if (D.type === 'task') data.stage = STAGES.includes(D.stage) ? D.stage : 'todo';
+  if (D.important) data.important = true;
   if (D.v.group) data.group = D.v.group;
   if (D.v.location) data.location = D.v.location;
   if (canRule() && D.v.recurrence) data.recurrence = D.v.recurrence;

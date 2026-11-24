@@ -40,7 +40,7 @@ parser hands back the text `"None"`.
 | `end` | both | same value types as `start`; omitted when a single all-day item |
 | `group` | both | a name, resolved through `groups.md` |
 | `stage` | `task` only | `todo` / `doing` / `done` |
-| `important` | `task` only | `true` when important; absent otherwise, never `false`. Ours, no RFC 5545 equivalent |
+| `important` | both | `true` when important; absent otherwise, never `false`. Ours, no RFC 5545 equivalent |
 | `location` | both | free text |
 | `alerts` | both | minutes before start, `0` = at start. Stored and exported only; nothing fires in the background |
 | `participants` | both | list of email addresses |
@@ -57,8 +57,8 @@ There is no `priority` key. It was RFC 5545 `PRIORITY` and a scale of 1 to 3; im
 yes or no, so the scale had nothing to say. A file carrying one is not read for it, and the key
 goes the next time the entry is saved, along with anything else the form does not own.
 
-Type and time are independent: `type` decides whether the entry has a stage, the value type of
-`start` decides whether it is all-day or timed. A task is usually all-day, but may carry a time
+Type and time are independent: `type` decides whether the entry has a stage - `important` is
+not a task's any more - and the value type of `start` decides whether it is all-day or timed. A task is usually all-day, but may carry a time
 and then renders at it.
 
 There is no `estimate` key either. It was a task's size in days, it was never read by anything
