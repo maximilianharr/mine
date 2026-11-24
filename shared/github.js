@@ -175,11 +175,12 @@ async function drainNow(message, retry) {
   // being cleared leaves items behind whose base SHA no longer matches - because the remote now
   // holds our own commit - and forking those into .conflict files is the app fighting its own
   // work. The blob is fetched here either way, so comparing it costs no request.
+  const listing = await ok(await rest(
+    `/repos/${c.owner}/${c.repo}/git/trees/${c.branch}?recursive=1`, { config: c }), 'tree read');
+  const remote = new Map(listing.tree.filter(t => t.type === 'blob').map(t => [t.path, t.sha]));
+
   const conflicts = [], done = [];
   {
-    const tree = await ok(await rest(
-      `/repos/${c.owner}/${c.repo}/git/trees/${c.branch}?recursive=1`, { config: c }), 'tree read');
-    const remote = new Map(tree.tree.filter(t => t.type === 'blob').map(t => [t.path, t.sha]));
     const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     for (const it of items) {
       const live = remote.get(it.path);
@@ -200,13 +201,31 @@ async function drainNow(message, retry) {
     if (!items.length) { await clearQueue(); return { committed: 0, conflicts }; }
   }
 
+  // One tree entry per path, the last queued op winning. A drain is one commit, so a path
+  // written twice in it is one write and a path written and then deleted is a delete; sending
+  // the same path twice in one tree request is not something the API has to make sense of.
+  const last = new Map();
+  for (const it of items) last.set(it.path, it);
+
   const entries = [];
-  for (const it of items) {
-    if (it.op === 'del') { entries.push({ path: it.path, mode: '100644', type: 'blob', sha: null }); continue; }
+  for (const it of last.values()) {
+    if (it.op === 'del') {
+      // Deleting a path the remote does not have is not a change - and it is not harmless
+      // either: `sha: null` on a path that is not in `base_tree` answers 422
+      // `GitRPC::BadObjectState` and refuses the whole commit, every time it is retried. A file
+      // moved or deleted before the queue ever drained is exactly that, because a move is a
+      // delete of a path GitHub never saw. Dropping it is also what the user asked for: the
+      // file is already gone locally and GitHub has nothing to remove.
+      if (remote.has(it.path)) entries.push({ path: it.path, mode: '100644', type: 'blob', sha: null });
+      continue;
+    }
     const blob = await ok(await rest(`/repos/${c.owner}/${c.repo}/git/blobs`,
       { config: c, method: 'POST', body: { content: encode(it.text), encoding: 'base64' } }), 'blob create');
     entries.push({ path: it.path, mode: '100644', type: 'blob', sha: blob.sha, _text: it.text });
   }
+  // Everything queued turned out to be a no-op against this remote. There is nothing to commit
+  // and nothing to keep: the mirror already reads the way the user left it.
+  if (!entries.length) { await clearQueue(); return { committed: 0, conflicts }; }
 
   const tree = await ok(await rest(`/repos/${c.owner}/${c.repo}/git/trees`, {
     config: c, method: 'POST',

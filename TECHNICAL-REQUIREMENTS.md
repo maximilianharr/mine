@@ -100,6 +100,20 @@ text differs from it**. Remote keeps the canonical path; the local version is co
 as `<name>.conflict-<yyyymmdd>.md` with `conflictOf:`. Nothing is discarded and the queue never
 jams.
 
+**One tree entry per path, and no impossible deletion.** The queue is collapsed to the last
+queued op per path before the tree is built, and a queued delete whose path is not in the remote
+listing is dropped. `sha: null` on a path that `base_tree` does not contain answers **422
+`GitRPC::BadObjectState`** and refuses the whole commit — and it refuses it identically on every
+retry, so one such item wedges the queue for good. A file moved or deleted before the queue ever
+drained is exactly that case, because a move is a delete of a path GitHub never saw: with the
+date in the path, changing an unpushed entry's date queues `del <old>` for a path that was only
+ever local. Dropping it is also what was asked for — the file is gone locally and GitHub has
+nothing to remove. If every queued item turns out to be such a no-op, the queue is cleared and
+no commit is made.
+
+This is also why a concurrent delete from another device heals itself: the listing is re-read on
+every attempt, so the path is gone from it and the entry is dropped rather than refused.
+
 **A matching text is a receipt, not a conflict.** A drain that died between the ref update and
 the queue being cleared leaves items behind whose base SHA no longer matches — because the remote
 now holds our own commit. Those are dropped, not forked: the blob is fetched in that branch
