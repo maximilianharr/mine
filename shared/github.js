@@ -1,5 +1,5 @@
 import { getConfig, getKV, setKV, getFile, putFile, delFile, allFiles,
-         enqueue, queued, clearQueue } from './store.js';
+         enqueue, queued, dequeue } from './store.js';
 import { parse, serialize } from './md.js';
 
 const API = 'https://api.github.com';
@@ -156,6 +156,11 @@ export async function drain(message, retry = true) {
 async function drainNow(message, retry) {
   let items = await queued();
   if (!items.length) return { committed: 0, conflicts: [] };
+  // What this drain is responsible for, and nothing else. A save made while it is running is a
+  // new key that must still be queued when it finishes - clearing the store would drop that
+  // item while its text stayed in the mirror, and the next pull would then delete the file for
+  // not being in the remote. One commit covers these keys; the next drain covers the rest.
+  const keys = items.map(i => i.key);
   const c = await auth();
 
   let parent = null, baseTree = null;
@@ -198,7 +203,7 @@ async function drainNow(message, retry) {
       conflicts.push({ path: original, keptAs: it.path });
     }
     items = items.filter(it => !done.includes(it));
-    if (!items.length) { await clearQueue(); return { committed: 0, conflicts }; }
+    if (!items.length) { await dequeue(keys); return { committed: 0, conflicts }; }
   }
 
   // One tree entry per path, the last queued op winning. A drain is one commit, so a path
@@ -225,7 +230,7 @@ async function drainNow(message, retry) {
   }
   // Everything queued turned out to be a no-op against this remote. There is nothing to commit
   // and nothing to keep: the mirror already reads the way the user left it.
-  if (!entries.length) { await clearQueue(); return { committed: 0, conflicts }; }
+  if (!entries.length) { await dequeue(keys); return { committed: 0, conflicts }; }
 
   const tree = await ok(await rest(`/repos/${c.owner}/${c.repo}/git/trees`, {
     config: c, method: 'POST',
@@ -253,7 +258,7 @@ async function drainNow(message, retry) {
     if (e.sha === null) await delFile(e.path);
     else await putFile({ path: e.path, text: e._text, oid: e.sha });
   }
-  await clearQueue();
+  await dequeue(keys);
   await setKV('commitEtag', null);   // our own commit changed the ref
   return { committed: items.length, commit: commit.sha, conflicts };
 }
@@ -266,7 +271,7 @@ const strip = ({ _text, ...e }) => e;
 // those files too and drop the ETag: the next pull restores exactly what GitHub holds.
 export async function discardQueue() {
   const items = await queued();
-  await clearQueue();
+  await dequeue(items.map(i => i.key));
   for (const path of new Set(items.map(i => i.path))) await delFile(path);
   await setKV('commitEtag', null);
   await record('drain', 'discarded', null, `${items.length} change(s) discarded unsent`);
@@ -278,7 +283,8 @@ export async function discardQueue() {
 // first queued file goes that way and the rest drain normally once a history exists.
 async function initialise(c, items, message, retry) {
   const first = items.find(i => i.op === 'put');
-  if (!first) { await clearQueue(); return { committed: 0, conflicts: [] }; }
+  // Nothing to write, and an empty repo has nothing to delete from either.
+  if (!first) { await dequeue(items.map(i => i.key)); return { committed: 0, conflicts: [] }; }
 
   const res = await ok(await rest(`/repos/${c.owner}/${c.repo}/contents/${encodeURI(first.path)}`, {
     config: c, method: 'PUT',
@@ -291,12 +297,13 @@ async function initialise(c, items, message, retry) {
 
   await putFile({ path: first.path, text: first.text, oid: res.content.sha });
 
-  const rest_ = items.filter(i => i !== first);
-  await clearQueue();
+  // Only the one that was just committed leaves the queue. The rest stay where they are, with
+  // the keys and the queued-at times they already had, and the recursive drain reads them back
+  // out - there is no need to take them out and put them in again.
+  await dequeue([first.key]);
   await setKV('commitEtag', null);
-  if (!rest_.length) return { committed: 1, commit: res.commit.sha, conflicts: [] };
+  if (items.length === 1) return { committed: 1, commit: res.commit.sha, conflicts: [] };
 
-  for (const it of rest_) await enqueue(it);
   const more = await drainNow(message, retry);
   return { ...more, committed: more.committed + 1, commit: more.commit || res.commit.sha };
 }

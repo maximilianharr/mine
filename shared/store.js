@@ -41,9 +41,25 @@ export const allFiles = async prefix =>
     .filter(f => !prefix || f.path.startsWith(prefix));
 
 export const enqueue = item => run('queue', 'readwrite', s => s.add(item));
-export const queued = () => run('queue', 'readonly', s => s.getAll());
 export const queuedCount = () => run('queue', 'readonly', s => s.count());
-export const clearQueue = () => run('queue', 'readwrite', s => s.clear());
+
+// Each item with the key it is stored under, both read in one transaction: a drain removes the
+// items it actually read, by key, and a write that landed while it was running must still be
+// there afterwards. Two separate reads could not be trusted to line up - an `add` between them
+// would lengthen one list and not the other. Within the one transaction they do line up by
+// index, because both are defined to walk the records in ascending key order.
+export async function queued() {
+  const d = await db();
+  return new Promise((res, rej) => {
+    const t = d.transaction('queue', 'readonly'), s = t.objectStore('queue');
+    const keys = s.getAllKeys(), items = s.getAll();
+    t.onerror = () => rej(t.error);
+    t.oncomplete = () => res(items.result.map((item, i) => ({ ...item, key: keys.result[i] })));
+  });
+}
+
+export const dequeue = keys =>
+  run('queue', 'readwrite', s => { for (const k of keys) s.delete(k); });
 
 // Request persistent storage. Granted without a prompt in an installed app on both
 // iOS and Android; without it, iOS evicts storage after ~7 days idle.

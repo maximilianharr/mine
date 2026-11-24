@@ -92,6 +92,15 @@ the expected old SHA and **no force**.
 One drain is one commit, so a move — delete plus create, because the date is in the path and the
 API has no rename — cannot be half-applied, and a 20-item offline backlog is one commit.
 
+**A drain removes the keys it read, never the store.** `queued()` returns each item with its key,
+and the drain deletes exactly those keys when the commit lands. Clearing the store instead would
+discard anything queued *while the drain was in flight* — a save made during a slow push — and
+that loss is silent and total: the item's text stays in the mirror under the blob SHA it was
+based on, and the next pull deletes the file for not being in the remote. The next drain picks up
+those later keys. For the same reason the first commit into an empty repo now takes only its own
+item out of the queue and leaves the rest where they are, rather than clearing and re-adding
+them, which also keeps their queued-at times.
+
 A rejected ref update means someone pushed elsewhere: pull, rebuild on the new base, retry. This
 succeeds, because nearly every write is a create at a freshly generated path.
 
