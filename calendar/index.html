@@ -32,9 +32,10 @@
       <button id="period" class="period" aria-label="Pick a date" aria-haspopup="true" aria-expanded="false"><span id="period-label">—</span></button>
       <button id="next" class="nav" aria-label="Next">›</button>
     </div>
-    <!-- rightmost: the panel, and the way out -->
+    <!-- rightmost: the hamburger, and the way out -->
     <div class="tb-side end">
-      <button id="menu-btn" class="nav ic" aria-label="Filter and settings"></button>
+      <button id="menu-btn" class="nav ic" aria-label="Filter and settings"
+              aria-haspopup="true" aria-expanded="false"></button>
       <a class="nav ic" id="home" href="../" aria-label="Back to Mine"></a>
     </div>
   </div>
@@ -92,6 +93,17 @@
   </form>
 </div>
 
+<!-- A row's own popup, anchored to the row that opened it: the row keeps its icon, its value
+     and its trashcan, so nothing moves under the finger that tapped it. -->
+<div class="pop fpop" id="fpop" hidden>
+  <div class="pop-head">
+    <strong id="fpop-title">—</strong><span class="spacer"></span>
+    <button class="ib" id="fpop-close" type="button"
+            title="Close this field" aria-label="Close this field"></button>
+  </div>
+  <div id="fpop-body"></div>
+</div>
+
 <!-- the group manager, the one survivor of the sub-popup: reached from the panel, edits no
      field of an entry, and writes groups.md itself. -->
 <div class="pop centred sub" id="sub" hidden>
@@ -102,15 +114,26 @@
   <div id="sub-body"></div>
 </div>
 
-<!-- one panel, two sections: the filter you open often, the settings that change once -->
+<!-- the hamburger's two errands, named before either is opened -->
+<div class="pop" id="menu-pop" hidden>
+  <div id="menu-body"></div>
+</div>
+
+<!-- the filter: a dropdown off the hamburger, because the view it narrows has to stay in sight -->
+<div class="pop" id="filter-pop" hidden>
+  <div class="pop-head">
+    <h2>Filter</h2><span class="spacer"></span>
+    <button class="ib" id="filter-close" type="button" title="Close" aria-label="Close"></button>
+  </div>
+  <div id="filter-body"></div>
+</div>
+
+<!-- the settings: the nine rows that change once, centred like every other overlay -->
 <div class="centred panel" id="settings-panel" hidden>
   <div class="pop-head">
-    <h2>Calendar</h2><span class="spacer"></span>
+    <h2>Settings</h2><span class="spacer"></span>
     <button class="ib" id="settings-close" type="button" title="Close" aria-label="Close"></button>
   </div>
-  <h3 class="sect">Filter</h3>
-  <div id="filter-body"></div>
-  <h3 class="sect">Settings</h3>
   <div id="settings-body"></div>
 </div>
 

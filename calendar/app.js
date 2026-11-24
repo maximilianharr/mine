@@ -1,5 +1,5 @@
-// The shell: the top pane, navigation, the date picker, the zoom, the sync line, and which view
-// the big calendar window holds. The filter lives in the panel with the settings.
+// The shell: the top pane, navigation, the date picker, the zoom, the hamburger's menu, the sync
+// line, and which view the big calendar window holds.
 import { getConfig, getKV, setKV, queuedCount } from '../shared/store.js';
 import { pull, drain } from '../shared/github.js';
 import {
@@ -11,8 +11,8 @@ import {
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
-import { closePopup } from './popup.js';
-import { openPanel, renderFilter } from './settings.js';
+import { escapeEntry } from './popup.js';
+import { openFilter, openPanel, renderFilter } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
@@ -133,10 +133,33 @@ $('#next').addEventListener('click', () => step(1));
 // column header.
 
 for (const [id, name] of [['#home', 'house'], ['#zoom-btn', 'zoom'], ['#menu-btn', 'menu'],
-  ['#day-add', 'plus'], ['#day-close', 'x'], ['#sub-close', 'x'], ['#settings-close', 'x']])
+  ['#day-add', 'plus'], ['#day-close', 'x'], ['#sub-close', 'x'], ['#settings-close', 'x'],
+  ['#filter-close', 'x'], ['#fpop-close', 'x']])
   $(id).append(icon(name));
 
-$('#menu-btn').addEventListener('click', openPanel);
+// ---- the hamburger's menu ------------------------------------------------------------------
+// Two errands behind one button, each named before it is opened and each opening on its own. The
+// button used to open both at once in a single panel, where a heading was the only thing telling
+// a group you hide this afternoon from the week's first day, and the filter had no room to list
+// its groups without pushing the settings off the screen.
+
+const MENU = [['filter', 'filter', openFilter], ['gear', 'settings', openPanel]];
+
+function openMenu() {
+  if (!$('#menu-pop').hidden) return closePops();
+  closePops();
+  $('#menu-body').replaceChildren(...MENU.map(([ic, text, open]) => {
+    const b = el('button', 'mrow');
+    b.type = 'button';
+    b.append(icon(ic), el('span', '', text));
+    b.addEventListener('click', open);   // each one closes the menu on its way in
+    return b;
+  }));
+  openPop($('#menu-pop'), $('#menu-btn'), 'right');
+}
+
+$('#menu-btn').addEventListener('click', openMenu);
+$('#filter-close').addEventListener('click', closePops);
 $('#settings-close').addEventListener('click', closePops);
 
 // ---- the dropdown date picker --------------------------------------------------------------
@@ -247,7 +270,7 @@ addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
   if (!$('#ask').hidden) $('#ask-keep').click();
   else if (!$('#sub').hidden) $('#sub-close').click();
-  else if (!$('#popup').hidden) closePopup();
+  else if (!$('#popup').hidden) escapeEntry();
   else closePops();
 });
 matchMedia('(min-width: 600px)').addEventListener('change', () => { closePops(); render(); });

@@ -1,35 +1,41 @@
-// The panel behind the hamburger: the filter at the top, the settings below it, under a heading
-// each. They are one panel because they are one errand - both are things you adjust about the
-// view in front of you and then leave alone, and two buttons a thumb's width apart asked which
-// of the two a given switch was before you could reach it. Merging them also freed the slot the
-// zoom took, which is what keeps the pane at four controls.
+// The hamburger's two errands, each its own overlay. The filter is a dropdown off the hamburger,
+// because it is the half you open often and the view it narrows has to stay in sight while you
+// narrow it; the settings are the nine rows that change once, so they are a centred panel. One
+// panel held both until the two were told apart by a heading alone - which is a weak way to
+// separate a thing you open daily from a thing you open twice, and it cost the filter the room
+// to show its groups.
 //
 // Everything here is stored on the device except the groups, the sprint length and the first
 // sprint date: those three are data and live in the repo, because the sprint a task belongs to
 // is derived from them and two devices that disagreed would put the same card in different
 // sprints. Theme and date format are Mine-wide, not the calendar's.
 //
-// Every row is two halves - the label on the left, its control on the right - so the controls
-// line up in one column. That alignment is the whole of what the panel was missing: a select, a
-// text box, a checkbox and a date field each started wherever its own label happened to end.
-// The groups are behind a button rather than listed, because a list grew with the repo and
-// pushed the nine settings that never change below the fold.
+// Every settings row is two halves - the label on the left, its control on the right - so the
+// controls line up in one column. That alignment is the whole of what the panel was missing: a
+// select, a text box, a checkbox and a date field each started wherever its own label happened
+// to end. The groups are behind a button rather than listed, because a list grew with the repo
+// and pushed the nine settings that never change below the fold.
 import { setKV } from '../shared/store.js';
 import { saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
-import { S, $, el, closePops, openCentred, colorOf, labelOf } from './ui.js';
+import { S, $, el, closePops, openPop, openCentred, colorOf, labelOf } from './ui.js';
+
+export function openFilter() {
+  closePops();
+  renderFilter();
+  openPop($('#filter-pop'), $('#menu-btn'), 'right');
+}
 
 export function openPanel() {
   closePops();
   build();
-  renderFilter();
   openCentred($('#settings-panel'));
 }
 
 // ---- the filter ----------------------------------------------------------------------------
-// A view filter, remembered per device. Groups are named and coloured below, in the settings
-// section's `edit groups`, not here.
+// A view filter, remembered per device. Groups are named and coloured in the settings panel's
+// `edit groups`, not here.
 
 function groupNames() {
   const names = new Set(Object.keys(S.model.groups));
@@ -42,22 +48,16 @@ function groupNames() {
   return out;
 }
 
-// Groups are a dropdown rather than a list: one row saying how many are on, which opens to the
-// same checkboxes. Folded is how it starts, and that is load bearing twice over now - a repo
-// with twenty groups would otherwise give the panel a filter taller than the screen and push
-// the nine settings rows below the fold.
-let groupsOpen = false;
+// The groups are a plain list of checkboxes. They were folded behind a `groups · 3 of 4` row for
+// one reason - an open list pushed the nine settings rows below the fold - and that reason went
+// when the settings moved into a panel of their own. One tap hides a group now instead of two,
+// and a repo with twenty groups scrolls inside the dropdown rather than growing it.
 
 export function renderFilter() {
   const names = groupNames();
-  const on = names.filter(([n]) => !S.hidden.has(n)).length;
-  const drop = el('button', 'gdrop', `groups · ${on} of ${names.length} ${groupsOpen ? '▴' : '▾'}`);
-  drop.type = 'button';
-  drop.setAttribute('aria-expanded', String(groupsOpen));
-  drop.addEventListener('click', () => { groupsOpen = !groupsOpen; renderFilter(); });
-  const kids = [drop];
+  const kids = [];
 
-  if (groupsOpen) for (const [name, label] of names) {
+  for (const [name, label] of names) {
     const lab = el('label', 'glab');
     const box = el('input');
     box.type = 'checkbox';

@@ -87,23 +87,42 @@ that the disk reads the same comparison the discard prompt does rather than a fl
 touch. That the disk is the **only** control in the popup that writes: no row, no toggle and no
 list leaves anything in the repo on its own, read from the queue being empty until it is pressed.
 
-**Every value is edited where it is read.** For the title, the when row, each of the five field
-rows and the body in turn: that clicking it puts an input, select or textarea **inside that row**,
-that no `#sub` popup is opened by any of them, and that the row then carries **a trashcan and an
-`x` and no save** — one save in the popup, in the top row, and a row that has grown its own is
-the two-saves confusion this rule exists against. That the two sit on the row's **first line**,
-above the editor and with the `x` rightmost, resolved from document order and left edges: under
-a textarea they would land in a different place on every row. That the row's `x` **closes the row
-and keeps what is in it**, and still writes nothing. That clicking a second row closes the first
-the same way. That only one row is active at a time.
+**Every value is edited where it is read, and opening it does not move the row.** This is the
+measurement the whole shape exists for, so it is a height and not a look: that an open row is
+**exactly as tall as it was shut**, read off `getBoundingClientRect()` for the row that opened and
+for every row in the popup, set and unset alike. A pixel of growth is a row below it having moved,
+which is the eye losing the field it has just tapped.
+
+For the title, the alerts, the location and the participants: that clicking it puts an **input in
+the line itself**, that the field's name is gone from the line and is the input's placeholder, and
+that the row carries **a trashcan and an `x` and no save** — one save in the popup, in the top row
+— with all three on the input's own line and the `x` rightmost, resolved from their top edges and
+left edges. That **the title row carries neither**, the popup's own `x` being a thumb's width
+above it. That the row's `x` **closes the row and keeps what is in it**, and still writes nothing.
+That clicking a second row closes the first the same way.
+
+For the when, the category, the repetition and the estimate: that clicking it opens `#fpop`
+**under the row**, that the row's height, its text and the number of rows in the popup are all
+unchanged, that the row holds no control of its own, and that **no scrim is raised** — the tap
+that dismisses this popup has to reach the row it landed on. That tapping a different row moves
+straight to it in **one tap**, and that tapping the row it is already on **closes** it rather than
+reopening it. That `#fpop`'s own `x` closes it and leaves the entry popup open. That no `#sub`
+popup is opened by any of the nine.
+
+That only one is open at a time, an inline input and a field popup never both. That **Escape is
+swallowed by a field popup and not by an inline row**: in a field popup it closes that and leaves
+the entry popup open, and in an inline row it asks the discard question, the row staying as it is.
+A new entry opens with its title row already an input, so a row that swallowed Escape would cost
+two presses to leave the commonest popup in the app.
 
 **One edit is one commit.** That editing four things in one popup and pressing the disk queues
 **one** write, and that the file then holds all four values. This is the measurement a popup
 writing per row could not pass, and it is the reason for the draft, so it is checked as a count
 and not only as an outcome.
 
-**The trashcan on a row.** That a set row carries one and an unset row does not. That it clears
-the field in the draft — the row drops to its muted name and the disk appears — and that it does
+**The trashcan on a row.** That a set row carries one and an unset row does not, and that the
+estimate's lives in its popup's head instead, its row being an icon with no room beside it. That
+it clears the field in the draft — the row drops to its muted name and the disk appears — and that it does
 **not** write on its own. That **clicking a row's trashcan does not activate the row**: the field
 is cleared and no input appears, which is the same rule a kanban card holds to and matters more
 here, the trashcan now being on the surface being tapped.
@@ -115,13 +134,22 @@ computed colour against the two tokens rather than from a screenshot. That the *
 category, repeat, alerts, location, participants in that canonical order on a task and on an
 event alike, with **details not among them** — it is the body at the foot, and a details row
 appearing in the list is the body having been flattened into one; that **every one of the five
-has a row whether it is set or not**; and that setting one moves its row above the unset ones
-while the order inside each group stays canonical.
+has a row whether it is set or not**; and that **setting one does not move its row** — the index
+of the row before and after filling it is the same — because a row that moves when it is filled
+loses the field as surely as a row that grows.
 
-**Picking a category closes the row.** That tapping a group puts the label in the row and closes
-it in one tap, with nothing pressed after it, and that **nothing is written** — the queue is
-still empty and the disk is now showing. That the repetition row, by contrast, stays open when
-its dropdown changes, because a rule is the dropdown and the ends control together.
+**Picking a category closes its popup.** That tapping a group puts the label in the row and closes
+the popup in one tap, with nothing pressed after it and the entry popup still open, and that
+**nothing is written** — the queue is still empty and the disk is now showing. That the repetition
+popup, by contrast, stays open when its dropdown changes, because a rule is the dropdown and the
+ends control together.
+
+**Times are typed and 24-hour.** That the when popup holds **four** boxes whose types are
+`date, text, date, text` — never a native `<input type="time">`, which would take its 12- or
+24-hour shape from the device's locale. That `9`, `900`, `0815`, `7:5` and `23:59` read back as `09:00`,
+`09:00`, `08:15`, `07:05` and `23:59`, and that `25:00`, `9:70`, `noon` and `99` are **refused**,
+the box going back to what the draft still holds. That the row does not restate the time while the
+popup is open — that is what keeps it still — and reads it the moment the popup closes.
 
 **A new entry is a draft like any other.** That a `+` opens the popup with the title row active
 and **every other row live** — clicking one opens its editor — with the when seeded from where it
@@ -145,15 +173,16 @@ choosing a task puts stage, important and estimate on that same row and switchin
 event takes all three away again. That stage cycles through three stages in three badge colours
 and back; that **important is a toggle and not a cycle** — two taps return it to where it started,
 it carries no badge and no digit, and there is no third state to reach; and that the estimate
-opens its editor **inline, beneath the row**, prefilled with one day, badges `3d` once set and
+opens its editor **in a popup under the hourglass**, leaving the toggle row's own height and row
+count untouched, prefilled with one day, badges `3d` once set and
 loses its badge once cleared. That a tap on any of the four **changes the draft and not the
 repo**: the disk appears, the queue stays empty. That `24h` and `!` light with the ordinary
 enabled background and never with `--good`, because green is the disk's, and that nothing else in
 the popup lights at all. That the row sits **below** the when row, not above it — resolved from
 the elements' document order, since a row that merely looks right can still be the old one.
 
-**That the `x` is the rightmost control in every popup**: the entry popup, each active row, the
-day preview and the hamburger panel. Resolved from the buttons' left edges, so a row that reads
+**That the `x` is the rightmost control in every popup**: the entry popup, each active row, each
+field popup, the day preview, the filter dropdown and the settings panel. Resolved from the buttons' left edges, so a row that reads
 correctly but was built in the old order cannot pass — and a check that only counted three
 buttons would have passed on the old order, which is why this one reads their positions. That the
 top row runs trashcan, disk, `x` in that order once the disk is showing.
@@ -177,7 +206,7 @@ nothing has been typed into closes it with no prompt; that changing something an
 the popup's `x`, clicking the backdrop or pressing Escape each raise the same prompt; and that
 **keep editing** leaves the popup open *with the change still in it*, which is the half of a
 discard dialog that usually goes wrong. That ticking **don't ask again** and reopening a popup
-makes the next `x` discard without asking, and that the hamburger panel's `Confirm discard` row
+makes the next `x` discard without asking, and that the settings panel's `Confirm discard` row
 turns the prompt back on.
 
 That **a row's own `x` never prompts** — it closes a row and keeps what is in it, so there is
@@ -186,35 +215,41 @@ with no disk showing, so merely activating a row is not a change. That the promp
 agree in both
 directions: nothing typed means no disk and no prompt, something typed means both.
 
-**The hamburger panel.** That **one button opens both halves**: the hamburger is the only way
-in, there is no gear and no filter button anywhere in the pane, and the panel that opens holds a
-filter section **above** a settings section — read from their top edges, so a panel that holds
-both in the wrong order cannot pass. That its nine settings rows are two halves — every label's
-box in the left half of the row and every control's box in the right — so the controls' left
-edges all agree, which is the one measurement that separates the new panel from the old. That no
-label wraps to a second line at 320 px. That **groups are not listed in the settings section**:
-it holds one *edit groups* button, which opens the same list the category row opens, and that
-**only this way in carries the pen, the trashcan and the `+ add`** — reached from an entry the
-same list has none of the three and no `no category` row either, which is the check that keeps
-the two forms apart. That the panel's last element is a settings row and **not a paragraph of
-explanation**. That with the groups dropdown folded the last of the nine rows is **above the
-fold at 320 px**, which is what the fold rule now costs: a filter section above them can push
-them off the screen as surely as a group list among them could.
+**The hamburger's menu.** That **one button still covers both and opens neither**: the hamburger
+is the only way in, there is no gear and no filter button anywhere in the pane, and one tap opens
+a menu whose rows read `filter` and `settings` with the filter dropdown and the settings panel
+both still hidden. That the menu hangs under the hamburger and within its right edge, read from
+the two bounding boxes. That tapping `filter` opens the filter **alone** and tapping `settings`
+opens the panel **alone**, each with the other and the menu hidden — a check that fails the moment
+the two are merged back into one overlay. That the filter hangs under the hamburger rather than
+being centred, because the view it narrows has to stay in sight while it is narrowed.
+
+**The settings panel.** That it holds the nine rows and **no filter section** — `#filter-body` is
+not inside it. That the nine are two halves — every label's box in the left half of the row and
+every control's box in the right — so the controls' left edges all agree, which is the one
+measurement that separates the new panel from the old. That no label wraps to a second line at
+320 px. That **groups are not listed in it**: it holds one *edit groups* button, which opens the
+same list the category row opens, and that **only this way in carries the pen, the trashcan and
+the `+ add`** — reached from an entry the same list has none of the three and no `no category` row
+either, which is the check that keeps the two forms apart. That the panel's last element is a
+settings row and **not a paragraph of explanation**. That the last of the nine rows is **above the
+fold at 320 px**, which is now unobstructed: there is no filter section above them to push them
+off the screen.
 
 **The popup is centred.** At 320 px, that the entry popup — with its tallest row active, the
-details body's textarea — the hamburger panel and the day preview each sit clear of the bottom
+details body's textarea — the settings panel and the day preview each sit clear of the bottom
 edge — their bounding box's bottom is above the
 viewport's, and their top below it. Nothing in the app is a bottom sheet any more, and a card
 that still stretches to the bottom edge is the old sheet in new paint. **And the day preview is
 centred on a desktop too**, measured at 900 px, because it is no longer anchored to the cell that
 opened it — the check that catches a third overlay mechanism growing back.
 
-**The filter, inside that panel.** That the groups are behind a dropdown rather than listed: the
-filter section shows one `groups` row, folded, and the checkboxes — one per group, each with its
-colour — appear only once it is opened. That ticking two of them still shows two groups and hides
-the rest, because folding the list away must not have made the filter single-select. That on the
-board the filter adds an assignee and **one** important toggle, that neither appears in a
-calendar view, and that no `P1`, `P2` or `P3` chip is left anywhere in it.
+**The filter dropdown.** That the groups are **listed, not folded**: there is no `groups`
+dropdown row and a checkbox per group, each with its colour, is there straight away. That ticking
+two of them still shows two groups and hides the rest, because a list is no excuse for the filter
+having become single-select. That on the board the filter adds an assignee and **one** important
+toggle, that neither appears in a calendar view, and that no `P1`, `P2` or `P3` chip is left
+anywhere in it.
 
 **The top pane.** That it holds no Today button, no `+`, no `-` or `+` zoom pair and **no caret
 `▾`** — a check for each one's absence is what keeps it gone. That **clicking the label opens the

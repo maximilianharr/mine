@@ -183,6 +183,13 @@ every save.
 
 Read the hour with `% 24`: some engines answer `24` for midnight under `hour12: false`.
 
+**A native `<input type="time">` cannot be made 24-hour.** Chrome and Firefox render it from the
+browser or OS locale; the `lang` attribute, CSS and every input attribute leave it alone. Since
+every time the calendar renders itself is `HH:MM` by construction, the when popup's two times are
+typed boxes with a parser (`hhmm` in `popup.js`) rather than that control. The two dates stay
+native: a date picker is worth more than a format, and `<input type="date">` hands back an ISO
+value whatever it displays.
+
 An unknown zone name falls back to the device's rather than throwing, because a bad value in
 settings must not stop the calendar rendering.
 
@@ -229,8 +236,8 @@ calendar/ui.js        DOM helpers, the icon set, and the state every view reads
 calendar/views.js     year, month, week, day, and the day preview
 calendar/kanban.js    the board
 calendar/popup.js     the one entry popup: its rows, their inline editors, their writes
-calendar/settings.js  the hamburger panel: the filter section above the settings section
-calendar/app.js       the top pane, navigation, the picker, the zoom, the sync line
+calendar/settings.js  the filter dropdown and the settings panel, the hamburger's two errands
+calendar/app.js       the top pane, navigation, the picker, the zoom, the menu, the sync line
 shared/prefs.js       theme and date format, which belong to Mine rather than to one app
 ```
 
@@ -241,21 +248,45 @@ back and making an import cycle.
 `FIELDS` in `popup.js` is built while the module is still evaluating, so anything it calls must
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.
 
-**There are two overlay mechanisms and no third.** `openPop` positions a dropdown under the
-button that opened it, which only the date picker and the zoom do; everything else carries
-`.centred` and is only unhidden, by `openCentred`. The filter was the third user of `openPop`
-and is now a section of the centred panel, so the count went down rather than up when the zoom
-arrived. **A field editor is neither**: it is drawn inside its own row, so the popup-over-a-popup
-layer — `#sub` and `#sub-scrim` — is no longer part of editing an entry at all. It survives for
-the group manager alone, which is reached from the panel and edits no entry.
+**There are three overlay mechanisms.** `openPop` positions a dropdown under the button that
+opened it — the date picker, the zoom, the hamburger's menu and the filter. `openCentred` only
+unhides something already placed by `.centred` — the settings panel, the day preview, the group
+manager. `openRowPop` is the third, and the one thing that distinguishes it is what it does *not*
+do: it raises **no scrim**. That is deliberate and it is the reason it cannot be one of the other
+two. A field's popup is dismissed by a tap that must still reach whatever it landed on, so that
+moving from one field to the next is one tap; a scrim would stop that tap, and two taps to change
+field is the friction this whole shape exists to remove. `justClosed` in `popup.js` is the other
+half of it: the capture-phase click listener closes the popup *before* the row's own handler runs,
+so without it the tap that closed a popup would immediately reopen it.
+
+Both `openPop` and `openRowPop` place through one `place()` in `ui.js`, which flips the popup above
+its anchor when there is no room below — a field row near the foot of a long entry popup is the
+case that needs it.
+
+`openFieldPop` looks its anchor up by `data-field` rather than taking the node. On a dismissing
+tap the capture-phase listener re-renders the rows before the row's own handler runs, so by the
+time that handler asks for a popup its node is detached and its `getBoundingClientRect()` is all
+zeros. The handler itself still fires: a click's propagation path is computed at dispatch, so
+detaching the target mid-dispatch does not cancel it.
+
+The popup-over-a-popup layer — `#sub` and `#sub-scrim` — is no longer part of editing an entry.
+It survives for the group manager alone, which is reached from the settings panel and edits no
+entry, and so is still the one overlay below the top row's disk that writes.
 
 The one popup means one builder. There is no `viewCard` beside `fillForm` any more: a row is
 drawn from the same `FIELDS` entry whether it is showing a value or editing one, which is what
 stops the two from disagreeing about a field — the preview showing the stage while the form hid
-it was exactly that, in two functions that had to be kept in step by hand. A third mechanism is
-how the day preview came
-to be anchored by script and then dragged back to the middle with `left: 50% !important` — one
-rule undoing another, in two files.
+it was exactly that, in two functions that had to be kept in step by hand. `mode` on a `FIELDS`
+entry is the whole of how a field is edited: `inline` puts its control in the row, `pop` in a
+popup anchored to the row, `block` is the body.
+
+**A row's height is held by CSS, not by what it contains.** `.frow` carries a `min-height` set by
+the tallest thing a row can hold — its trashcan and its `x`, which a set row already carries shut
+— and every control a row opens is shorter than that. Nothing in script measures or equalises
+anything, so a row cannot change height by being opened.
+
+A mechanism invented twice is how the day preview came to be anchored by script and then dragged
+back to the middle with `left: 50% !important` — one rule undoing another, in two files.
 
 Every icon comes from the one table in `ui.js`. The buttons in `index.html` are empty and are
 filled by `icon()` at boot, so an icon cannot drift between a hand-written path in the markup and

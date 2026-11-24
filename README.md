@@ -37,7 +37,7 @@ app, stored on the device, and scoped so it can only touch that data repo.
 
 The main app, the sync layer and the on-device checks are done and verified end to end against a
 real repo. The calendar is built — the five views, the kanban, the entry popup and its field
-popups, the settings panel — and `test/run.sh` covers it.
+popups, the filter and the settings — and `test/run.sh` covers it.
 
 Not built yet: the per-app summary above the tiles that [REQUIREMENTS.md](REQUIREMENTS.md)
 describes. The tile screen shows tiles only, so opening the calendar is currently the only way

@@ -148,27 +148,44 @@ export function iconBtn(name, label, cls = '') {
 }
 
 // ---- overlays ------------------------------------------------------------------------------
-// Two mechanisms and no third. `openPop` positions a dropdown under the button that opened it,
-// which only the date picker and the zoom do. Everything else - the day preview, the panel, the
-// group manager - is centred by the stylesheet and only has to be unhidden. A field editor is
-// neither: it is drawn inside its own row.
+// Three mechanisms. `openPop` hangs a dropdown off the button that opened it - the date picker,
+// the zoom, the hamburger's menu and the filter. `openCentred` is the settings panel, the day
+// preview and the group manager, centred by the stylesheet and only unhidden. `openRowPop` is
+// the third and the odd one: a field's popup inside the entry popup, which carries **no scrim**,
+// so the tap that dismisses it still reaches the row it landed on and moving from one field to
+// the next is one tap rather than two. That is the whole reason it is not one of the other two.
 
 export const openCentred = pop => { pop.hidden = false; $('#scrim').hidden = false; };
+
+// Under the thing that opened it, flipped above when there is no room below - a row near the
+// foot of a long entry popup is the case that needs it.
+function place(pop, anchor, align) {
+  const r = anchor.getBoundingClientRect();
+  const w = pop.offsetWidth;
+  const h = pop.offsetHeight;
+  const left = align === 'right' ? r.right - w : r.left;
+  pop.style.left = `${Math.max(8, Math.min(left, innerWidth - w - 8))}px`;
+  const below = r.bottom + 6;
+  const above = r.top - 6 - h;
+  pop.style.top = `${below + h > innerHeight - 8 && above > 8 ? above : below}px`;
+}
 
 export function openPop(pop, anchor, align = 'left') {
   pop.hidden = false;
   $('#scrim').hidden = false;
-  const r = anchor.getBoundingClientRect();
-  const w = pop.offsetWidth;
-  const left = align === 'right' ? r.right - w : r.left;
-  pop.style.left = `${Math.max(8, Math.min(left, innerWidth - w - 8))}px`;
-  pop.style.top = `${r.bottom + 6}px`;
+  place(pop, anchor, align);
   anchor.setAttribute?.('aria-expanded', 'true');
 }
 
-const POPS = ['#picker', '#zoom-pop', '#day-pop', '#settings-panel'];
+export function openRowPop(pop, anchor) {
+  pop.hidden = false;
+  place(pop, anchor, 'left');
+}
+
+const POPS = ['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#settings-panel'];
 
 export function closePops() {
   for (const id of [...POPS, '#scrim']) $(id).hidden = true;
-  for (const id of ['#period', '#zoom-btn']) $(id).setAttribute('aria-expanded', 'false');
+  for (const id of ['#period', '#zoom-btn', '#menu-btn'])
+    $(id).setAttribute('aria-expanded', 'false');
 }

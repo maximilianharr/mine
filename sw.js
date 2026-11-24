@@ -1,6 +1,6 @@
 import { APPS } from './shared/apps.js';
 
-const VERSION = '2026-11-23.3';
+const VERSION = '2026-11-24.1';
 const CACHE = `mine-${VERSION}`;
 
 const SHELL = [

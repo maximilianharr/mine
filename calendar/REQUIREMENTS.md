@@ -113,10 +113,10 @@ or lets one wrap away.
   they are, and a gesture doing what a visible button does is the same second mechanism this
   document refuses a card on a desktop. So no sideways gesture does anything, in any view, and
   nothing ever has to be told apart from a card drag on the board or from a scroll in a grid.
-- **Rightmost, the two ways out.** A **hamburger** button that opens the filter and the settings
-  in one panel, and a home icon back to the Mine tile screen. A house rather than an arrow,
-  because a third arrow beside the two that step through periods reads as another way to move
-  inside the calendar.
+- **Rightmost, the two ways out.** A **hamburger** button that names its two errands — `filter`
+  and `settings` — and opens whichever is tapped, and a home icon back to the Mine tile screen. A
+  house rather than an arrow, because a third arrow beside the two that step through periods reads
+  as another way to move inside the calendar.
 
 ### The zoom
 
@@ -210,10 +210,11 @@ is already showing the one day the preview would list.
 
 ## Entry popup
 
-The popup **opens in the middle of the screen**, on a phone as much as on a desktop — and so
-does every other overlay in the calendar: the hamburger panel and the day preview. Nothing rises
-from the bottom edge any more. A centred card is reached with either thumb and does not pretend
-to be a drawer that can be dragged.
+The popup **opens in the middle of the screen**, on a phone as much as on a desktop — and so do
+the settings panel and the day preview. Nothing rises from the bottom edge any more. A centred
+card is reached with either thumb and does not pretend to be a drawer that can be dragged. The
+hamburger's menu and the filter hang off the hamburger instead, as dropdowns, and a field's own
+popup hangs off its row; those three name the thing they came from, which a centred card cannot.
 
 **There is one popup, and it is both.** Clicking an entry — in any grid, in the day preview, or
 as a card on the board — opens the entry, shown as text, and **every value in it is edited where
@@ -277,24 +278,51 @@ where the value has to fit. **An unset row shows the field's name in its place, 
 is what an empty input does everywhere else in Mine, and what keeps a bell from being a bell and
 nothing else. A set row reads as a value; an unset one reads as an invitation.
 
-- **The rows that are set move to the top.** Set fields come first, unset ones follow, and inside
-  each group the order is always the canonical one below. Setting a field lifts its row into the
-  top group and shuffles nothing else, so a row never moves for a reason you did not cause.
+- **The rows never move.** Every row is in the canonical order below whether it is set or not.
+  Set rows used to be lifted to the top, which moved a row the moment it was filled — so the
+  field just typed into was no longer where it had just been looked for. That is the same
+  complaint as a row that grows, and it has the same answer: the popup's shape does not depend
+  on what is in it.
 - **A set row carries a trashcan at its right**, which clears that field in the draft. An unset
   row has nothing to clear and carries none.
-- **Clicking a row makes it active.** The value becomes the control for it, in the row itself,
-  and the row's first line carries its name and then, at the right, **a trashcan and an `x`** —
-  and **no save of its own**. They sit at the top right rather than under the editor, because the
-  way out of a thing is in the same corner everywhere in Mine, and an `x` below a textarea is in
-  a different place on every row depending on how tall its editor is.
+- **Opening a row does not change its height.** This is the rule the rest of this section serves.
+  A row that grew a heading and a control beneath it moved every row under it, so a popup opened
+  to type one word rearranged itself and the eye had to find the field again. Every row is the
+  height of the tallest thing a row can hold — its trashcan and its `x`, which a set row already
+  carries shut — and nothing a row opens is taller than that.
+- **A field whose control fits a line holds it in the line.** The title, the location, the alerts
+  and the participants become an input where their value was, at the same size, **with the field's
+  name as the placeholder rather than a heading above it**: a heading was the line the row grew
+  by, and it named what the icon beside it already said. The trashcan and the `x` stay at the
+  right of that same line, where the closed row's trashcan already was, so the way out of a row is
+  in the corner it is in everywhere in Mine. **The title row is the one with neither**, because an
+  entry must have a title and so there is nothing to clear, and because the popup's own `x`, which
+  discards the whole edit, is a thumb's width above that line; it closes on Escape or by opening
+  any other row.
+- **A field whose control cannot fit a line opens it in a popup anchored to the row.** The when,
+  the category, the repetition and the estimate: four date and time boxes, a list of categories, a
+  rule with an end condition, a number with a unit. The row keeps its icon, its value and its
+  trashcan — **nothing about it moves** — and the popup hangs directly under it, naming the field
+  and carrying an `x`. The estimate's is the one that also carries the trashcan, because its row
+  is an icon on the toggle row with no room beside it.
+- **The field popup carries no scrim**, alone among the calendar's overlays. A scrim would stop
+  the tap that dismisses it, so moving from one field to the next would take two taps; without one
+  the tap reaches the row it landed on and opens it. Tapping the row it is already on closes it
+  rather than reopening it.
 - **The `x` closes the row and keeps what is in it.** There is nothing to accept: the editor has
   been writing into the draft since the first keystroke, which is what lets the disk appear the
   moment something differs from the file. So closing a row is only closing it — a field typed
   into is not undone by leaving it, which is what a tap meant for the row below would otherwise
   do. Clearing the field is the trashcan beside the `x`, and undoing the edit of a whole entry is
   the popup's own `x`. There is exactly one save in this popup and it is the one in the top row.
-- **Only one row is active at a time.** Clicking another row closes the one that was open, which
-  likewise keeps what is in it.
+- **Only one row is open at a time**, and a line's input and a field's popup are never both open.
+  Opening either closes the other, which likewise keeps what is in it.
+- **Escape unwinds the one layer there is.** A field popup swallows it, so Escape inside a field
+  does not throw away the edit the field is part of. **An inline row does not** — it is the row in
+  its editing state rather than a layer over anything, and leaving it loses nothing, so Escape
+  there keeps meaning *leave the popup*. A new entry opens with its title row already an input,
+  and making that swallow the first press would cost two presses to leave the commonest popup in
+  the app. The row's own `x` is what closes a row.
 - **Clicking a row's trashcan does not activate the row.** This is the rule a kanban card already
   holds to, and it matters more here, because the trashcan now sits on the surface being tapped.
   The row and its controls are one place where a click that does two things is easy to build.
@@ -309,27 +337,39 @@ nothing else. A set row reads as a value; an unset one reads as an invitation.
 
 The sixth, **details**, is not a row: it is the body, and it is drawn in full at the foot of the
 popup — described below. A markdown body is the one value that cannot be read on one line, so a
-row is the wrong shape for it, and putting it first in the order the way a row would be sorted
-pushes everything else below the fold on any entry with an agenda in it. It keeps its place in
-the canonical order of fields everywhere that order is a list of fields; it simply is not one of
-the rows that order sorts.
+row is the wrong shape for it, and putting it first in the canonical order pushes everything else
+below the fold on any entry with an agenda in it. It keeps its place in the canonical order of
+fields everywhere that order is a list of fields; it simply is not one of the rows.
 
-**Every editor opens in its own row.** There is no popup over the popup any more: the field
-popups are gone, and with them the rule that a sub-popup never writes to the repo — the rows do
-not write either, so there is nothing left to carve out. The card scrolls, so a textarea fits in
-a row as well as it fitted in a card of its own. The one survivor of that mechanism is the group
-manager behind *edit groups*, which is not editing a field.
+**No editor writes to the repo.** The field popups write into the draft exactly as the inline
+rows do, so the old rule that a sub-popup never writes is not a carve-out any more: nothing
+below the top row's disk writes at all. **The body is the one field whose open shape still
+carries a line of its own** — a textarea cannot have its name and its buttons beside it — and
+that line is the same header the closed body already shows, so nothing moves there either. The
+group manager behind *edit groups* is the one overlay here that does write, and it is not editing
+a field of an entry.
 
-**Picking a category takes it.** Tapping a group puts it in the draft and closes the row — there
-is nothing more to say about a choice from a list, and with no save in the row there is nothing
-for a second tap to press. It is the one row that closes itself.
+**Picking a category takes it.** Tapping a group puts it in the draft and closes the popup —
+there is nothing more to say about a choice from a list, and with no save in it there is nothing
+for a second tap to press.
 
 ### The title, the when, and the toggle row
 
-**The title is a row too** — text until clicked, then an input with the trio. So is **the when**,
-which reads `MON, 20.11.2026 · 09:00–10:00` and opens the start and end date and time inputs
-inside the row. Four input boxes at the top of a popup opened to find out what day something is
-on was the form at its least readable, and this is the row that had the most to gain.
+**The title is a row too** — text until clicked, then an input in the same line at the same size.
+So is **the when**, which reads `MON, 20.11.2026 · 09:00–10:00` and opens the start and end date
+and time boxes in a popup under it. Four input boxes at the top of a popup opened to find out what
+day something is on was the form at its least readable; four of them also cannot be a line, which
+makes the when the clearest case for the popup — the row goes on reading the day while they are
+open, and only takes the new reading once they are shut.
+
+**The times are typed, not a native time control.** `HH:MM`, and forgiving about how it is reached:
+`9` and `900` and `9:00` all read back as `09:00`, `930` and `0930` and `9:3` as `09:30`, and
+anything that is not a time of day is refused and the box goes back to what the draft still holds.
+A native `<input type="time">` takes its 12- or 24-hour shape from the device's locale and nothing
+in markup, CSS or a `lang` attribute can tell it otherwise, while [every other time in the
+calendar is 24-hour by construction](#the-filter-and-the-settings). **The two dates stay native**,
+because a date picker is worth more than a format and a date, unlike a time, cannot be misread
+into a different value.
 
 The when-line no longer repeats the stage, the importance and the estimate as words. The toggle
 row shows all three, live, directly beneath it.
@@ -357,8 +397,9 @@ open. The disk appears on the first tap, as it does for any other change.
   is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
   not already said, which is what made the old flag need a digit and this one not.
 - an hourglass for **estimate** — the one of the four that opens an editor, because a number has
-  to be typed. It opens **inline, beneath the row**, with a trashcan and an `x`, like any other
-  field. Its badge reads the day count as `2d`.
+  to be typed. It opens **in a popup under the hourglass**, so the toggle row keeps its one line
+  like every other row. That popup is the one that carries the trashcan itself, because its row is
+  an icon with no room beside it. Its badge reads the day count as `2d`.
 
 On an event, stage, important and estimate are not there at all, because an event has none of
 them. They sit here so that a task that is not on a board still carries the two fields a kanban
@@ -517,7 +558,7 @@ card count: the dot said what the coloured name now says, and a count is a numbe
 on. The name is **centred and drawn at twice the size**; the `+` stays at the right of the
 header, where it is the board's only way to make a task, since the top pane has none. The sprint
 selector sits in the top pane, because one board shows one sprint, and the filter is behind the
-hamburger with everything else. On the board that filter gains an assignee and a single
+hamburger like everywhere else. On the board that filter gains an assignee and a single
 **important only** toggle — one switch, now that importance is a yes or no, where four priority
 chips used to ask which tiers you meant.
 
@@ -616,31 +657,41 @@ first, each block by start date.
 
 ## The filter and the settings
 
-**One button opens both.** The hamburger opens a centred panel, titled `Calendar`, whose top
-right has an `x` to close, and it holds two sections: **the filter at the top, the settings
-below it**, under a heading each.
+**One button, two errands, named before either opens.** The hamburger opens a short dropdown
+reading `filter` and `settings`, and opens neither of them; a second tap opens the one that was
+meant. One button still covers both, so the pane stays at four controls and the phone's first row
+does not gain a fifth — but the button no longer decides which of the two you came for.
 
-They are one panel because they are one errand. Both are things you adjust about the view in
-front of you and then leave alone, and two buttons a thumb's width apart — one to hide a group,
-one to change the week's first day — asked which of the two a given switch was before you could
-reach it. Merging them also freed the slot the zoom took, which is what keeps the pane at four
-controls and the phone's first row from gaining a fifth.
+They were one panel for a while, under a heading each. A heading is a weak way to separate a thing
+you open daily from a thing you open twice, and it cost the filter the room to show its groups:
+the list had to be folded away or it pushed the nine settings rows below the fold. Naming the two
+and opening them apart costs one tap and buys each of them its own shape.
 
-The filter comes first because it is the half you open often: a group hidden this afternoon, the
-board narrowed to what is important. The settings are the nine rows that change once.
+**The filter is a dropdown off the hamburger.** It is the half you open often — a group hidden
+this afternoon, the board narrowed to what is important — and the view it narrows has to stay in
+sight while it is narrowed, which a centred card over the middle of the screen cannot do.
 
-| section | holds |
+**The settings are a centred panel**, titled `Settings`, whose top right has an `x` to close.
+They are the nine rows that change once, so they may take the middle of the screen.
+
+| overlay | holds |
 | --- | --- |
-| Filter | the groups dropdown; on the board also **important only** and an **assignee** |
-| Settings | the nine rows below |
+| Filter (a dropdown) | a checkbox per group; on the board also **important only** and an **assignee** |
+| Settings (a centred panel) | the nine rows below |
 
-**Groups stay a dropdown inside the filter, not a list**: one `groups` row saying how many are
-on, which opens to the same checkboxes, each group showing its colour. Any subset can still be
-hidden — the dropdown only folds the list away. Folded is how it starts, and that is now load
-bearing twice over: a repo with twenty groups would otherwise give the panel a filter taller
-than the screen *and* push the nine settings rows below the fold. This is a view filter and is
-remembered per device; groups are *named and coloured* in the settings section's **edit groups**,
-not here.
+**The groups are listed, not folded behind a dropdown.** One checkbox per group, each showing its
+colour, straight away — one tap to hide a group instead of two. The fold existed for one reason,
+that an open list pushed the nine settings rows below the fold, and that reason went with the
+settings. A repo with twenty groups scrolls inside the dropdown rather than growing it past the
+screen. This is a view filter and is remembered per device; groups are *named and coloured* in the
+settings panel's **edit groups**, not here.
+
+**Times read 24-hour everywhere, and are typed that way.** The hour gutter in the week and day
+grids, a time on a card, a time in a row — all `HH:MM`, with no setting to change it and no
+12-hour form anywhere. There is no *time format* row beside *date format* because there is nothing
+to choose. The one control that could have disagreed was the native time input in the when popup,
+which took its shape from the device's locale; [it is a typed box
+instead](#the-title-the-when-and-the-toggle-row).
 
 **Every row is two halves: the label in the left half, its control in the right.** That one rule
 is what the panel was missing. A select, a text box, a checkbox and a date field each began
@@ -668,7 +719,9 @@ Those are labels only: the two renamed rows still read and write `kanban-interva
 **Groups are behind the button, not listed in the panel.** *Edit groups* opens the category
 popup in its manage-only form — every group with its colour, a `+ add`, a pen and a trashcan. A
 list in the panel grew with the repo and pushed the nine settings that never change below the
-fold, which is the one thing a settings panel must not do.
+fold, which is the one thing a settings panel must not do. The checkbox list in the filter is a
+different thing: it hides and shows, it names and colours nothing, and it is in an overlay with
+nothing below it to push.
 
 **The panel ends at its last settings row.** There is no paragraph under it explaining what is
 stored where. That rule is the next two paragraphs, and it belongs in this document rather than

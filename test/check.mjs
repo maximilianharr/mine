@@ -182,37 +182,66 @@ const FIELD_ROWS = `[...document.querySelectorAll('#f-rows .frow')]
     unset: !!r.querySelector('.ftap.unset'),
     aria: r.querySelector('.ftap') ? r.querySelector('.ftap').getAttribute('aria-label') : '',
     trash: r.querySelectorAll('[aria-label^="Clear"]').length,
-    open: r.classList.contains('open'),
+    open: r.classList.contains('in') || r.classList.contains('open'),
+    h: Math.round(r.getBoundingClientRect().height),
     muted: r.querySelector('.ftap') ? getComputedStyle(r.querySelector('.ftap')).color : ''
   }))`;
-// Clicking the row's text opens it. A row that is already open - the title row of a new entry
-// is - has no text to click and needs no opening.
-const openRow = async field => {
+// Clicking the row's text opens it - an input in the line for the three text fields, a popup
+// anchored to the row for the four whose control cannot be a line. The title row of a new entry
+// is already open and has no text to click.
+const tapRow = async field => {
   await ev(`(() => {
-    const t = document.querySelector('#f-rows [data-field="${field}"] .ftap, '
-      + '#f-rows [data-field="${field}"] .vbody-tap');
-    if (t) t.click();
-    return !!t;
+    const t = document.querySelector('#f-rows [data-field="${field}"] .ftap')
+      || document.querySelector('#f-rows [data-field="${field}"] .vbody-tap')
+      || document.querySelector('#f-rows [data-field="${field}"]');
+    t.click();
   })()`);
-  await sleep(300);
+  await sleep(350);
 };
+const openRow = tapRow;
 // A row has no save of its own: closing it keeps what is in it, because the editor has been
-// writing into the draft all along. Its trashcan and its x sit at the right of its first line.
+// writing into the draft all along. Its trashcan and its x sit at the right of the line itself.
 const rowX = async field => {
   await ev(`document.querySelector('#f-rows [data-field="${field}"] [aria-label="Close this field"]').click()`);
   await sleep(250);
 };
 const rowButtons = field => ev(`[...document.querySelectorAll(
-  '#f-rows [data-field="${field}"] .ftitle button')]
+  '#f-rows [data-field="${field}"] .ib')]
   .map(b => (b.getAttribute('aria-label') || '?').split(':')[0])`);
+const popButtons = () => ev(`[...document.querySelectorAll('#fpop .ib')]
+  .map(b => (b.getAttribute('aria-label') || '?').split(':')[0])`);
+// The input is in the row for a text field and in the popup for the rest, so the typing helper
+// takes whichever is there.
 const typeIn = async (field, value) => {
   await ev(`(() => {
     const n = document.querySelector('#f-rows [data-field="${field}"] input, '
-      + '#f-rows [data-field="${field}"] textarea');
+        + '#f-rows [data-field="${field}"] textarea')
+      || document.querySelector('#fpop input, #fpop textarea');
     n.value = ${JSON.stringify(value)};
     n.dispatchEvent(new Event('input', { bubbles: true }));
   })()`);
   await sleep(200);
+};
+// One of the when popup's four boxes: 0 start date, 1 start time, 2 end date, 3 end time.
+const typeWhen = async (i, value, blur) => {
+  await ev(`(() => {
+    const n = document.querySelectorAll('#fpop input')[${i}];
+    n.value = ${JSON.stringify(value)};
+    n.dispatchEvent(new Event('input', { bubbles: true }));
+    ${blur ? `n.dispatchEvent(new Event('blur'));` : ''}
+    return n.value;
+  })()`);
+  await sleep(200);
+  return ev(`document.querySelectorAll('#fpop input')[${i}].value`);
+};
+// The hamburger names its two errands before either opens: one tap to show them, one to pick.
+const menu = async which => {
+  await ev(`document.querySelector('#menu-btn').click()`);
+  await sleep(350);
+  if (!which) return;
+  await ev(`[...document.querySelectorAll('#menu-body .mrow')]
+    .find(b => b.textContent === '${which}').click()`);
+  await sleep(400);
 };
 const box = sel => ev(`(() => {
   const r = document.querySelector('${sel}').getBoundingClientRect();
@@ -267,8 +296,9 @@ eq('and its toggle row says 24h, not a sun', await ev(words('#f-rows .flags')), 
 // An entry must have a title, and that is the only way a new entry differs from an edit.
 eq('the disk is disabled until the title has text',
   await ev(`document.querySelector('#f-icons [aria-label="Save"]').disabled`), true);
-eq('and its title row is already open', await ev(
-  `document.querySelector('#f-rows [data-field="title"]').classList.contains('open')`), true);
+eq('and its title row is already an input in its own line', await ev(
+  `(() => { const r = document.querySelector('#f-rows [data-field="title"]');
+    return [!!r.querySelector('input'), r.classList.contains('open')]; })()`), [true, false]);
 await typeIn('title', 'A new one');
 eq('and enabled once it has',
   await ev(`document.querySelector('#f-icons [aria-label="Save"]').disabled`), false);
@@ -301,13 +331,19 @@ eq('the body is a block of its own, not a row',
 // A set row shows its value - `Conference room 3B`, not `Location Conference room 3B` - and the
 // field's name survives only in the button's label, for a screen reader. Clicking another row
 // takes what is in the one that was open; there is no save in a row to press.
+const closedH = (await ev(FIELD_ROWS)).find(r => r.field === 'location').h;
 await openRow('location');
+// The one measurement this whole shape exists for: an open row is exactly as tall as it was
+// shut, so nothing below it moves and the field is still where it was tapped.
+const openH = (await ev(FIELD_ROWS)).find(r => r.field === 'location').h;
+eq('an open text row is the same height as a closed one', openH, closedH);
 await typeIn('location', 'Conference room 3B');
 await openRow('participants');
 await rowX('participants');
 const rows1 = await ev(FIELD_ROWS);
 const loc = rows1.find(r => r.field === 'location');
-eq('a set row moves to the top', rows1[0].field, 'location');
+eq('a set row stays where it was', rows1.map(r => r.field).indexOf('location'),
+  rows0.map(r => r.field).indexOf('location'));
 eq('and shows the value alone', loc.text, 'Conference room 3B');
 eq('with the name only in its label', loc.aria, 'Location: Conference room 3B');
 eq('drawn plain rather than muted', loc.muted, FG);
@@ -317,22 +353,26 @@ eq('the unset rows keep their order',
   ['group', 'recurrence', 'alerts', 'participants']);
 
 // A row being edited carries a trashcan and an x and no save: there is one save in this popup,
-// and the two sit at the right of the row's first line, not under its editor.
+// and the two sit at the right of the line itself, where the closed row's trashcan already was.
 await openRow('location');
 eq('an open row carries a trashcan and an x, and no save', await rowButtons('location'),
   ['Clear location', 'Close this field']);
-eq('both above the editor it belongs to', await ev(
-  `document.querySelector('#f-rows [data-field="location"] .ftitle')
-     .compareDocumentPosition(document.querySelector('#f-rows [data-field="location"] .fedit'))
-     & 4 ? 'after' : 'before'`), 'after');
+ok('all three on one line with the input', await ev(
+  `(() => { const r = document.querySelector('#f-rows [data-field="location"]');
+    const tops = [...r.querySelectorAll('input, .ib')]
+      .map(n => Math.round(n.getBoundingClientRect().top));
+    return Math.max(...tops) - Math.min(...tops) <= 4; })()`),
+  'the buttons are not on the input\'s line');
 ok('and the x is the rightmost of them', await ev(
-  `(() => { const bs = [...document.querySelectorAll(
-     '#f-rows [data-field="location"] .ftitle button')];
+  `(() => { const bs = [...document.querySelectorAll('#f-rows [data-field="location"] .ib')];
     const x = bs.find(b => b.getAttribute('aria-label') === 'Close this field');
     return bs.every(b => b === x || b.getBoundingClientRect().left < x.getBoundingClientRect().left);
   })()`), 'the x is not rightmost in the row');
 eq('and the editor is inside the row',
   await ev(`!!document.querySelector('#f-rows [data-field="location"] input')`), true);
+eq('with no field popup and no heading above it', await ev(
+  `[document.querySelector('#fpop').hidden,
+    document.querySelectorAll('#f-rows [data-field="location"] .ftitle').length]`), [true, 0]);
 eq('with no sub-popup opened', await ev(`document.querySelector('#sub').hidden`), true);
 
 // The row's x closes it and keeps what was typed: the editor has been writing into the draft all
@@ -353,6 +393,119 @@ await sleep(250);
 const cleared = (await ev(FIELD_ROWS)).find(r => r.field === 'location');
 eq('a row trashcan clears the field', [cleared.unset, cleared.text], [true, 'Location']);
 eq('and does not open the row', cleared.open, false);
+
+// ---- 2b. the four fields whose control cannot be a line ---------------------------------------
+// The category, the repetition and the when open a popup anchored to their row, and the row is
+// left exactly as it was: same height, same text, same trashcan. That is the whole of it - a row
+// that grew a heading and a control sent the eye hunting for the field it had just tapped.
+
+for (const [fieldName, expect] of [['group', 'Category'], ['recurrence', 'Repeat']]) {
+  const before = await ev(`(() => {
+    const r = document.querySelector('#f-rows [data-field="${fieldName}"]');
+    return { h: Math.round(r.getBoundingClientRect().height), text: r.textContent,
+             rows: document.querySelectorAll('#f-rows .frow').length }; })()`);
+  await tapRow(fieldName);
+  const after = await ev(`(() => {
+    const r = document.querySelector('#f-rows [data-field="${fieldName}"]');
+    const p = document.querySelector('#fpop');
+    return { h: Math.round(r.getBoundingClientRect().height), text: r.textContent,
+             rows: document.querySelectorAll('#f-rows .frow').length,
+             open: !p.hidden, title: document.querySelector('#fpop-title').textContent,
+             under: p.getBoundingClientRect().top > r.getBoundingClientRect().bottom,
+             inRow: r.querySelectorAll('input, select').length,
+             scrim: document.querySelector('#scrim').hidden }; })()`);
+  ok(`${fieldName} opens a popup under its row`, after.open && after.under, JSON.stringify(after));
+  eq(`named ${expect}`, after.title, expect);
+  eq(`and the ${fieldName} row does not change`, [after.h, after.text, after.rows],
+    [before.h, before.text, before.rows]);
+  eq('with no control left in the row itself', after.inRow, 0);
+  // No scrim, so the tap that dismisses it still reaches the row it landed on.
+  eq('and no scrim behind it', after.scrim, true);
+}
+
+// One tap from one field to the next: the dismissing tap is the opening tap, which is the whole
+// reason this popup has no scrim of its own.
+await tapRow('group');
+eq('tapping another row moves straight to it', await ev(
+  `document.querySelector('#fpop-title').textContent`), 'Category');
+// And tapping the row it is already on closes it rather than reopening it.
+await tapRow('group');
+eq('tapping the open row closes it', await ev(`document.querySelector('#fpop').hidden`), true);
+
+// Picking a category takes it and closes the popup: there is nothing more to say about a choice
+// from a list, and the entry popup behind it stays open.
+await tapRow('group');
+await ev(`document.querySelector('#fpop .gpick').click()`);
+await sleep(350);
+const tookIt = await ev(`[document.querySelector('#fpop').hidden,
+  document.querySelector('#popup').hidden,
+  document.querySelector('#f-rows [data-field="group"] .ftap.unset') ? 'unset' : 'set']`);
+eq('picking a category closes the popup and keeps the entry', tookIt, [true, false, 'set']);
+await ev(`document.querySelector('#f-rows [data-field="group"] [aria-label^="Clear"]').click()`);
+await sleep(300);
+
+// The when is the row that had the most to gain: four boxes cannot be a line, so they are in the
+// popup and the row goes on reading the day while they are open.
+const whenBefore = await ev(`(() => {
+  const r = document.querySelector('#f-rows [data-field="when"]');
+  return { h: Math.round(r.getBoundingClientRect().height), text: r.textContent }; })()`);
+await tapRow('when');
+const whenOpen = await ev(`(() => {
+  const r = document.querySelector('#f-rows [data-field="when"]');
+  const ins = [...document.querySelectorAll('#fpop input')];
+  return { h: Math.round(r.getBoundingClientRect().height), text: r.textContent,
+           count: ins.length, types: ins.map(i => i.type) }; })()`);
+eq('the when row does not change when its popup opens',
+  [whenOpen.h, whenOpen.text], [whenBefore.h, whenBefore.text]);
+eq('the popup holds four boxes', whenOpen.count, 4);
+// A native time input takes its 12- or 24-hour shape from the device locale and nothing in
+// markup can tell it otherwise, so the two times are typed. The dates stay native.
+eq('two native dates and two typed times, never a native time',
+  whenOpen.types, ['date', 'text', 'date', 'text']);
+
+// What a typed time accepts, and what it reads back as. The draft is what the row reads, so the
+// row is checked too rather than only the box.
+for (const [typed, shown] of [['930', '09:30'], ['9', '09:00'], ['0815', '08:15'],
+  ['7:5', '07:05'], ['23:59', '23:59']]) {
+  eq(`${typed} reads back as ${shown}`, await typeWhen(1, typed, true), shown);
+}
+// Rejected outright: the box goes back to what the draft still holds rather than keeping nonsense.
+for (const bad of ['25:00', '9:70', 'noon', '99']) {
+  eq(`${bad} is refused`, await typeWhen(1, bad, true), '23:59');
+}
+// The row does not restate the time while the popup is open - that is what keeps it still - and
+// it reads it the moment the popup closes.
+eq('the row holds its text while the popup is typed into',
+  await ev(`document.querySelector('#f-rows [data-field="when"] .ftap').textContent`),
+  whenBefore.text);
+await ev(`document.querySelector('#fpop-close').click()`);
+await sleep(300);
+eq('the popup x closes it and leaves the entry open', await ev(
+  `[document.querySelector('#fpop').hidden, document.querySelector('#popup').hidden]`),
+  [true, false]);
+eq('and the row then reads the time it was given', await ev(
+  `document.querySelector('#f-rows [data-field="when"] .ftap').textContent.includes('23:59')`),
+  true);
+
+// Escape unwinds one layer at a time rather than throwing the edit away from inside a field.
+await tapRow('recurrence');
+await ev(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+await sleep(300);
+eq('Escape closes the field popup first', await ev(
+  `[document.querySelector('#fpop').hidden, document.querySelector('#popup').hidden]`),
+  [true, false]);
+// An inline row is not a layer, so it does **not** swallow an Escape: leaving it loses nothing,
+// and a new entry opens with its title row already an input, so swallowing the first press would
+// cost two to leave the commonest popup in the app. Escape there asks the discard question.
+await tapRow('location');
+await ev(`document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }))`);
+await sleep(350);
+eq('an inline row does not swallow Escape', await ev(
+  `[!!document.querySelector('#f-rows [data-field="location"] input'),
+    !document.querySelector('#ask').hidden]`), [true, true]);
+await ev(`document.querySelector('#ask-keep').click()`);
+await sleep(250);
+await rowX('location');
 
 const allday = (await ev(FLAGS))[0];
 await flag(0);
@@ -389,34 +542,42 @@ ok('two taps return it to plain', !bangs[1].includes('@'), bangs[1]);
 eq('and it carries no badge either way', bangs.map(badge), ['', '']);
 
 // The estimate is the one of the four that opens an editor, because a number has to be typed -
-// and it opens inline, beneath the row, like any other field.
+// and it opens in a popup under the hourglass, so the toggle row keeps its one line.
+const flagsH = await ev(
+  `Math.round(document.querySelector('#f-rows .flags').getBoundingClientRect().height)`);
 await flag(3);
 await sleep(300);
 const est = await ev(`(() => {
-  const r = document.querySelector('#f-rows [data-field="estimate"]');
-  return { inline: !!r, value: r ? r.querySelector('input').value : '',
+  const p = document.querySelector('#fpop');
+  const b = document.querySelector('#f-rows [data-field="estimate"]').getBoundingClientRect();
+  return { open: !p.hidden, title: document.querySelector('#fpop-title').textContent,
+           value: p.querySelector('input').value,
+           rows: document.querySelectorAll('#f-rows [data-field="estimate"]').length,
            sub: document.querySelector('#sub').hidden,
-           after: document.querySelector('#f-rows .flags')
-             .compareDocumentPosition(r) & 4 ? 'after' : 'before' };
+           under: p.getBoundingClientRect().top > b.bottom,
+           flagsH: Math.round(document.querySelector('#f-rows .flags').getBoundingClientRect().height) };
 })()`);
-ok('the estimate opens an editor in the popup', est.inline, 'no inline estimate row');
-eq('beneath the toggle row', est.after, 'after');
+ok('the estimate opens a popup under the hourglass', est.open && est.under, JSON.stringify(est));
+eq('named for the field', est.title, 'Estimate');
+eq('and the toggle row gains no row of its own', est.rows, 1);
+eq('nor any height', est.flagsH, flagsH);
 eq('and opens no sub-popup', est.sub, true);
 eq('prefilled with one day', est.value, '1');
-eq('its buttons are a trashcan and an x', await rowButtons('estimate'),
+// The one popup that carries the trashcan itself: its row is an icon with no room beside it.
+eq('its buttons are a trashcan and an x', await popButtons(),
   ['Clear estimate', 'Close this field']);
 eq('the trashcan is red', await ev(
-  `getComputedStyle(document.querySelector('#f-rows [data-field="estimate"] [aria-label^="Clear"]')).color`),
-  BAD);
+  `getComputedStyle(document.querySelector('#fpop [aria-label^="Clear"]')).color`), BAD);
 
 await typeIn('estimate', '3');
-await flag(3);                                   // tapping the hourglass again closes the row
-await sleep(250);
+await flag(3);                                   // tapping the hourglass again closes the popup
+await sleep(300);
 eq('the estimate badges its days', badge((await ev(FLAGS))[3]), '3d');
+eq('and the popup is shut', await ev(`document.querySelector('#fpop').hidden`), true);
 await flag(3);
-await sleep(250);
-await ev(`document.querySelector('#f-rows [data-field="estimate"] [aria-label^="Clear"]').click()`);
-await sleep(250);
+await sleep(300);
+await ev(`document.querySelector('#fpop [aria-label^="Clear"]').click()`);
+await sleep(300);
 eq('a cleared estimate loses its badge', badge((await ev(FLAGS))[3]), '');
 
 await click(1);                                   // back to an event
@@ -471,8 +632,7 @@ await shoot('view-K');
 // calendar where a group is named or coloured, and the one survivor of the sub-popup, because it
 // edits no field of an entry.
 await open();
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(500);
+await menu('settings');
 await ev(`document.querySelector('#edit-groups').click()`);
 await sleep(450);
 eq('edit groups opens the group list', await ev(
@@ -502,83 +662,101 @@ await sleep(250);
 // is no `no category` row either.
 await open();
 await newEntry();
-await openRow('group');
+await tapRow('group');
 const pick = await ev(`({
-  inline: !!document.querySelector('#f-rows [data-field="group"] .glist'),
+  inPop: !!document.querySelector('#fpop .glist'),
+  inRow: !!document.querySelector('#f-rows [data-field="group"] .glist'),
   sub: document.querySelector('#sub').hidden,
-  rows: document.querySelectorAll('#f-rows [data-field="group"] .gpick').length,
-  pens: [...document.querySelectorAll('#f-rows .ib')]
+  rows: document.querySelectorAll('#fpop .gpick').length,
+  pens: [...document.querySelectorAll('#fpop .ib')]
     .filter(b => /^Edit /.test(b.getAttribute('aria-label') || '')).length,
-  trashes: [...document.querySelectorAll('#f-rows [data-field="group"] .glist .ib')]
+  trashes: [...document.querySelectorAll('#fpop .glist .ib')]
     .filter(b => /^Delete /.test(b.getAttribute('aria-label') || '')).length,
-  add: [...document.querySelectorAll('#f-rows [data-field="group"] .link')]
+  add: [...document.querySelectorAll('#fpop .link')]
     .filter(b => /add/i.test(b.textContent)).length,
-  none: [...document.querySelectorAll('#f-rows [data-field="group"] .gpick')]
+  none: [...document.querySelectorAll('#fpop .gpick')]
     .filter(b => /no category/i.test(b.textContent)).length
 })`);
-ok('the category row lists the groups inside itself', pick.inline && pick.rows > 0,
-  JSON.stringify(pick));
+ok('the category popup lists the groups', pick.inPop && pick.rows > 0, JSON.stringify(pick));
+eq('and the row itself holds no list', pick.inRow, false);
 eq('and opens no sub-popup', pick.sub, true);
 eq('with no pen', pick.pens, 0);
 eq('and no trashcan', pick.trashes, 0);
 eq('and no + add', pick.add, 0);
 eq('and no no-category row', pick.none, 0);
-eq('the row carries no save, because the tap is the choice', await rowButtons('group'),
+eq('the popup carries no save, because the tap is the choice', await popButtons(),
   ['Close this field']);
 
-// A tap on a group closes the row in one tap, and writes nothing: the disk is what writes.
-await ev(`document.querySelector('#f-rows [data-field="group"] .gpick').click()`);
+// A tap on a group closes the popup in one tap, and writes nothing: the disk is what writes.
+await ev(`document.querySelector('#fpop .gpick').click()`);
 await sleep(300);
-const picked = await ev(FIELD_ROWS);
-eq('picking a group closes the row', picked.find(r => r.field === 'group').open, false);
-eq('and sets it', picked.find(r => r.field === 'group').unset, false);
+const chose = await ev(FIELD_ROWS);
+eq('picking a group closes the popup', await ev(`document.querySelector('#fpop').hidden`), true);
+eq('and sets it', chose.find(r => r.field === 'group').unset, false);
 eq('and writes nothing on its own', await queueLen(), 0);
 await closeForm();
 
 // ---- 4. the filter and the top pane ------------------------------------------------------------
 
-// One button opens both halves: the filter at the top of the panel, the settings below it, and
-// no gear and no filter button anywhere in the pane. Groups stay folded into a dropdown, and
-// folding the list away must not have made the filter single-select.
+// The hamburger names its two errands and opens neither: one tap shows `filter` and `settings`,
+// a second opens the one that was meant. There is still no gear and no filter button in the pane,
+// because both are behind this one button.
 await viewport(900);
 await open();
 eq('there is no gear and no filter button in the pane',
   await ev(`document.querySelectorAll('#gear, #filter-btn').length`), 0);
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(350);
-eq('the hamburger opens one panel holding both sections', await ev(
-  `(() => { const p = document.querySelector('#settings-panel');
-    return !p.hidden && [...p.querySelectorAll('.sect')].map(h => h.textContent); })()`),
-  ['Filter', 'Settings']);
-eq('with the filter above the settings', await ev(
-  `document.querySelector('#filter-body')
-     .compareDocumentPosition(document.querySelector('#settings-body')) & 4 ? 'after' : 'before'`),
-  'after');
-const folded = await ev(`({
-  drop: !!document.querySelector('#filter-body .gdrop'),
-  shown: document.querySelectorAll('#filter-body .glab').length
-})`);
-ok('the filter holds a groups dropdown', folded.drop, 'no groups dropdown in the filter');
-eq('and no checkbox until it is opened', folded.shown, 0);
-await ev(`document.querySelector('#filter-body .gdrop').click()`);
-await sleep(300);
-const unfolded = await ev(`({
+await menu();
+eq('the hamburger opens a menu naming its two errands', await ev(
+  `(() => { const p = document.querySelector('#menu-pop');
+    return !p.hidden && [...p.querySelectorAll('.mrow')].map(b => b.textContent); })()`),
+  ['filter', 'settings']);
+eq('and opens neither of them yet', await ev(
+  `[document.querySelector('#filter-pop').hidden,
+    document.querySelector('#settings-panel').hidden]`), [true, true]);
+eq('the menu hangs off the hamburger, within its right edge', await ev(
+  `(() => { const b = document.querySelector('#menu-btn').getBoundingClientRect();
+    const p = document.querySelector('#menu-pop').getBoundingClientRect();
+    return [p.top > b.bottom, Math.round(p.right) <= Math.round(b.right) + 1]; })()`),
+  [true, true]);
+
+await menu('filter');
+eq('filter opens the filter alone', await ev(
+  `[document.querySelector('#filter-pop').hidden,
+    document.querySelector('#settings-panel').hidden,
+    document.querySelector('#menu-pop').hidden]`), [false, true, true]);
+// Hanging off the hamburger rather than centred: the view it narrows has to stay in sight while
+// it is narrowed, which a centred card over the middle of the screen cannot do.
+ok('and hangs off the hamburger rather than being centred', await ev(
+  `(() => { const b = document.querySelector('#menu-btn').getBoundingClientRect();
+    const p = document.querySelector('#filter-pop').getBoundingClientRect();
+    return p.top > b.bottom && p.top < b.bottom + 20; })()`), 'the filter is not under the button');
+// The groups are no longer folded away: that fold existed only because an open list pushed the
+// nine settings rows below the fold, and the settings are not in here any more.
+const groups = await ev(`({
+  drop: document.querySelectorAll('#filter-body .gdrop').length,
   shown: document.querySelectorAll('#filter-body .glab').length,
   swatches: document.querySelectorAll('#filter-body .glab .swatch').length
 })`);
-ok('opening it reveals a checkbox per group', unfolded.shown >= 3, `${unfolded.shown} checkboxes`);
-eq('each showing its colour', unfolded.swatches, unfolded.shown);
+eq('the groups are listed, not folded behind a dropdown', groups.drop, 0);
+ok('a checkbox per group, straight away', groups.shown >= 3, `${groups.shown} checkboxes`);
+eq('each showing its colour', groups.swatches, groups.shown);
 await ev(`document.querySelectorAll('#filter-body .glab input')[0].click()`);
 await sleep(500);
 const ticks = await ev(`[...document.querySelectorAll('#filter-body .glab input')].map(i => i.checked)`);
 eq('unticking one leaves the rest on', [ticks[0], ticks.slice(1).every(Boolean)], [false, true]);
 await ev(`document.querySelectorAll('#filter-body .glab input')[0].click()`);
 await sleep(500);
-// With the groups folded, the last of the nine settings rows is still above the fold: a filter
-// section above them can push them off the screen as surely as a group list among them could.
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(250);
+// The settings panel holds the nine rows and nothing else: no filter section above them, so the
+// last of them is above the fold at 320px with nothing to push it down.
 await viewport(320);
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(350);
+await menu('settings');
+eq('settings opens the panel alone, with no filter section in it', await ev(
+  `[document.querySelector('#settings-panel').hidden,
+    document.querySelector('#filter-pop').hidden,
+    document.querySelector('#settings-panel').querySelectorAll('#filter-body').length]`),
+  [false, true, 0]);
 const fold = await ev(`(() => {
   const rows = document.querySelectorAll('#settings-body .srow');
   const last = rows[rows.length - 1].getBoundingClientRect();
@@ -591,8 +769,7 @@ await sleep(250);
 
 await viewport(900);
 await open('K');
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(350);
+await menu('filter');
 const boardFilter = await ev(`({
   chips: [...document.querySelectorAll('#filter-body .chip')].map(c => c.textContent),
   selects: document.querySelectorAll('#filter-body select').length
@@ -604,8 +781,7 @@ await sleep(250);
 
 await viewport(900);
 await open();
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(350);
+await menu('filter');
 eq('and neither is in a calendar view', await ev(
   `document.querySelectorAll('#filter-body .chip, #filter-body select').length`), 0);
 await ev(`document.querySelector('#scrim').click()`);
@@ -887,8 +1063,7 @@ ok('with the rest behind a +N', narrowCell.more > 0, 'no +N anywhere, so nothing
 // that separates the new panel from the old, where each control began wherever its label ended.
 await viewport(900);
 await open();
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(500);
+await menu('settings');
 const panel = await ev(`(() => {
   const rows = [...document.querySelectorAll('#settings-body .srow')];
   const lefts = rows.map(r => Math.round(
@@ -914,8 +1089,7 @@ await sleep(250);
 
 await viewport(320);
 await open();
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(500);
+await menu('settings');
 const labelHeights = await ev(`[...document.querySelectorAll('#settings-body .slab')]
   .map(l => Math.round(l.getBoundingClientRect().height))`);
 ok('no label wraps to a second line at 320px', new Set(labelHeights).size === 1,
@@ -937,8 +1111,7 @@ await openRow('body');
 ok('and stays centred with its tallest row open', centred(await box('#popup .card')),
   JSON.stringify(await box('#popup .card')));
 await closeForm();
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(500);
+await menu('settings');
 ok('the settings panel is centred', centred(await box('#settings-panel')),
   JSON.stringify(await box('#settings-panel')));
 await ev(`document.querySelector('#settings-close').click()`);
@@ -1159,7 +1332,8 @@ const saveTask = async (title, clearEstimate, important) => {
   if (clearEstimate) {
     await flag(3);
     await sleep(300);
-    await ev(`document.querySelector('#f-rows [data-field="estimate"] [aria-label^="Clear"]').click()`);
+    // The estimate's trashcan is in its popup's head, its row being an icon with no room beside it.
+    await ev(`document.querySelector('#fpop [aria-label^="Clear"]').click()`);
     await sleep(300);
   }
   if (important) { await flag(2); await sleep(250); }
@@ -1347,8 +1521,7 @@ eq('don\'t ask again stops the prompt', await ev(
   `[document.querySelector('#ask').hidden, document.querySelector('#popup').hidden]`),
   [true, true]);
 
-await ev(`document.querySelector('#menu-btn').click()`);
-await sleep(500);
+await menu('settings');
 eq('and the panel has a row to put it back', await ev(`(() => {
   const r = [...document.querySelectorAll('#settings-body .srow')]
     .find(r => /confirm discard/i.test(r.querySelector('.slab').textContent));

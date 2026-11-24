@@ -1,6 +1,11 @@
 // One popup for an entry, read and written in the same rows. A row is text until it is clicked;
-// then the value becomes the control for it, in the row itself, with a trashcan and an x and no
-// save of its own. There is no pen and no second popup behind one.
+// then it holds the control for its value - and it holds it **without changing shape**. A row
+// that grew a heading and a control beneath it moved every row under it and sent the eye hunting
+// for the field it had just tapped, which is the one thing a popup opened to type one word must
+// not do. So a row that can hold its control on one line does (the title, location, alerts and
+// participants are an input in the line, with the field's name as the placeholder), and a row
+// whose control cannot be a line opens that control in a small popup anchored to the row, which
+// is left exactly as it was (the when, the category, the repetition and the estimate).
 //
 // The rows hold a draft and nothing reaches the repo until the top row's disk, so one entry edit
 // is one commit and the x discards the lot. The disk appears only once the draft differs from
@@ -16,7 +21,9 @@ import {
 } from './data.js';
 import { setKV } from '../shared/store.js';
 import { render } from '../shared/markdown.js';
-import { S, $, el, icon, iconBtn, labelOf, longDayLabel, inkOn, STAGE_COLOR } from './ui.js';
+import {
+  S, $, el, icon, iconBtn, labelOf, longDayLabel, inkOn, openRowPop, STAGE_COLOR
+} from './ui.js';
 
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
 
@@ -26,31 +33,40 @@ const FORM_KEYS = ['title', 'type', 'start', 'end', 'stage', 'important',
   'estimate', 'group', 'location', 'recurrence', 'alerts', 'participants'];
 
 let D = null;        // the draft
-let active = null;   // the row being edited: { key }
+let active = null;   // the row holding an inline input: { key }
+let popped = null;   // the key whose anchored popup is open
+let justClosed = null;   // the key a dismissing tap just closed, so that tap cannot reopen it
 
 // ---- the fields behind the icons ------------------------------------------------------------
 
 // The order is the same on a task as on an event, so the row does not reshuffle when the type
 // changes - and the detail rows below follow it, which puts participants at the bottom.
+// `mode` is how the field is edited: `inline` puts its input in the row, `pop` opens it in a
+// popup anchored to the row, `block` is the body, which is neither.
 const FIELDS = [
-  { k: 'body', ic: 'lines', label: 'Details', empty: '',
+  { k: 'body', ic: 'lines', label: 'Details', empty: '', mode: 'block',
     set: v => !!v.trim(), sum: v => v.trim().split('\n').find(Boolean) || '', ed: bodyEditor },
-  { k: 'group', ic: 'ball', label: 'Category', empty: '',
+  { k: 'group', ic: 'ball', label: 'Category', empty: '', mode: 'pop',
     set: v => !!v, sum: v => labelOf(v), ed: groupPicker },
-  { k: 'recurrence', ic: 'repeat', label: 'Repeat', empty: '',
+  { k: 'recurrence', ic: 'repeat', label: 'Repeat', empty: '', mode: 'pop',
     set: v => !!v, sum: v => ruleText(v), ed: recurrenceEditor },
-  { k: 'alerts', ic: 'bell', label: 'Alerts', empty: [],
+  { k: 'alerts', ic: 'bell', label: 'Alerts', empty: [], mode: 'inline',
     set: v => v.length > 0, sum: v => v.map(alertText).join(', '), ed: alertsEditor },
-  { k: 'location', ic: 'pin', label: 'Location', empty: '',
-    set: v => !!v, sum: v => v, ed: textEditor('Where', 'Conference room 3B') },
-  { k: 'participants', ic: 'person', label: 'Participants', empty: [],
+  { k: 'location', ic: 'pin', label: 'Location', empty: '', mode: 'inline',
+    set: v => !!v, sum: v => v, ed: textEditor('Location') },
+  { k: 'participants', ic: 'person', label: 'Participants', empty: [], mode: 'inline',
     set: v => v.length > 0, sum: v => v.join(', '), ed: participantsEditor }
 ];
 
 // The estimate has an editor but no place in D.v, so it reads and writes through these two
-// rather than reaching into D.v itself.
-const EST = { k: 'estimate', ic: 'glass', label: 'Estimate', empty: null,
-  set: v => !!v, sum: v => `${v}d`, ed: estimateEditor };
+// rather than reaching into D.v itself. The when has no place in D.v either and no stored value
+// at all - it is four parts of the draft - so its editor writes them itself.
+// `popClear` is the estimate alone: its row is an icon on the toggle row with no room for a
+// trashcan beside it, so the one place its popup differs from the other three is that it carries
+// the trashcan in its own head.
+const EST = { k: 'estimate', ic: 'glass', label: 'Estimate', empty: null, mode: 'pop',
+  popClear: true, set: v => !!v, sum: v => `${v}d`, ed: estimateEditor };
+const WHEN = { k: 'when', label: 'When', mode: 'pop', ed: whenEditor };
 const readField = f => f.k === 'estimate' ? D.estimate : D.v[f.k];
 const writeField = (f, v) => { if (f.k === 'estimate') D.estimate = v; else D.v[f.k] = v; };
 
@@ -130,7 +146,7 @@ const dirty = () => !!D && (!D.occ || snapshot(D) !== D.clean);
 // Leaving a popup that holds unsaved changes asks first - the x, the backdrop and Escape are one
 // way out and ask one question. A row's own x is not guarded and has nothing to guard: it closes
 // a row and keeps what is in it.
-export function closePopup() {
+function closePopup() {
   if (D && S.prefs.confirmDiscard && snapshot(D) !== D.clean) {
     $('#ask-never').checked = false;
     $('#ask').hidden = false;
@@ -142,8 +158,21 @@ export function closePopup() {
 function discard() {
   $('#ask').hidden = true;
   $('#popup').hidden = true;
+  $('#fpop').hidden = true;
   active = null;
+  popped = null;
   D = null;
+}
+
+// Escape unwinds the one layer there is: a field's popup, which is a real overlay with an x of
+// its own, swallows it so that Escape inside a field does not throw away the edit the field is
+// part of. An **inline row does not** - it is the row in its editing state, not a layer over
+// anything, and leaving it loses nothing, so Escape there keeps meaning "leave the popup". A new
+// entry opens with its title row already an input, and making that swallow the first Escape would
+// have cost two presses to leave the commonest popup in the app.
+export function escapeEntry() {
+  if (popped !== null) closeFieldPop();
+  else closePopup();
 }
 
 $('#ask-keep').addEventListener('click', () => { $('#ask').hidden = true; });
@@ -159,12 +188,13 @@ $('#ask-discard').addEventListener('click', async () => {
   discard();
 });
 
-$('#popup').addEventListener('click', e => { if (e.target === $('#popup')) closePopup(); });
+$('#popup').addEventListener('click', e => {
+  if (justClosed === null && e.target === $('#popup')) closePopup();
+});
 
 // ---- rows ----------------------------------------------------------------------------------
-// A row is the icon, then the value - no field name beside it. Clicking it makes it active: the
-// value becomes the control for it, in the row itself, with a trashcan and an x and no save of
-// its own. There is exactly one save in this popup and it is the one in the top row.
+// A row is the icon, then the value - no field name beside it. Clicking it opens its control
+// without moving the row: an input in the line, or a popup anchored under it.
 //
 // An open editor writes into the draft as it is typed, which is what lets the disk appear the
 // moment something differs from the file without the row being re-rendered under the cursor -
@@ -174,17 +204,16 @@ function fillForm() {
   iconRow();
   const kids = [titleRow()];
   if (D.occ && D.occ.seriesId) kids.push(scopeRow());
-  kids.push(whenRow(), flagsRow());
-  if (is('estimate')) kids.push(editorRow(EST, 'glass'));
-  kids.push(...fieldRows(), bodyBlock());
+  kids.push(whenRow(), flagsRow(), ...fieldRows(), bodyBlock());
   $('#f-rows').replaceChildren(...kids);
 }
 
 const is = key => !!active && active.key === key;
 
-// Only one row is active at a time: opening another simply closes the one that was open, whose
-// value is already in the draft.
+// Only one row is open at a time, and an inline row and a field popup are never both open:
+// opening either simply closes the other, whose value is already in the draft.
 function openRow(key) {
+  closeFieldPop(false);
   active = { key };
   fillForm();
   focusRow();
@@ -194,8 +223,72 @@ function openRow(key) {
 // there is nothing to accept. Clearing the field is the trashcan beside the x, and undoing the
 // edit of a whole entry is the popup's own x.
 function closeRow() {
+  if (!active) return;
   active = null;
   fillForm();
+}
+
+// A tap that is the whole edit - the type pair, the toggle row, the scope pair - changes the
+// draft and redraws, which also closes whatever row was open, whose value is already in the
+// draft. Separate from closeRow because these redraw whether or not a row was open.
+function redraw() {
+  active = null;
+  closeFieldPop(false);
+  fillForm();
+}
+
+// ---- a field's own popup -------------------------------------------------------------------
+// Anchored to the row that opened it, which keeps its icon, its value and its trashcan: nothing
+// about the row moves, which is the whole point. The four fields behind one are those whose
+// control cannot be a single line - four date and time boxes, a list of categories, a rule and
+// its end condition, a number with a unit.
+//
+// It carries **no scrim**, unlike every other overlay in the calendar. A scrim would make the tap
+// that dismisses it stop there, so moving from one field to the next would take two taps; without
+// one the tap reaches the row it landed on and opens it. `justClosed` is what keeps that tap from
+// reopening the field it has just closed.
+
+function openFieldPop(f) {
+  closeRow();
+  popped = f.k;
+  const ed = f.ed(f.k === 'when' ? null : readField(f));
+  if (f.k !== 'when') live(ed.node, () => writeField(f, ed.read()));
+  $('#fpop-title').textContent = f.label;
+  const head = $('#fpop-title').parentElement;
+  head.querySelector('.ib.bad')?.remove();
+  if (f.popClear && f.set(readField(f))) head.insertBefore(clearBtn(f), $('#fpop-close'));
+  $('#fpop-body').replaceChildren(ed.node);
+  // The anchor is looked up rather than passed in: on a dismissing tap the capture-phase
+  // listener below re-renders the rows before the row's handler calls this, so a node passed in
+  // from that handler is already detached and measures as zero.
+  openRowPop($('#fpop'), $(`#f-rows [data-field="${f.k}"]`));
+  requestAnimationFrame(() => $('#fpop').querySelector('input, select, textarea')?.focus());
+}
+
+function closeFieldPop(render = true) {
+  if (popped === null) return;
+  popped = null;
+  $('#fpop').hidden = true;
+  if (render) fillForm();            // the row reads the value the popup has just changed
+}
+
+$('#fpop-close').addEventListener('click', () => closeFieldPop());
+
+// Capture, so this runs before the row's own click handler: the popup closes and the same tap
+// then opens whatever it hit.
+addEventListener('click', e => {
+  if (popped === null || $('#fpop').contains(e.target)) return;
+  justClosed = popped;
+  closeFieldPop();
+  setTimeout(() => { justClosed = null; }, 0);
+}, true);
+
+// One way in for every row: the popup for the four whose control cannot be a line, the row itself
+// for the three that can.
+function openField(f) {
+  if (justClosed === f.k) return;    // the tap that closed it must not reopen it
+  if (f.mode === 'pop') openFieldPop(f);
+  else openRow(f.k);
 }
 
 const focusRow = () =>
@@ -225,7 +318,7 @@ function iconRow() {
   } else for (const [t, ic, label] of [['task', 'check', 'Task'], ['event', 'cal', 'Event']]) {
     const b = iconBtn(ic, label, D.type === t ? 'on' : '');
     b.setAttribute('aria-pressed', String(D.type === t));
-    b.addEventListener('click', () => { D.type = t; closeRow(); });
+    b.addEventListener('click', () => { D.type = t; redraw(); });
     kids.push(b);
   }
   kids.push(el('span', 'spacer'));
@@ -249,48 +342,35 @@ function iconRow() {
   $('#f-icons').replaceChildren(...kids);
 }
 
-// The title is a row too: text until clicked, then an input.
+// The title is a row too: text until clicked, then an input in the same line at the same size.
+// It is the one row with neither a trashcan nor an x - an entry must have a title, so there is
+// nothing to clear, and the popup's own x, which discards the whole edit, is a thumb's width
+// above this line. It closes on Escape, or by opening any other row.
 function titleRow() {
+  const row = el('div', `frow first${is('title') ? ' in' : ''}`);
+  row.dataset.field = 'title';
   if (is('title')) {
     const i = el('input', 'title-in');
     i.value = D.title;
     i.placeholder = 'Title';
     live(i, () => { D.title = i.value; });
-    return editorShell(null, 'Title', i, true);
+    row.append(i);
+    return row;
   }
-  const row = el('div', 'frow first');
-  row.dataset.field = 'title';
   row.append(tap(D.title || 'Untitled', !D.title, 'ttap',
     () => openRow('title'),
     `Title${D.title ? `: ${D.title}` : ''}`));
   return row;
 }
 
-// The when: one row reading the day and the times, opening the four inputs inside itself. Four
-// input boxes at the top of a popup opened to find out what day something is on was the form at
-// its least readable.
+// The when: one row reading the day and the times, opening the four inputs in a popup under it.
+// Four input boxes at the top of a popup opened to find out what day something is on was the form
+// at its least readable, and four of them cannot be a line, so they are the clearest case for the
+// popup: the row goes on reading the day while they are open.
 function whenRow() {
-  if (is('when')) {
-    const wrap = el('div');
-    const mk = (labelText, type, k, cls) => {
-      const i = el('input');
-      i.type = type;
-      i.value = D[k];
-      if (type === 'time') i.disabled = D.allDay;
-      live(i, () => { D[k] = i.value; });
-      return field(labelText, i, null, cls);
-    };
-    const r1 = el('div', 'row2');
-    r1.append(mk('Start', 'date', 'startDate'), mk('Time', 'time', 'startTime', 't'));
-    const r2 = el('div', 'row2');
-    r2.append(mk('End', 'date', 'endDate'), mk('Time', 'time', 'endTime', 't'));
-    wrap.append(r1, r2);
-    return editorShell('cal', 'When', wrap, true);
-  }
   const row = el('div', 'frow');
   row.dataset.field = 'when';
-  row.append(tap(whenText(), false, 'wtap', () => openRow('when'),
-    `When: ${whenText()}`));
+  row.append(tap(whenText(), false, 'wtap', () => openField(WHEN), `When: ${whenText()}`));
   return row;
 }
 
@@ -319,7 +399,7 @@ function scopeRow() {
     b.addEventListener('click', () => {
       D = draft(D.occ, v, {});
       D.clean = snapshot(D);
-      closeRow();
+      redraw();
     });
     group.append(b);
   }
@@ -333,14 +413,14 @@ function scopeRow() {
   return wrap;
 }
 
-// Five of the six fields are rows; the sixth is the body, at the foot. The rows that are set
-// come first and the rest follow, in the canonical order inside each group, so setting a field
-// lifts its row and shuffles nothing else.
+// Five of the six fields are rows; the sixth is the body, at the foot. They are in the canonical
+// order whether they are set or not. They used to be sorted set-first, which moved a row the
+// moment it was filled - so the field just typed into was no longer where it had just been looked
+// for, which is the same complaint the rows that grew answered.
 function fieldRows() {
-  const usable = FIELDS.filter(f => f.k !== 'body' && (f.k !== 'recurrence' || canRule()));
-  const isSet = f => f.set(D.v[f.k]);
-  return [...usable.filter(isSet), ...usable.filter(f => !isSet(f))]
-    .map(f => is(f.k) ? editorRow(f, f.ic) : closedRow(f));
+  return FIELDS
+    .filter(f => f.k !== 'body' && (f.k !== 'recurrence' || canRule()))
+    .map(f => f.mode === 'inline' && is(f.k) ? inlineRow(f) : closedRow(f));
 }
 
 function closedRow(f) {
@@ -349,35 +429,24 @@ function closedRow(f) {
   const set = f.set(readField(f));
   row.append(icon(f.ic));
   row.append(tap(set ? f.sum(readField(f)) : f.label, !set, '',
-    () => openRow(f.k),
+    () => openField(f),
     `${f.label}${set ? `: ${f.sum(readField(f))}` : ''}`));
   if (set) row.append(clearBtn(f));
   return row;
 }
 
-function editorRow(f, ic) {
+// An inline row: the input takes the line the value was on, at the same height, with the trashcan
+// and the x where the closed row's trashcan already is. The field's name is the input's
+// placeholder rather than a heading above it, because a heading was the line the row grew by and
+// it named what the icon beside it already said.
+function inlineRow(f) {
+  const row = el('div', 'frow in');
+  row.dataset.field = f.k;
   const ed = f.ed(readField(f));
   live(ed.node, () => writeField(f, ed.read()));
-  return editorShell(ic, f.label, ed.node, false, f);
-}
-
-// A row being edited: its name on the first line with the trashcan and the x at the right of it,
-// and the control across the row's width below - so a date pair or a textarea is not squeezed
-// into what is left beside them, and the way out of the row is in the corner it is in
-// everywhere else. The body's header is already this shape when the body is closed.
-function editorShell(ic, label, node, noClear, f) {
-  const row = el('div', `frow open${ic ? '' : ' first'}`);
-  if (active) row.dataset.field = active.key;
-  const head = el('div', 'ftitle');
-  if (ic) head.append(icon(ic));
-  head.append(el('span', '', label), el('span', 'spacer'));
-  if (!noClear && f && f.set(readField(f))) head.append(clearBtn(f));
   const x = iconBtn('x', 'Close this field');
   x.addEventListener('click', closeRow);
-  head.append(x);
-  const wrap = el('div', 'fedit');
-  wrap.append(node);
-  row.append(head, wrap);
+  row.append(icon(f.ic), ed.node, clearBtn(f), x);
   return row;
 }
 
@@ -398,7 +467,9 @@ function clearBtn(f) {
   b.addEventListener('click', e => {
     e.stopPropagation();
     writeField(f, f.empty);
-    closeRow();
+    if (popped === f.k) return closeFieldPop();
+    active = null;
+    fillForm();
   });
   return b;
 }
@@ -425,7 +496,7 @@ function allDayBtn() {
     D.allDay = !D.allDay;
     if (D.allDay) { D.startTime = ''; D.endTime = ''; }
     else { D.startTime = D.startTime || '09:00'; D.endTime = D.endTime || '10:00'; }
-    closeRow();
+    redraw();
   });
   return b;
 }
@@ -433,7 +504,8 @@ function allDayBtn() {
 // Stage, important and estimate are three small values rather than fields with a form each, so
 // they are edited in the row itself. Stage and the estimate show their value as a badge on the
 // icon's corner; important has nothing to put in one and lights instead. Only the estimate opens
-// an editor, because a number has to be typed - and it opens inline, beneath the row.
+// an editor, because a number has to be typed - and it opens in a popup under the hourglass, so
+// the toggle row stays one line like every other.
 const badged = (b, text, cls, color) => {
   const s = el('span', ['badge', cls].filter(Boolean).join(' '), text);
   if (color) { s.style.background = color; s.style.color = inkOn(color); }
@@ -445,7 +517,7 @@ function stageBtn() {
   const b = badged(iconBtn('cols', `Stage: ${D.stage}`), '', '', STAGE_COLOR[D.stage]);
   b.addEventListener('click', () => {
     D.stage = STAGES[(STAGES.indexOf(D.stage) + 1) % STAGES.length];
-    closeRow();
+    redraw();
   });
   return b;
 }
@@ -455,16 +527,16 @@ function stageBtn() {
 function bangBtn() {
   const b = iconBtn('!', 'Important', D.important ? 'on' : '');
   b.setAttribute('aria-pressed', String(D.important));
-  b.addEventListener('click', () => { D.important = !D.important; closeRow(); });
+  b.addEventListener('click', () => { D.important = !D.important; redraw(); });
   return b;
 }
 
 function estBtn() {
   const b = iconBtn('glass', `Estimate: ${D.estimate ? `${D.estimate} day(s)` : 'none'}`,
-    is('estimate') ? 'on' : '');
+    popped === 'estimate' ? 'on' : '');
+  b.dataset.field = 'estimate';
   if (D.estimate) badged(b, `${D.estimate}d`, 'wide');
-  b.addEventListener('click', () =>
-    is('estimate') ? closeRow() : openRow('estimate'));
+  b.addEventListener('click', () => openField(EST));
   return b;
 }
 
@@ -473,11 +545,7 @@ function estBtn() {
 // replaces the rendered nodes with the raw markdown in a textarea.
 function bodyBlock() {
   const f = FIELDS.find(x => x.k === 'body');
-  if (is('body')) {
-    const row = editorRow(f, 'lines');
-    row.classList.add('vbody');
-    return row;
-  }
+  if (is('body')) return bodyRow(f);
   const wrap = el('div', 'vbody');
   wrap.dataset.field = 'body';
   const head = el('div', 'ftitle');
@@ -493,7 +561,29 @@ function bodyBlock() {
   return wrap;
 }
 
+// The body is the one field whose open shape still carries a line of its own: its editor is a
+// textarea, so its name, trashcan and x cannot sit beside it. That line is the same header the
+// closed body already shows, so nothing moves here either.
+function bodyRow(f) {
+  const row = el('div', 'frow open vbody');
+  row.dataset.field = 'body';
+  const ed = f.ed(D.v.body);
+  live(ed.node, () => writeField(f, ed.read()));
+  const head = el('div', 'ftitle');
+  head.append(icon(f.ic), el('span', '', f.label), el('span', 'spacer'));
+  if (f.set(D.v.body)) head.append(clearBtn(f));
+  const x = iconBtn('x', 'Close this field');
+  x.addEventListener('click', closeRow);
+  head.append(x);
+  const wrap = el('div', 'fedit');
+  wrap.append(ed.node);
+  row.append(head, wrap);
+  return row;
+}
+
 // ---- the editors ---------------------------------------------------------------------------
+// Every editor returns the bare control: an inline row puts it in the line, a popup puts it in
+// its body, and only the ones with more than one control of their own wrap them in labels.
 
 function field(labelText, control, hint, cls) {
   const l = el('label', cls || '', labelText);
@@ -503,12 +593,12 @@ function field(labelText, control, hint, cls) {
 }
 
 // A declaration, not a const arrow: FIELDS calls this while the module is still evaluating.
-function textEditor(labelText, placeholder) {
+function textEditor(placeholder) {
   return cur => {
     const i = el('input');
     i.value = cur || '';
     i.placeholder = placeholder;
-    return { node: field(labelText, i), read: () => i.value.trim() };
+    return { node: i, read: () => i.value.trim() };
   };
 }
 
@@ -518,32 +608,80 @@ function estimateEditor(cur) {
   i.min = '0';
   i.step = '0.5';
   i.inputMode = 'decimal';
+  i.placeholder = 'days';
   i.value = cur ?? '';
   return {
-    node: field('Days', i, 'Cleared, the task simply has no estimate.'),
+    node: i,
     read: () => { const n = Number(i.value); return Number.isFinite(n) && n > 0 ? n : null; }
   };
 }
 
+// A line of minutes, so the row holds it: the placeholder is the format, because `0, 15` is the
+// one of the three that a field name would not have explained. That 0 means at start, and that
+// nothing fires while the app is closed, is in REQUIREMENTS.md - the row has no line to say it on
+// and gaining one is what this change removed.
 function alertsEditor(cur) {
   const i = el('input');
   i.inputMode = 'numeric';
   i.placeholder = '0, 15';
   i.value = (cur || []).join(', ');
-  return {
-    node: field('Minutes before start', i,
-      '0 is at start. Stored and exported only — nothing fires while the app is closed.'),
-    read: () => splitList(i.value).map(Number).filter(Number.isFinite)
-  };
+  return { node: i, read: () => splitList(i.value).map(Number).filter(Number.isFinite) };
 }
 
+// One line, commas between: splitList already breaks on commas, semicolons and spaces alike, so
+// a file written with one address per line still reads back the same.
 function participantsEditor(cur) {
-  const t = el('textarea');
-  t.rows = 3;
-  t.spellcheck = false;
-  t.className = 'body-in';
-  t.value = (cur || []).join('\n');
-  return { node: field('Email addresses', t, 'One per line.'), read: () => splitList(t.value) };
+  const i = el('input');
+  i.spellcheck = false;
+  i.autocapitalize = 'off';
+  i.placeholder = 'a@b.com, c@d.com';
+  i.value = (cur || []).join(', ');
+  return { node: i, read: () => splitList(i.value) };
+}
+
+// The four parts of the when, in two lines of a popup. The times are typed rather than native
+// `<input type="time">`: that control takes its 12- or 24-hour shape from the device's locale and
+// nothing in markup, CSS or the `lang` attribute can tell it otherwise, while every other time in
+// the calendar is 24-hour by construction. The dates stay native, because a date picker is worth
+// more than a format and an ISO date cannot be misread.
+function whenEditor() {
+  const wrap = el('div');
+  const date = (labelText, k) => {
+    const i = el('input');
+    i.type = 'date';
+    i.value = D[k];
+    live(i, () => { D[k] = i.value; });
+    return field(labelText, i);
+  };
+  const time = (labelText, k) => {
+    const i = el('input');
+    i.inputMode = 'numeric';
+    i.placeholder = '09:00';
+    i.disabled = D.allDay;
+    i.value = D[k];
+    // Written through on every valid reading, so the disk appears as it does for any other edit,
+    // and tidied on the way out: `930` leaves the field reading `09:30`.
+    live(i, () => { const t = hhmm(i.value); if (t !== null) D[k] = t; });
+    i.addEventListener('blur', () => { i.value = D[k]; });
+    return field(labelText, i, null, 't');
+  };
+  const r1 = el('div', 'row2');
+  r1.append(date('Start', 'startDate'), time('Time', 'startTime'));
+  const r2 = el('div', 'row2');
+  r2.append(date('End', 'endDate'), time('Time', 'endTime'));
+  wrap.append(r1, r2);
+  return { node: wrap, read: () => null };
+}
+
+// `9` and `900` and `9:00` are all 09:00; `930` and `0930` and `9:3` are 09:30. Anything that is
+// not a time of day returns null, and the field goes back to what the draft still holds.
+function hhmm(text) {
+  const t = String(text).trim();
+  if (!t) return '';
+  const m = /^(\d{3,4})$|^(\d{1,2}):?(\d{0,2})$/.exec(t);
+  if (!m) return null;
+  const [h, min] = m[1] ? [+m[1].slice(0, -2), +m[1].slice(-2)] : [+m[2], m[3] ? +m[3] : 0];
+  return h < 24 && min < 60 ? `${pad(h)}:${pad(min)}` : null;
 }
 
 function bodyEditor(cur) {
@@ -589,7 +727,7 @@ $('#sub-scrim').addEventListener('click', closeSub);
 function groupPicker(cur) {
   return groupList(cur || '', name => {
     writeField(FIELDS.find(f => f.k === 'group'), name);
-    closeRow();
+    closeFieldPop();
   });
 }
 
