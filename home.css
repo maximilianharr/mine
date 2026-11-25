@@ -7,8 +7,8 @@ body { padding: 16px max(16px, env(safe-area-inset-left)) 24px; max-width: 44rem
 
 /* The screen's own button: filled, full width, one per decision. */
 button {
-  width: 100%; padding: .9rem; margin: .4rem 0;
-  color: var(--bg); background: var(--accent);
+  width: 100%; padding: .9rem; margin: .4rem 0; border-radius: .55rem;
+  color: var(--raise); background: var(--accent);
 }
 .icon-btn {
   width: auto; padding: .4rem .7rem; font-size: 1.1rem; line-height: 1;
@@ -17,11 +17,16 @@ button {
 }
 
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(7rem, 1fr)); gap: .8rem; margin: 1rem 0; }
+/* A tile is a card on the paper, not a block of fill: the hairline is what makes it one, and it
+   is the same hairline every surface in Mine is edged with. */
 .tile {
-  display: flex; flex-direction: column; align-items: center; gap: .5rem;
-  padding: 1.2rem .5rem; text-decoration: none; color: var(--fg);
-  background: var(--soft); border-radius: .8rem;
+  display: flex; flex-direction: column; align-items: center; gap: .55rem;
+  padding: 1.3rem .5rem; text-decoration: none; color: var(--fg);
+  background: var(--raise); border: 1px solid var(--line); border-radius: .9rem;
+  box-shadow: 0 1px 2px rgb(90 60 30 / .06);
+  transition: box-shadow .14s ease;
 }
+.tile:hover { box-shadow: 0 2px 10px rgb(90 60 30 / .12); }
 .tile img { width: 2.2rem; height: 2.2rem; }
 .tile span { font-size: .85rem; }
 
@@ -31,12 +36,12 @@ dd { margin: 0; word-break: break-word; }
 
 .banner {
   padding: .7rem .9rem; margin: .6rem 0; font-size: .85rem;
-  background: var(--soft); border-left: 3px solid var(--bad); border-radius: .3rem;
+  background: var(--soft); border-left: 3px solid var(--bad); border-radius: .35rem;
 }
 .banner.update {
   position: fixed; inset: auto 1rem 1rem; display: flex; align-items: center;
   justify-content: space-between; gap: 1rem; border-left-color: var(--good);
-  box-shadow: 0 2px 12px rgb(0 0 0 / .18);
+  background: var(--raise); box-shadow: var(--shadow);
 }
 .banner.update button { width: auto; padding: .45rem .9rem; }
 
@@ -50,5 +55,5 @@ dd { margin: 0; word-break: break-word; }
 .prefrow { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px solid var(--line); }
 .prefrow span { flex: 1; font-size: .85rem; }
 .prefrow select { width: auto; min-width: 8rem; margin: 0; padding: .5rem; font: inherit;
-  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem; }
+  color: var(--fg); background: var(--raise); border: 1px solid var(--line); border-radius: .45rem; }
 .prefs .note { margin: .5rem 0 0; font-size: .75rem; color: var(--muted); }

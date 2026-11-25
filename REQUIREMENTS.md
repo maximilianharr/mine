@@ -44,6 +44,24 @@ settings and in each app's: **theme** (system, light or dark) and **date format*
 follows the device's locale, or `dd.mm.yyyy`, or `mm/dd/yy`). Both default to following the
 device, so Mine looks like the rest of the phone until you say otherwise.
 
+## How Mine looks
+
+**Paper, not screen.** The page is a warm off-white rather than white, and the surfaces that sit
+above it — a popup, a panel, a card, a tile — are a shade lighter than the page and edged with a
+hairline. That is what makes an overlay read as lifted, so none of them needs a heavy border or
+a dark drop shadow. There is no neutral grey anywhere in the palette: every colour in it, down
+to the rules and the muted text, has warmth in it. The dark theme is the same paper at night —
+a warm near-black with brown in it, paper-coloured ink — and not a second palette.
+
+**One accent**, a terracotta, and an app highlights its own thing with it rather than naming a
+colour of its own: the calendar's today is that accent. **Serif for what is read, sans for what
+is operated** — a heading, a period label, an entry's title and a rendered body's headings are
+set in Charter; every control, label and value is set in the system sans.
+
+**Icons are outlines**, drawn on one 16×16 box at a 1.2–1.4 stroke. The single deliberate solid
+is the calendar's stage square, which is its task marker filled in and would otherwise be the
+same drawing as it.
+
 One convention is the same in every app: **a save icon is green and a trashcan is red**, wherever
 either appears — a trashcan is red even where it only clears one field of one entry, because the
 rule is the icon, not the consequence. Both are **glyphs on no

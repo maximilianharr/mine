@@ -37,7 +37,12 @@ export const S = {
 
 // The kanban's column colours. In ui.js rather than kanban.js because the entry popup's stage
 // button carries the same three, and one table is the only way they cannot drift apart.
-export const STAGE_COLOR = { todo: '#c0392b', doing: '#e0a500', done: '#27ae60' };
+//
+// They name custom properties rather than hexes: a stage colour has to hold on paper and at
+// night, and a hex written here could only ever be one of the two. The properties are declared
+// in style.css beside the rest of the palette, and an inline `color: var(--todo)` resolves to
+// whichever scheme is on.
+export const STAGE_COLOR = { todo: 'var(--todo)', doing: 'var(--doing)', done: 'var(--done)' };
 // The stage as a word, for the places that read it rather than colour it: the popup's line and
 // the filter's rows. The board draws the bare key, which is the column's own name.
 export const STAGE_LABEL = { todo: 'Todo', doing: 'Doing', done: 'Done' };
@@ -122,12 +127,12 @@ export const monthDays = (y, m, { value, highlight, onPick }) => [
 // REQUIREMENTS.md states for all of Mine would quietly stop being conventions.
 addIcons({
   repeat: { d: 'M2.6 8.4A5.4 5.4 0 0 1 12.6 5.6M13.4 7.6A5.4 5.4 0 0 1 3.4 10.4M12.9 2.6v3.2H9.7M3.1 13.4v-3.2h3.2', stroke: 1.5 },
-  ball:   { d: 'M8 2.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 8 2.6z' },
+  ball:   { d: 'M8 3.1a4.9 4.9 0 1 0 0 9.8 4.9 4.9 0 0 0 0-9.8z', stroke: 1.4 },
   cal:    { d: 'M2.8 4.6h10.4v8.8H2.8zM2.8 7.4h10.4M5.6 2.6v3M10.4 2.6v3', stroke: 1.4 },
-  pin:    { d: 'M8 1.4a4.4 4.4 0 0 0-4.4 4.4C3.6 9.2 8 14.6 8 14.6s4.4-5.4 4.4-8.8A4.4 4.4 0 0 0 8 1.4zm0 6a1.6 1.6 0 1 1 0-3.2 1.6 1.6 0 0 1 0 3.2z' },
-  bell:   { d: 'M8 1.6a3.6 3.6 0 0 0-3.6 3.6v2.6L2.8 10.4h10.4L11.6 7.8V5.2A3.6 3.6 0 0 0 8 1.6zM6.3 11.6a1.8 1.8 0 0 0 3.4 0z' },
-  person: { d: 'M8 2.2a2.6 2.6 0 1 1 0 5.2 2.6 2.6 0 0 1 0-5.2zM2.4 14c0-3.1 2.5-4.9 5.6-4.9s5.6 1.8 5.6 4.9z' },
-  filter: { d: 'M2 3h12l-4.8 5.8V14L6.8 12.6V8.8z' },
+  pin:    { d: 'M8 1.9a4.2 4.2 0 0 0-4.2 4.2c0 3.2 4.2 8.1 4.2 8.1s4.2-4.9 4.2-8.1A4.2 4.2 0 0 0 8 1.9zM8 7.7a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4z', stroke: 1.3 },
+  bell:   { d: 'M8 2.1a3.4 3.4 0 0 0-3.4 3.4v2.3L3.3 10.2h9.4l-1.3-2.4V5.5A3.4 3.4 0 0 0 8 2.1zM6.4 11.6a1.6 1.6 0 0 0 3.2 0', stroke: 1.4 },
+  person: { d: 'M8 2.7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3.1 13.7c0-2.8 2.4-4.5 4.9-4.5s4.9 1.7 4.9 4.5', stroke: 1.4 },
+  filter: { d: 'M2.5 3.3h11l-4.2 5.2v5.1L6.7 12.3V8.5z', stroke: 1.4 },
   // A ticked square for task, a calendar page for event: the icon row carries no letters.
   check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
   // The stage: a filled square with a tick knocked out of it, carried in the stage's own colour

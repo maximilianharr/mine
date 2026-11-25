@@ -92,6 +92,23 @@ builds its screens out of - the icon button, the three overlay mechanisms, the s
 logs panel and a rendered markdown body. Each app's own stylesheet loads after it and holds only
 what is its own.
 
+Every token is declared three times - once for the light theme, once inside the
+`prefers-color-scheme: dark` query for the device's own choice, and once under
+`:root[data-theme="dark"]` for the setting that overrides it - and the dark pair carry the same
+values. Beyond the colours themselves the set holds `--raise`, the surface a popup or a card
+sits on, one shade above `--bg`; `--chip-bg` and `--chip-ink`, the two mixes an entry's own
+colour is drawn with, which differ between the themes because a dark page needs more tint and a
+lighter ink; and `--serif` / `--sans` / `--mono`, so no stylesheet names a font family of its
+own. **There are no web fonts**: the CSP is `default-src 'self'`, so every stack is system fonts
+with a metric-compatible fallback behind the first name.
+
+A colour that has to hold in both themes cannot be written in JavaScript, because the code
+cannot see which theme is on. The calendar's three stage colours are the case: `STAGE_COLOR`
+hands out `var(--todo)` rather than a hex, and an inline `style.color = 'var(--todo)'` resolves
+against whichever theme is live. A colour that comes from the user's own data - a category's -
+can only be the one hex they wrote, so the stylesheet mixes it against the theme instead: the
+app sets `--c` on the element and the two `--chip-*` mixes do the rest.
+
 `home.css` is the tile screen's own, loaded by the root `index.html` alone. It is there because
 the tile screen is one app among the others: a full-width filled button and a 44rem body are its
 choices, and while they sat in the base every app page had to undo them.

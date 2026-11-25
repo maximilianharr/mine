@@ -187,7 +187,11 @@ selected sprint. In the year view it is the day preview's `+`, as everywhere els
   screen allows rather than as tall as its cells happen to need. The extra height goes to the
   cell, **not to more entry lines** — the cap below is about what a glance can read, not about
   what fits. Entries appear inside each day cell as small lines carrying the
-  title on the group's background colour, sorted by time, all-day items first. On desktop a timed
+  title **in its group's colour: a tint of that colour behind it, the colour itself as the ink,
+  and a rule of it at full strength down the left edge.** A month of solid bars is a month that
+  cannot be read past, and the tint says the same thing while leaving the page its own colour.
+  The two mixes differ between the light theme and the dark one, a dark page needing more tint
+  and a lighter ink. Lines are sorted by time, all-day items first. On desktop a timed
   entry's line is prefixed with its time; on a phone it is the title alone, because seven columns
   across a phone have no room for both and the title is the part worth reading — the time is one
   tap away in the day preview. A cell shows at most four on desktop and two on a phone, then
@@ -526,9 +530,19 @@ On an event the stage is not there at all, because an event has none. `24h` and 
 entry, and the stage sits here so that a task that is not on a board still carries what a kanban
 card shows.
 
-Neither lit control — `24h` or `!` — is the disk's green: in all of Mine green is a save and red
+**A lit icon lights in its own field's colour.** The category lights in the colour of the
+category it holds, with the ball on it knocked out so the icon carries that category twice over;
+`!` lights in the red importance is drawn in everywhere else — the `!` on a card, the trashcan;
+and every other field — `24h`, the repeat, the alerts, the location, the participants, the
+details — lights in the one accent. A single near-black fill behind all of them said only *set*,
+when each of these already has a colour that means something. The same two colours carry the
+`24h` and `!` chips under the chevron, as a tint rather than a solid, a chip having a word on it
+as well as a glyph.
+
+No lit control is the disk's green: in all of Mine green is a save and red
 is a trashcan, and a green toggle beside the disk would make the popup look like it offers two
-primary actions.
+primary actions. `!` is the one lit in red, and it is the same red the trashcan uses because it
+is the same meaning — this matters, not this is dangerous — wearing one colour.
 
 ### The details body
 
@@ -709,8 +723,10 @@ override for that occurrence alone; the rule itself is never rewritten.
 
 Each column header shows its state and a `+` that creates a task in that stage, on the first day
 of the selected sprint. **The state's name carries the colour** — `todo` red, `doing` yellow,
-`done` green, the board's own three colours exactly, the yellow being the cards' `#e0a500` rather
-than a pure one, which would not be readable on the light theme. There is no colour dot and no
+`done` green, the board's own three colours exactly. They are declared as `--todo`, `--doing`
+and `--done` in the stylesheet rather than written as hexes in the code, and each has a value
+for the light theme and one for the dark: a yellow that is readable on paper is not the yellow
+that is readable at night. There is no colour dot and no
 card count: the dot said what the coloured name now says, and a count is a number nobody acts
 on. The name is **centred and drawn at twice the size**; the `+` stays at the right of the
 header, where it is the board's only way to make a task, since the top pane has none. The sprint

@@ -22,7 +22,7 @@ import {
 import { setKV } from '../shared/store.js';
 import { render } from '../shared/markdown.js';
 import {
-  S, $, el, icon, iconBtn, colorOf, labelOf, dayLabel, shortDayLabel, openRowPop, monthDays,
+  S, $, el, icon, iconBtn, colorOf, inkOn, labelOf, dayLabel, shortDayLabel, openRowPop, monthDays,
   STAGE_COLOR, STAGE_LABEL
 } from './ui.js';
 import { parseDateText, dateTextOf, datePlaceholder } from '../shared/prefs.js';
@@ -556,14 +556,25 @@ function quickRow() {
 
 // A field as an icon: lit when it holds something, because with the name gone the lit state is
 // all that is left to say so, and the value itself is in the label a screen reader and a hover
-// both read. The ball is the one that says more - it carries its category's colour.
+// both read.
+//
+// **A lit icon lights in its field's own colour**, which is `--on` - the category's colour for
+// the category, the accent for every other field. The category is the one that says more again:
+// the ball on top is knocked out in whatever reads on that colour, so the icon carries the
+// category twice over and does not need a name beside it.
 function quickBtn(f) {
   const v = readField(f);
   const set = f.set(v);
   const b = iconBtn(f.ic, `${f.label}${set ? `: ${f.sum(v)}` : ''}`,
     set || popped === f.k ? 'on' : '');
   b.dataset.field = f.k;
-  if (f.k === 'group' && D.v.group) b.querySelector('svg').style.color = colorOf(D.v.group);
+  if (f.k === 'group' && D.v.group) {
+    const c = colorOf(D.v.group);
+    b.style.setProperty('--on', c);
+    b.querySelector('svg').style.color = inkOn(c);
+  } else {
+    b.style.setProperty('--on', 'var(--link)');
+  }
   b.addEventListener('click', () => openField(f, 'quick'));
   return b;
 }
@@ -589,13 +600,17 @@ function expandBtn() {
 // a trashcan nor an x - and neither value fills a row of its own.
 function chipsRow() {
   const row = el('div', 'frow chips');
-  row.append(chip('24h', 'All-day', D.allDay, toggleAllDay),
-    chip('!', 'Important', D.important, () => { D.important = !D.important; redraw(); }));
+  row.append(chip('24h', 'All-day', D.allDay, toggleAllDay, 'var(--link)'),
+    chip('!', 'Important', D.important,
+      () => { D.important = !D.important; redraw(); }, 'var(--bad)'));
   return row;
 }
 
-function chip(glyph, text, on, onClick) {
+// The same two values the icons above carry, and the same colours: a lit chip is a tint of its
+// own `--on` rather than a solid, because a chip carries a word as well as a glyph.
+function chip(glyph, text, on, onClick, colour) {
   const b = el('button', `fchip${on ? ' on' : ''}`);
+  b.style.setProperty('--on', colour);
   b.type = 'button';
   b.setAttribute('aria-pressed', String(on));
   b.setAttribute('aria-label', text);
@@ -625,6 +640,7 @@ function stageRow() {
 // strip and the prose still say all-day, which is the clearer word where there is room for it.
 function allDayBtn() {
   const b = iconBtn('24h', 'All-day', D.allDay ? 'on' : '');
+  b.style.setProperty('--on', 'var(--link)');
   b.setAttribute('aria-pressed', String(D.allDay));
   b.addEventListener('click', toggleAllDay);
   return b;
@@ -657,6 +673,9 @@ function cycleStage() {
 // has already said everything a yes or no has to say.
 function bangBtn() {
   const b = iconBtn('!', 'Important', D.important ? 'on' : '');
+  // The red importance is drawn in everywhere else - the `!` on a card, the trashcan - so lit
+  // importance is that red rather than the accent the other icons light in.
+  b.style.setProperty('--on', 'var(--bad)');
   b.setAttribute('aria-pressed', String(D.important));
   b.addEventListener('click', () => { D.important = !D.important; redraw(); });
   return b;

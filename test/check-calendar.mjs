@@ -768,13 +768,22 @@ eq('and it is the same popup the row opens', [fromIcon.title, fromIcon.groups > 
   ['Category', true]);
 await ev(`document.querySelector('#fpop .gpick').click()`);
 await sleep(300);
+// A lit icon lights in **its own field's colour**, and the category's own colour is the one it
+// holds. `--on` is what the popup hands the stylesheet, so the check is that the background it
+// ends up with is that colour and not the plain accent, and that the ball on top is knocked out
+// in something else - otherwise it would be the colour drawn on itself.
 const picked = await ev(`(() => {
   const b = document.querySelector('#f-rows .quick [data-field="group"]');
-  return [getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)',
-          getComputedStyle(b.querySelector('svg')).color !== getComputedStyle(b).color,
-          b.getAttribute('aria-label')]; })()`);
-eq('a picked category lights its icon and colours its ball', picked.slice(0, 2), [true, true]);
-ok('with the value in the label', /^Category: ./.test(picked[2]), picked[2]);
+  const cs = getComputedStyle(b);
+  return { own: b.style.getPropertyValue('--on').trim(), bg: cs.backgroundColor,
+           ball: getComputedStyle(b.querySelector('svg')).color,
+           label: b.getAttribute('aria-label') }; })()`);
+ok('a picked category lights its icon in that category\'s own colour',
+  /^#[0-9a-f]{3,8}$/i.test(picked.own) && picked.bg === await rgb(picked.own),
+  `--on ${picked.own}, background ${picked.bg}`);
+ok('and the ball on it is knocked out, not drawn in the same colour',
+  picked.ball !== picked.bg, `${picked.ball} on ${picked.bg}`);
+ok('with the value in the label', /^Category: ./.test(picked.label), picked.label);
 
 // The chevron: the same values as lines, in the order the icons are in, with the two toggles
 // sharing the first of them. The icons stay - a field having two ways in is already true of a
@@ -1547,9 +1556,12 @@ const page = dir => ev(`[...document.querySelectorAll('.knav')]
 
 eq('the header carries no count and no dot', await ev(
   `document.querySelectorAll('.khead .kcount, .khead .kdot').length`), 0);
+// Read off the property rather than against a hex: the three stage colours are declared for
+// both schemes now, so a hex here would pin the check to one of them.
 eq('the stage name carries its colour', await ev(
   `getComputedStyle(document.querySelector('.kcol[data-stage="doing"] .kname')).color`),
-  await rgb('#e0a500'));
+  await rgb(await ev(
+    `getComputedStyle(document.documentElement).getPropertyValue('--doing').trim()`)));
 
 const atTodo = await ev(shown);
 eq('exactly one column is visible', atTodo.count, 1);

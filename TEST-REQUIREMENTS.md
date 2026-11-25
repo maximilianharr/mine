@@ -254,11 +254,12 @@ icons, and that choosing a task adds the stage between them — the stage alone,
 on every entry now. That stage cycles through three stages in three colours and back, the colour
 being the icon's own: a **ticked square with the tick knocked out of it**, drawn in the stage's
 colour, which is what the badge on its corner used to carry. That the category's **ball is drawn
-in its category's colour** when one is picked and in the row's ink when none is. That
-**important is a toggle and not a cycle** — two taps return it to where it started, its icon
-carries no colour of its own, and there is no third state to reach. That a tap on any of them
+in its category's colour** on the detail line when one is picked and in the row's ink when none
+is. That
+**important is a toggle and not a cycle** — two taps return it to where it started and there is
+no third state to reach. That a tap on any of them
 **changes the draft and not the repo**: the disk appears, the queue stays empty. That `24h` and
-`!` light with the ordinary enabled background and never with `--good`, because green is the
+`!` never light with `--good`, because green is the
 disk's. That the row sits **below** the when row, not above it — resolved from the elements'
 document order, since a row that merely looks right can still be the old one.
 
@@ -266,7 +267,10 @@ document order, since a row that merely looks right can still be the old one.
 important, the category, the repetition and the alerts **and no names**, and that location,
 participants and details are lines whether the chevron is open or shut — a pin standing in for an
 address says only that there is one. That a field icon is **lit when its field holds something**
-and plain when it does not, its value being in the label alone. That **tapping an icon opens
+and plain when it does not, its value being in the label alone — and that it lights **in its own
+field's colour**: the category's icon takes the background of the category it holds, read off
+the `--on` the popup hands the stylesheet, with the ball on it knocked out in something else, so
+an icon drawing a colour on itself cannot pass. That **tapping an icon opens
 exactly what tapping its line opens**, anchored under the icon that was tapped rather than under
 the row of the same name. That the chevron shows the lines, that `24h` and `!` share the first of
 them **as two chips on one line**, that the stage line reads `Todo`, `Doing` or `Done` and
@@ -470,7 +474,9 @@ between them; that an enabled one has a background and a disabled one has none, 
 cannot be made large by making the disabled one look live; that a sideways touch gesture on the
 board changes nothing; and that a column header's `+` opens a new task in that stage. That the
 header carries **no card count and no colour dot**, and that the stage name is drawn in its own
-stage colour — red, yellow, green — resolved against the same table the cards use. Each of these
+stage colour — red, yellow, green — read off the `--doing` property rather than against a hex,
+since each stage colour now has a light value and a dark one and a hex would pin the check to
+one theme. Each of these
 is read with the orientation set to horizontal, which is also the default, so none of them may be
 written in a way that a stacked board would satisfy by accident.
 

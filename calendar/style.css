@@ -6,9 +6,18 @@
    the form primitives, the icon button, the three overlay mechanisms, the settings row, the
    logs panel and a rendered markdown body. Only what is the calendar's own is in here. */
 
-:root { --cell: 3.3rem; --today: #1f66d0; --hour: 2.4rem; --gutter: 2rem; --tcol: 3rem; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --today: #6ea8ff; } }
-:root[data-theme="dark"] { --today: #6ea8ff; }
+/* Today is the one accent, so it is the one the whole of Mine already names. The three stages
+   are the calendar's own and are declared here for both schemes: ui.js hands them out as
+   `var(--todo)` rather than as hexes, because a stage has to hold on paper and at night. */
+:root {
+  --cell: 3.3rem; --hour: 2.4rem; --gutter: 2rem; --tcol: 3rem;
+  --today: var(--link);
+  --todo: #9c4a35; --doing: #a9792a; --done: #4f6b3f;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --todo: #ef8a6f; --doing: #e2b45c; --done: #94c27a; }
+}
+:root[data-theme="dark"] { --todo: #ef8a6f; --doing: #e2b45c; --done: #94c27a; }
 
 body { padding-bottom: env(safe-area-inset-bottom); }
 #cal { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
@@ -24,6 +33,13 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   padding: max(.5rem, env(safe-area-inset-top)) .5rem .5rem;
   background: var(--bg); border-bottom: 1px solid var(--line);
 }
+/* Nothing in the pane is filled: the four errand buttons are outlined and the two that step the
+   period carry nothing at all, so the row is hairlines and the label, and the label is the
+   heaviest thing in it. A filled block either side of it was the loudest thing on the page. */
+.topbar .nav.ic { background: none; border: 1px solid var(--line); }
+.topbar .nav.ic:hover, .tb-mid .nav:hover { background: var(--soft); }
+.tb-mid .nav { background: none; }
+.tb-mid .nav:active { background: var(--line); }
 .tb-side { display: flex; align-items: center; gap: .3rem; min-width: 0; }
 .tb-side.end { justify-content: flex-end; }
 .tb-mid { display: flex; align-items: center; gap: .1rem; min-width: 0; }
@@ -35,7 +51,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   display: inline-flex; align-items: center; justify-content: center;
   width: auto; min-width: 2.6rem; min-height: 2.6rem; margin: 0; padding: .3rem .45rem;
   font-size: 2rem; line-height: 1; font-weight: 500; text-decoration: none;
-  color: var(--fg); background: var(--soft); border: 0; border-radius: .5rem;
+  color: var(--fg); background: var(--soft); border: 0; border-radius: .55rem;
 }
 .nav.ic svg { width: 1.8rem; height: 1.8rem; display: block; }
 
@@ -44,7 +60,8 @@ body { padding-bottom: env(safe-area-inset-bottom); }
    The dropdown still shows the period in full. */
 .period {
   display: inline-flex; align-items: center; justify-content: center; min-width: 0;
-  width: auto; margin: 0; padding: .4rem .4rem; font-size: 1.5rem; font-weight: 600;
+  width: auto; margin: 0; padding: .4rem .4rem;
+  font-family: var(--serif); font-size: 1.55rem; font-weight: 600; letter-spacing: -.008em;
   color: var(--fg); background: none; border: 0; border-radius: .5rem;
   white-space: nowrap; cursor: pointer;
 }
@@ -93,19 +110,30 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .day.we { background: var(--soft); }
 .day.out { opacity: .4; }
 .num {
-  align-self: center; min-width: 1.5rem; padding: .1rem 0;
-  font-size: .76rem; font-variant-numeric: tabular-nums; text-align: center;
+  align-self: center; min-width: 1.6rem; padding: .12rem 0;
+  font-size: .78rem; font-weight: 600; font-variant-numeric: tabular-nums; text-align: center;
   color: var(--muted); border-radius: 999px;
 }
-.day.today .num { color: #fff; background: var(--today); font-weight: 700; }
+.day.today { background: color-mix(in srgb, var(--today) 7%, transparent); }
+.day.today .num { color: var(--raise); background: var(--today); font-weight: 700; }
 
-.rows { display: flex; flex-direction: column; gap: 1px; overflow: hidden; }
+.rows { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+/* An entry is a **tint of its category's colour with that colour as the ink**, not a solid block
+   of it: a month of solid bars is a month that cannot be read past, and the tint keeps the page
+   paper-coloured while saying the same thing. The rule down the left is what carries the colour
+   at full strength. `--c` is set on the element by views.js; the two mixes are tokens, because a
+   dark page needs more tint and a lighter ink than a light one.
+   The tint is mixed with `transparent` rather than with the background, so a line sits correctly
+   on a weekend cell, which is not the same colour as the rest. */
 .eline {
-  display: flex; align-items: center; gap: .2rem;
-  padding: .06rem .22rem; font-size: .66rem; line-height: 1.3;
-  border-radius: .22rem; cursor: pointer;
+  display: flex; align-items: center; gap: .25rem;
+  padding: .1rem .26rem .1rem .36rem; font-size: .68rem; line-height: 1.35;
+  background: color-mix(in srgb, var(--c, var(--accent)) var(--chip-bg), transparent);
+  color: color-mix(in srgb, var(--c, var(--accent)) var(--chip-ink), var(--fg));
+  box-shadow: inset 2px 0 0 var(--c, var(--accent));
+  border-radius: .25rem; cursor: pointer;
 }
-.eline .when { flex: none; font-variant-numeric: tabular-nums; opacity: .8; }
+.eline .when { flex: none; font-variant-numeric: tabular-nums; font-weight: 600; }
 .eline .what { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 /* In a month cell the title is clipped rather than ellipsised: three dots cost three characters
    in the one place in the app where characters are scarcest, and a clipped word already says
@@ -113,8 +141,12 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .grid .eline .what { text-overflow: clip; }
 .eline.done .what { text-decoration: line-through; opacity: .75; }
 /* A day an entry only passes through: flat on the side it continues, so a run of cells reads as
-   one bar with two rounded ends. */
-.eline.from-before { border-top-left-radius: 0; border-bottom-left-radius: 0; }
+   one bar with two rounded ends. The rule down the left belongs to the day it starts on, so a
+   continued day drops it and takes that space back for the title. */
+.eline.from-before {
+  border-top-left-radius: 0; border-bottom-left-radius: 0;
+  box-shadow: none; padding-left: .26rem;
+}
 .eline.goes-on { border-top-right-radius: 0; border-bottom-right-radius: 0; }
 .more { font-size: .6rem; color: var(--muted); padding-left: .2rem; }
 
@@ -188,10 +220,13 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .tcol.we { background-color: var(--soft); }
 .tev {
   position: absolute; left: 2px; right: 2px; min-height: 1rem; overflow: hidden;
-  padding: .1rem .3rem; font-size: .68rem; line-height: 1.25;
+  padding: .12rem .34rem; font-size: .68rem; line-height: 1.3;
+  background: color-mix(in srgb, var(--c, var(--accent)) var(--chip-bg), var(--bg));
+  color: color-mix(in srgb, var(--c, var(--accent)) var(--chip-ink), var(--fg));
+  box-shadow: inset 2.5px 0 0 var(--c, var(--accent));
   border-radius: .3rem; cursor: pointer;
 }
-.tev .when { display: block; font-variant-numeric: tabular-nums; opacity: .85; }
+.tev .when { display: block; font-variant-numeric: tabular-nums; font-weight: 600; }
 .tev .what { display: block; font-weight: 600; }
 .tev .meta { display: block; font-size: .62rem; opacity: .85; }
 .tev.done .what { text-decoration: line-through; }
@@ -216,17 +251,23 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   transform: translateX(calc(var(--col) * -100%)); transition: transform .18s ease-out;
 }
 .one .kcol { margin: .5rem; }
+/* No tray behind a column: the three stand on the page and are told apart by their headings and
+   the rule under each, which is how a printed page separates three columns too. */
 .kcol {
-  display: flex; flex-direction: column; gap: .4rem;
-  padding: .4rem; background: var(--soft); border-radius: .6rem;
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .4rem; background: none; border: 1px solid var(--line); border-radius: .7rem;
 }
 /* The state's name is centred on the column and carries that stage's colour; the `+` sits at the
    right, where it is the board's only way to make a task. Two equal side tracks, so the name is
    centred on the column rather than on what the `+` leaves over. */
-.khead { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .3rem; }
+.khead {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .3rem;
+  padding-bottom: .35rem; margin-bottom: .1rem; border-bottom: 1px solid var(--line);
+}
 .kmid { display: flex; align-items: center; justify-content: center; gap: .2rem; min-width: 0; }
 .kname {
-  text-transform: capitalize; font-size: 1.6rem; font-weight: 700; line-height: 1.15;
+  font-family: var(--serif);
+  text-transform: capitalize; font-size: 1.4rem; font-weight: 600; line-height: 1.15;
   overflow: hidden; text-overflow: ellipsis;
 }
 /* The header's pagers are bigger and sit on a background of their own, so they cannot be read
@@ -240,8 +281,9 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .kadd { justify-self: end; width: 2rem; height: 2rem; }
 .kcards { display: flex; flex-direction: column; gap: .4rem; }
 .kcard {
-  display: flex; gap: .4rem; padding: .4rem;
-  background: var(--bg); border: 1px solid var(--line); border-radius: .5rem;
+  display: flex; gap: .45rem; padding: .5rem;
+  background: var(--raise); border: 1px solid var(--line); border-radius: .55rem;
+  box-shadow: 0 1px 2px rgb(90 60 30 / .06);
 }
 .kbar { flex: none; width: 3px; border-radius: 2px; }
 .kmain { flex: 1; min-width: 0; }
@@ -286,10 +328,10 @@ body { padding-bottom: env(safe-area-inset-bottom); }
    being picked - the start date, so the day the end may not fall before is in the grid. */
 .pk.sel { background: var(--accent); color: var(--bg); font-weight: 700; }
 .pk.hl { box-shadow: inset 0 0 0 2px var(--accent); }
-.pk.now { color: #fff; background: var(--today); font-weight: 700; }
+.pk.now { color: var(--raise); background: var(--today); font-weight: 700; }
 /* The sprint today falls in: brighter than the rest in dark mode, darker in light. */
 .pk.cur { background: var(--accent); color: var(--bg); }
-.pk.cur.now { color: #fff; background: var(--today); }
+.pk.cur.now { color: var(--raise); background: var(--today); }
 .pick-body.years .pk { padding: .7rem .1rem; }
 
 /* A filter that is on says so on the hamburger: a small count at its top right, one per kind
@@ -298,7 +340,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .fcount {
   position: absolute; top: 0; right: 0; min-width: .95rem; height: .95rem; padding: 0 .1rem;
   font-size: .6rem; font-weight: 700; line-height: .95rem; text-align: center;
-  color: #fff; background: var(--today); border-radius: 999px;
+  color: var(--raise); background: var(--today); border-radius: 999px;
 }
 /* The groups above, the stages and importance below: two kinds of narrowing, one dropdown. */
 .fsep { height: 1px; margin: .4rem .2rem; background: var(--line); }
@@ -326,9 +368,14 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .dentry {
   display: flex; align-items: center; gap: .6rem; width: 100%;
   padding: .55rem .5rem; text-align: left;
-  color: var(--fg); background: var(--soft); border-radius: .5rem; cursor: pointer;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--c, var(--accent)) var(--chip-bg), var(--raise));
+  border-radius: .5rem; cursor: pointer;
 }
-.dentry .bar { flex: none; width: 4px; align-self: stretch; border-radius: 2px; }
+.dentry .bar {
+  flex: none; width: 3px; align-self: stretch; border-radius: 2px;
+  background: var(--c, var(--accent));
+}
 .dentry .mid { flex: 1; min-width: 0; }
 .dentry .dt { display: block; font-size: .68rem; color: var(--muted); }
 .dentry .dn { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -396,11 +443,18 @@ body { padding-bottom: env(safe-area-inset-bottom); }
    neither carries a trashcan, and neither fills a row on its own. */
 .chips { gap: .45rem; }
 .fchip {
-  display: flex; align-items: center; gap: .4rem; margin: 0; padding: .4rem .7rem;
+  display: flex; align-items: center; gap: .4rem; margin: 0; padding: .42rem .78rem;
   font: inherit; font-size: .85rem; color: var(--fg); background: none;
   border: 1px solid var(--line); border-radius: 999px; cursor: pointer;
 }
-.fchip.on { background: var(--soft); border-color: var(--muted); font-weight: 600; }
+/* Lit in its own colour, like the icon that carries the same value above it - a tint rather
+   than a solid, a chip having a word on it as well as a glyph. */
+.fchip.on {
+  background: color-mix(in srgb, var(--on, var(--accent)) 13%, transparent);
+  border-color: color-mix(in srgb, var(--on, var(--accent)) 45%, var(--line));
+  color: color-mix(in srgb, var(--on, var(--accent)) 72%, var(--fg));
+  font-weight: 600;
+}
 .fchip .glyph { font-size: .8rem; font-weight: 700; }
 .btngroup { display: flex; margin: .7rem 0 0; }
 .seg {
@@ -417,8 +471,8 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .iconbar .seg { flex: none; padding: .35rem .55rem; }
 .body-in {
   display: block; width: 100%; margin-top: .3rem; padding: .7rem;
-  font: .85rem/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
-  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .5rem;
+  font: .85rem/1.5 var(--mono);
+  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .45rem;
   resize: vertical;
 }
 /* A row is the icon, then the value - no field name beside it, because the name said what the
@@ -468,7 +522,10 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 .ftitle .spacer { flex: 1; }
 /* The title row carries no icon, so it reads as the entry's name rather than as a field. */
 .frow.first { border-top: 0; }
-.ttap { font-size: 1.25rem; font-weight: 600; line-height: 1.25; white-space: normal; }
+.ttap {
+  font-family: var(--serif); font-size: 1.35rem; font-weight: 600; letter-spacing: -.008em;
+  line-height: 1.25; white-space: normal;
+}
 /* The when: two halves, each the way into the flow that sets it. They wrap rather than shrink,
    so a span whose two datings do not fit one line drops the end to a second, still at the right
    - the row is the one in the popup that may be two lines tall, and it is also the only one

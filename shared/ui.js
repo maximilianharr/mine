@@ -23,11 +23,14 @@ export const phone = () => !matchMedia('(min-width: 600px)').matches;
 // stop being one. An app's own subjects - the calendar's recurrence, its stages - are registered
 // by that app with addIcons().
 
+// Drawn as outlines rather than solids: a stroked glyph is what carries Mine's paper look, and
+// at 1.2-1.4 it stays legible at 16px. The one deliberate solid is the calendar's `ticked`, which
+// is `check` filled in and would otherwise be the same drawing as it.
 const NS = 'http://www.w3.org/2000/svg';
 const ICON = {
-  trash:  { d: 'M6.2 1.6h3.6l.6 1.2h2.8v1.5H2.8V2.8h2.8l.6-1.2zM3.9 5.6h8.2l-.7 8.8H4.6z' },
-  disk:   { d: 'M2.6 2h8.2L14 5.2V14H2.6zm3 0v3.6h4.6V2zM5 9h6v5H5z' },
-  pen:    { d: 'M11.6 1.8l2.6 2.6-8 8-3.4.8.8-3.4z' },
+  trash:  { d: 'M3 5.2h10M6.4 5.2V3.4h3.2v1.8M4.7 5.2l.5 8.4h5.6l.5-8.4M6.8 7.6v3.4M9.2 7.6v3.4', stroke: 1.3 },
+  disk:   { d: 'M3.2 3.2h7.3l2.3 2.4v7.2H3.2zM5.7 3.2v3.3h4V3.2M5.7 9.3h4.6v3.5H5.7', stroke: 1.3 },
+  pen:    { d: 'M11.4 2.1l2.5 2.5-7.7 7.7-3.3.8.8-3.3zM9.6 3.9l2.5 2.5', stroke: 1.3 },
   plus:   { d: 'M8 3v10M3 8h10', stroke: 1.8 },
   x:      { d: 'M4 4l8 8M12 4l-8 8', stroke: 1.8 },
   chev:   { d: 'M10 3.5 5.5 8l4.5 4.5', stroke: 1.8 },
@@ -39,7 +42,7 @@ const ICON = {
   // A clock face for the logs: the panel's subject is when the last attempt ran and how long the
   // queue has been waiting. A stack of lines would read as details, which `lines` already means.
   logs:   { d: 'M8 2.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 8 2.6zM8 5.1V8.3l2.5 1.6', stroke: 1.5 },
-  house:  { d: 'M8 1.9 1.5 7.4h1.8V14h3.3V9.9h2.8V14h3.3V7.4h1.8z' },
+  house:  { d: 'M2.5 7.3 8 2.5l5.5 4.8V13.5H9.6V9.7H6.4v3.8H2.5z', stroke: 1.4 },
   gear:   { d: 'M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM7.1 1.4h1.8l.3 1.7 1.2.5 1.4-1 1.3 1.3-1 1.4.5 1.2 1.7.3v1.8l-1.7.3-.5 1.2 1 1.4-1.3 1.3-1.4-1-1.2.5-.3 1.7H7.1l-.3-1.7-1.2-.5-1.4 1-1.3-1.3 1-1.4-.5-1.2-1.7-.3V7.1l1.7-.3.5-1.2-1-1.4 1.3-1.3 1.4 1 1.2-.5z', stroke: 1.2 }
 };
 

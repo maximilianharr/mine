@@ -117,8 +117,11 @@ function monthCell(key, month, items, cap) {
   return cell;
 }
 
-// A small line carrying the title on the group's background colour. `tick` is false in the
-// month view, where the width goes to the title; everywhere else a task keeps its one-tap done.
+// A small line carrying the title in its group's colour. The colour is handed to the stylesheet
+// as `--c` rather than painted on here: the line is drawn as a tint of it with the colour itself
+// as the ink, and the two mixes that takes are different on paper and at night. `tick` is false
+// in the month view, where the width goes to the title; everywhere else a task keeps its
+// one-tap done.
 //
 // A line for a day the entry only passes through is **flat on the side it continues**, so a run
 // of cells reads as one bar with two rounded ends. The title is repeated on every day rather
@@ -129,9 +132,7 @@ function entryLine(o, key, tick = true) {
     o.dayKey < key ? 'from-before' : '', o.endDayKey > key ? 'goes-on' : '']
     .filter(Boolean).join(' '));
   r.dataset.key = o.key;
-  const c = colorOf(o.group);
-  r.style.background = c;
-  r.style.color = inkOn(c);
+  r.style.setProperty('--c', colorOf(o.group));
   const when = dayTime(o, key);
   if (when) r.append(el('span', 'when', when));
   r.append(el('span', 'what', o.title));
@@ -249,9 +250,7 @@ function timeGrid(keys, byDay) {
 function timeBlock(o, detailed) {
   const b = el('div', `tev${o.stage === 'done' ? ' done' : ''}`);
   b.dataset.key = o.key;
-  const c = colorOf(o.group);
-  b.style.background = c;
-  b.style.color = inkOn(c);
+  b.style.setProperty('--c', colorOf(o.group));
   b.style.top = `${o.minutes / 1440 * 100}%`;
   b.style.height = `${Math.min(1440 - o.minutes, minutes(o)) / 1440 * 100}%`;
   b.append(el('span', 'when', o.end && !isAllDay(o.end)
@@ -289,8 +288,8 @@ function fillDayPop(key) {
   list.replaceChildren(...items.map(o => {
     const row = el('div', `dentry${o.stage === 'done' ? ' done' : ''}`);
     row.dataset.key = o.key;
+    row.style.setProperty('--c', colorOf(o.group));
     const bar = el('span', 'bar');
-    bar.style.background = colorOf(o.group);
     const mid = el('div', 'mid');
     mid.append(el('span', 'dt', [o.allDay ? 'all-day' : dayTime(o, key) || 'continues',
       labelOf(o.group), o.type === 'task' ? o.stage : '',
