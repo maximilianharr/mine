@@ -13,6 +13,7 @@ calendar, zettelkasten, diary — so it stays portable and free of vendor lock-i
 | [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) | how it is built, and the verified platform findings |
 | [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md) | what is checked before a change ships, and how |
 | [calendar/](calendar/) | the calendar app, with its own pair of docs |
+| [CLAUDE.md](CLAUDE.md) | how to find your way around without reading all of it |
 
 ## Layout
 
