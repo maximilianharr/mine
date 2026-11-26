@@ -2139,15 +2139,14 @@ eq('and a task without the key does not', await importantIn('Deploy the release'
 
 // ---- 8. the shared renderer, and discarding an edit ---------------------------------------------
 
-// The renderer builds nodes and never markup, so a body carrying a script tag shows that tag as
-// text and adds nothing to the document. That is the check that keeps it so.
+// What the renderer does with each construct, and that it never adds markup, is checked on the
+// renderer itself in check-mine.mjs. Here: that an entry's body is shown through it.
 await viewport(900);
 await open();
 await newEntry();
 await openRow('body');
-const BODY = ['## Agenda', '- rollout dates', '- [x] token scope', '- [ ] dns cutover',
-  '**blocker** here and `code`', '[spec](https://example.com/spec)',
-  '[bad](javascript:alert(1))', '<script>alert(1)</script>'].join('\n');
+const BODY = ['## Agenda', '- rollout dates', '- [ ] dns cutover',
+  '[spec](https://example.com/spec)'].join('\n');
 eq('the body opens a textarea in its own row', await ev(
   `!!document.querySelector('#f-rows [data-field="body"] textarea')`), true);
 await typeIn('body', BODY);
@@ -2162,27 +2161,9 @@ await ev(`[...document.querySelectorAll('.eline')]
 await sleep(500);
 const md = await ev(`(() => {
   const b = document.querySelector('#f-rows .vbody');
-  const boxes = [...b.querySelectorAll('input[type=checkbox]')];
-  return { heads: [...b.querySelectorAll('.md-h')].map(h => h.textContent),
-    items: b.querySelectorAll('li').length,
-    boxes: boxes.map(i => i.checked), pressable: boxes.filter(i => !i.disabled).length,
-    strong: [...b.querySelectorAll('strong')].map(n => n.textContent),
-    code: [...b.querySelectorAll('code')].map(n => n.textContent),
-    links: [...b.querySelectorAll('a')].map(a => a.getAttribute('href')),
-    scripts: b.querySelectorAll('script').length,
-    text: b.textContent };
+  return { heads: [...b.querySelectorAll('.md-h')].map(h => h.textContent), text: b.textContent };
 })()`);
 eq('a body renders its heading', md.heads, ['Agenda']);
-ok('and its list items', md.items >= 3, `${md.items} items`);
-eq('a checklist renders ticked and unticked', md.boxes, [true, false]);
-eq('and neither box is pressable', md.pressable, 0);
-eq('bold renders bold', md.strong, ['blocker']);
-eq('and inline code renders code', md.code, ['code']);
-eq('a safe link becomes one, and a javascript: URL does not', md.links,
-  ['https://example.com/spec']);
-ok('the unsafe one stays text', md.text.includes('javascript:alert(1)'), md.text);
-eq('and no script element is added', md.scripts, 0);
-ok('a script tag shows as text', md.text.includes('<script>alert(1)</script>'), md.text);
 // Shown in full and rendered when the row is closed, which is the one thing the old preview
 // existed for: a clipped line here is the body flattened into a row like the other five.
 ok('and the whole body is shown, not a clipped line',

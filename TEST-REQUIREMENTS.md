@@ -109,6 +109,15 @@ once and still applying in an app opened afterwards, and a pinned palette pinnin
 bar to its page colour until system hands it back. That last one is the whole of what "one
 setup, every app" means, in one check.
 
+**The shared renderer**, called directly rather than through any one app's screens, because
+every app shows its markdown through it. That `## Agenda`, a `- ` bullet, a `- [x]` and a
+`- [ ]`, `**bold**`, `` `code` `` and a link render as a heading element, a list with a ticked
+and an unticked box, a bold element, a code element and an anchor whose href is the link's — and
+that a `javascript:` URL in the same text produces no anchor at all. That a ticked checkbox is
+not pressable. That `<script>alert(1)</script>` puts that text on the screen and adds **no
+script element to the document**: the renderer builds nodes and never markup, and this is the
+check that keeps it so.
+
 ### The calendar
 
 **Every view fits a phone.** Day, week, month, year and kanban, at 320 and 360 CSS px, in light
@@ -240,15 +249,11 @@ That the **disk is disabled until the title has text** and enabled once it has, 
 disabled state and not from how it looks. That closing it writes **nothing**: no file appears and
 the queue is empty, which is what keeps a stray `+` from leaving an `Untitled` behind.
 
-**The shared renderer, and the body.** That a details body holding `## Agenda`, a `- ` bullet, a
-`- [x]` and a `- [ ]`, `**bold**` and a link renders as a heading element, a list with a ticked
-and an unticked box, a bold element and an anchor whose href is the link's — and that a
-`javascript:` URL in the same body produces no anchor at all. That a body containing
-`<script>alert(1)</script>` puts that text on the screen and adds **no script element to the
-document**: the renderer builds nodes and never markup, and this is the check that keeps it so.
-That a ticked checkbox is not pressable. That the body is **rendered and shown in full** when the
-row is inactive — the whole text, not a clipped line — and that clicking it replaces the rendered
-nodes with a textarea holding the raw markdown, with its `x` at the foot.
+**The body.** That an entry's body is shown through the shared renderer — its heading is a
+heading element — and is **rendered and shown in full** when the row is inactive — the whole
+text, not a clipped line — and that clicking it replaces the rendered nodes with a textarea
+holding the raw markdown, with its `x` at the foot. What the renderer does with each construct is
+checked on the renderer itself, under the tile screen.
 
 **The quick row.** That a new entry is an event whose row holds `24h`, `!`, and the three field
 icons, and that choosing a task adds the stage between them — the stage alone, since important is

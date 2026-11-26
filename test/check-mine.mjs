@@ -171,4 +171,37 @@ eq('and system hands the bar back to the device',
   await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
   ['#EBE6D2', '#12161f']);
 
+// ---- 7. the shared renderer ----------------------------------------------------------------
+// Every app shows its markdown through shared/markdown.js, so it is checked here, on its own,
+// rather than through any one app's screens. It builds nodes and never markup, so a body
+// carrying a script tag shows that tag as text and adds nothing to the document.
+
+const md = await ev(`(async () => {
+  const { render } = await import('/shared/markdown.js');
+  const b = document.createElement('div');
+  b.append(render(${JSON.stringify(['## Agenda', '- rollout dates', '- [x] token scope',
+    '- [ ] dns cutover', '**blocker** here and `code`', '[spec](https://example.com/spec)',
+    '[bad](javascript:alert(1))', '<script>alert(1)</script>'].join('\n'))}));
+  const boxes = [...b.querySelectorAll('input[type=checkbox]')];
+  return { heads: [...b.querySelectorAll('.md-h')].map(h => h.textContent),
+    items: b.querySelectorAll('li').length,
+    boxes: boxes.map(i => i.checked), pressable: boxes.filter(i => !i.disabled).length,
+    strong: [...b.querySelectorAll('strong')].map(n => n.textContent),
+    code: [...b.querySelectorAll('code')].map(n => n.textContent),
+    links: [...b.querySelectorAll('a')].map(a => a.getAttribute('href')),
+    scripts: b.querySelectorAll('script').length,
+    text: b.textContent };
+})()`);
+eq('a heading renders as one', md.heads, ['Agenda']);
+eq('and list items as items', md.items, 3);
+eq('a checklist renders ticked and unticked', md.boxes, [true, false]);
+eq('and neither box is pressable', md.pressable, 0);
+eq('bold renders bold', md.strong, ['blocker']);
+eq('and inline code renders code', md.code, ['code']);
+eq('a safe link becomes one, and a javascript: URL does not', md.links,
+  ['https://example.com/spec']);
+ok('the unsafe one stays text', md.text.includes('javascript:alert(1)'), md.text);
+eq('and no script element is added', md.scripts, 0);
+ok('a script tag shows as text', md.text.includes('<script>alert(1)</script>'), md.text);
+
 report('mine');
