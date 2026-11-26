@@ -41,6 +41,12 @@ settings and in each app's: **theme** (system, light, dark, coffee or neutral) a
 follows the device's locale, or `dd.mm.yyyy`, or `mm/dd/yy`). Both default to following the
 device, so Mine looks like the rest of the phone until you say otherwise.
 
+Two more device preferences are Mine-wide, though they live in the apps that use them rather than
+in the main settings: **where an app's header is docked**, top or bottom, and **whether leaving an
+edited popup asks before discarding**. Your thumb and your patience are the same in every app, so
+docking the header at the bottom in one, or ticking *don't ask again* in one, holds in all of
+them.
+
 ## How Mine looks
 
 **Paper, not screen.** **Light** is cream paper and black ink, taken from Adobe Color's most
@@ -80,8 +86,8 @@ is enough, because what makes it findable is the green disk and not the edge of 
 ## Markdown bodies
 
 Every app keeps its text as markdown, so every app has to show it. **One renderer, in `shared/`,
-used by all of them** — the calendar's details body today, a zettelkasten note and a diary entry
-next. Two renderers would drift, and a note that looked right in one app and wrong in the next
+used by all of them** — the calendar's details body and a note's body today, a zettelkasten note
+and a diary entry next. Two renderers would drift, and a note that looked right in one app and wrong in the next
 would be the plainest possible sign that these files are not as portable as the whole idea claims.
 
 It is **deliberately small**, and covers what a personal note actually holds: paragraphs, `#` to
@@ -141,7 +147,7 @@ covers the lower half anyway.
 
 - Changes appear instantly and are queued for GitHub in the background.
 - A sync indicator shows: in sync / pending / error. It is also a button: pressing it opens the
-  calendar's `logs`, which says what the last attempt did and what is still waiting.
+  app's `logs`, which says what the last attempt did and what is still waiting.
 - Offline, the queue is kept and sent when you are back online or reopen the app. **Every open
   and every window focus retries it**, whatever went wrong last time, because a queue nothing
   retries is a queue that never empties — a browser left reporting a count it can neither

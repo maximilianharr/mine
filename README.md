@@ -1,7 +1,7 @@
 # Mine
 
 A set of small PWAs that keep your personal data as markdown in a private GitHub repo —
-calendar, zettelkasten, diary — so it stays portable and free of vendor lock-in.
+calendar, notes, zettelkasten, diary — so it stays portable and free of vendor lock-in.
 
 **Live: https://maximilianharr.github.io/mine/** — install it to your home screen.
 
@@ -13,6 +13,7 @@ calendar, zettelkasten, diary — so it stays portable and free of vendor lock-i
 | [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) | how it is built, and the verified platform findings |
 | [TEST-REQUIREMENTS.md](TEST-REQUIREMENTS.md) | what is checked before a change ships, and how |
 | [calendar/](calendar/) | the calendar app, with its own pair of docs |
+| [notes/](notes/) | the notes app, with its own pair of docs |
 | [CLAUDE.md](CLAUDE.md) | how to find your way around without reading all of it |
 
 ## Layout
@@ -22,8 +23,9 @@ style.css                                         the shared base: tokens and ch
 index.html app.js home.css sw.js manifest.json    the main app
 shared/   apps.js store.js github.js md.js        used by every app
           markdown.js prefs.js ui.js sync.js
+          search.js drag.js
           vendor/
-calendar/                                         one folder per app
+calendar/ notes/                                  one folder per app
 test/                                             the checks: test/run.sh
 ```
 
@@ -39,4 +41,5 @@ app, stored on the device, and scoped so it can only touch that data repo.
 
 The main app, the sync layer and the on-device checks are done and verified end to end against a
 real repo. The calendar is built — the five views, the kanban, the entry popup and its field
-popups, the filter and the settings — and `test/run.sh` covers it.
+popups, the filter and the settings — and so are notes, a Keep-like grid of tagged markdown
+notes; `test/run.sh` covers both.

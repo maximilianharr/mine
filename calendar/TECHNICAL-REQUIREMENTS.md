@@ -290,13 +290,14 @@ calendar/data.js      the model, the date and sprint arithmetic, and the writes
 calendar/ui.js        DOM helpers, the icon set, and the state every view reads
 calendar/views.js     year, month, week, day, and the day preview
 calendar/kanban.js    the board
-calendar/drag.js      press-and-drag, for a card, an entry and the top pane
 calendar/popup.js     the one entry popup: its rows, their inline editors, their writes
 calendar/settings.js  the filter dropdown, the settings panel and the logs panel: the filter
                       button's and the hamburger's two errands
 calendar/app.js       the top pane, navigation, the picker, the zoom, the menu, the search's
                       wiring, the sync line
-shared/prefs.js       theme and date format, which belong to Mine rather than to one app
+shared/prefs.js       theme, date format, dock position and confirm discard, which belong to
+                      Mine rather than to one app
+shared/drag.js        press-and-drag, for a card, an entry and the top pane
 ```
 
 `ui.js` holds the state in one object with `render`, `status`, `push`, `refresh` and `reload` as
@@ -304,7 +305,7 @@ slots the shell fills in, so a view can ask for a redraw or a background push wi
 `app.js` back and making an import cycle. The logs panel's `push now` goes through `refresh`,
 which is the same serialised drain-then-pull the app runs on open and on focus.
 
-**Dragging is pointer events, in `drag.js`**, not HTML5 drag and drop, which never fires for a
+**Dragging is pointer events, in `shared/drag.js`**, not HTML5 drag and drop, which never fires for a
 finger. `draggable(host, { item, target, drop, start, end })` listens for a press on the host;
 `item` says what the press picks up and `target(x, y)` what lies under a point, read with
 `elementFromPoint` while the lifted copy has `pointer-events: none`. A touch lifts after a 400 ms
@@ -316,8 +317,8 @@ too late on iOS — and the scroller under the item is scrolled by the pointer's
 click on whatever it landed on. A held element carries `user-select: none` and
 `-webkit-touch-callout: none`, or iOS raises its callout instead.
 
-**The pane is docked by a class on `body`**, `dock-bottom`, read from `calendar.barPosition` in
-the KV store at boot and set by a drop. The stylesheet does the rest by `order` inside `#cal`'s
+**The pane is docked by a class on `body`**, `dock-bottom`, read from `mine.barPosition` in
+the KV store at boot and set by a drop, through `dockable()` in `shared/ui.js`. The stylesheet does the rest by `order` inside `#cal`'s
 column — the sync line first, the view, the pane last and sticky at `bottom: 0` — and on a phone
 gives the period row `order: 0` so the buttons are the lower row. The dropdowns need nothing:
 `openPop` already flips a dropdown above its button when there is no room below. The pane is

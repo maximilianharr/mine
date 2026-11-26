@@ -24,10 +24,12 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 /index.html /manifest.json /sw.js
 /style.css  the shared base      /home.css  the tile screen's own
 /shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js
-          ui.js  sync.js  search.js  vendor/
+          ui.js  sync.js  search.js  drag.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
+/notes/   index.html  app.js  style.css  icon.svg  sample/
 /test/    run.sh  unit.mjs  serve.py  cdp.mjs  check-mine.mjs  check-calendar.mjs
+          check-notes.mjs
 ```
 
 No build step: no bundler, no CI, no node_modules. `git push` deploys, every page opens from
@@ -65,6 +67,15 @@ while it is open, so a result edited from the search reads as saved. The index i
 every open rather than kept: a few thousand small files parse in milliseconds, and a kept index
 is a second copy of the mirror that can disagree with it.
 
+The header every app opens on is shared too, once a second app wanted one. `.topbar`, `.nav`,
+the sync line and the dock zones are in `style.css`; the press-and-drag is `shared/drag.js`; and
+`dockable(bar, onDock)` in `shared/ui.js` makes a header draggable to the top or the bottom half
+of the screen, sets `dock-bottom` on `body`, and stores the choice as `mine.barPosition`, which
+`loadPrefs()` hands back with the theme. An app's own stylesheet keeps only what differs: the
+calendar's centred period and its two-row phone layout. The discard prompt's *don't ask again*
+is `mine.confirmDiscard`, read by `loadPrefs()` the same way, so every app's prompt obeys one
+switch.
+
 `shared/apps.js` exports the app list and is imported by the tile screen, `sw.js` and
 `github.js`, so adding an app means editing one array, and its `files` are what the worker
 precaches. The list is
@@ -91,9 +102,9 @@ Everything shared is in place, so an app is its folder plus two one-line registr
 
 What you do **not** have to build: the setup gate is a config read (`getConfig()`) and six lines
 of HTML; the sync line and the logs panel are `createSync()` and `renderLogs()`; the icon set,
-the overlays and the settings row come from `shared/ui.js`; the markdown renderer and its
+the overlays, the settings row and the dockable header come from `shared/ui.js`; the markdown renderer and its
 stylesheet are shared already. Data goes under `<slug>/` in the data repo, and device settings
-under `<slug>.*` in `kv`.
+under `<slug>.*` in `kv` — except the Mine-wide ones, under `mine.*`.
 
 Two conventions the shared code assumes: an app that opens overlays has a `#scrim`, and it calls
 `registerPops()` once with the overlays `closePops()` should close.

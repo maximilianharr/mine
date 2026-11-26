@@ -541,7 +541,7 @@ time across a DST change, a moved occurrence is listed on its new day and not it
 
 **Docking the pane.** At 900 px: that a press on the label that moves at once leaves the pane
 at the top; that the same press held for a moment and dragged into the lower half docks it at
-the bottom, with the sync line above it, the choice stored as `calendar.barPosition`, and neither
+the bottom, with the sync line above it, the choice stored as `mine.barPosition`, and neither
 the picker nor a leftover drop zone or lifted copy on screen; that the filter then opens
 **upwards**, its bottom edge above its button's top; and that a reload keeps it at the bottom. At
 360 px: that the period row is **above** the buttons when docked at the bottom, and that a finger
@@ -603,6 +603,33 @@ restores those paths, and leaves the panel reading `in sync`.
 
 The one thing this cannot check is the drain succeeding, because that needs a real token. What it
 does check is the half that used to be unreachable: what the app says when the drain does not.
+
+### Notes
+
+`test/check-notes.mjs`, seeded from `serve.py`'s `notes` fixture: a handful of notes with
+different `updated` times, tags shared between them, one untagged, and one with a long body.
+
+**The grid.** That the header holds `+`, search, filter, ☰ and ⌂ in one row and fits 320 px; that
+the cards are in `updated` order, newest first; that a card carries its title, its rendered
+body, its tags and its date; that the grid is one column at 360 px and more than one at 1200 px;
+and that nothing scrolls sideways at 320 or 360 px, light and dark.
+
+**The popup.** That a card opens its note with no disk showing; that changing the title shows the
+disk and saving writes the file with the new title, a newer `updated`, the same `created`, and
+any hand-added key kept; that the saved note moves to the front of the grid; that `+` opens an
+empty note whose disk is disabled until it has a title, and whose save writes a file under
+`notes/YYYY/MM/` with `created` and `updated` equal; that a tag can be ticked off and a new one
+typed in the tags popup; that the trashcan, with `confirm` stubbed, deletes the file; and that
+an edited popup's `x` asks before discarding, and does not once `mine.confirmDiscard` is off.
+
+**The filter.** That ticking one tag shows only the notes carrying it, two tags show either, and
+`untagged` shows the note with none; that the funnel shows the count; and that a reload keeps it.
+
+**The header dock.** That a held drag of the header to the lower half docks it at the bottom and
+stores `mine.barPosition`, and that the calendar then opens docked at the bottom too.
+
+The model — sorting, the fallbacks for a hand-written file, a save keeping keys it does not
+own — is in `unit.mjs`.
 
 ## A check must be able to fail
 

@@ -134,7 +134,8 @@ moment — a button included, with a finger or a mouse — lifts the whole pane,
 phone; two dashed places appear at the top and the bottom of the screen, the one in whose half
 the pane is held is marked, and releasing docks it there. A press that does not hold is still a
 click on whatever was pressed, and a hold opens nothing. Where it is docked is **remembered per
-device**, like the board's orientation, and holds for every view, the board included.
+device and for all of Mine** — the notes header docks with it — and holds for every view, the
+board included.
 
 At the bottom, **the sync line moves to the top**, so the two never stack, and **on a phone the
 two rows swap**: the period goes on the upper row and the six buttons on the lower, nearest the
@@ -1009,7 +1010,7 @@ why two of them are no longer named after the kanban:
 | Time zone | a zone name such as `Europe/Berlin`, defaulting to the device's own |
 | Date format | `auto` (the device's locale), `dd.mm.yyyy` or `mm/dd/yy` |
 | Calendar weeks | the month view's week-number gutter |
-| Confirm discard | whether leaving an edited popup asks before discarding |
+| Confirm discard | whether leaving an edited popup asks before discarding, in every app |
 | Sprint length | in weeks |
 | First sprint | the date sprint 1 starts on |
 | Theme | system, light or dark |
@@ -1039,7 +1040,8 @@ first sprint date, which are data and live in the repo so they follow you and me
 everywhere. The board's orientation is a device preference too, and the one of them with no row
 here: it is picked in the zoom, where it is read as a view control rather than as a setting.
 Theme and date format apply to all of Mine, not the calendar alone, and the main app's settings
-shows the same two rows.
+shows the same two rows. Confirm discard is Mine-wide too: the notes app's prompt obeys the same
+switch.
 
 ## On a phone
 
