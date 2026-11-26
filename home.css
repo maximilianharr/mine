@@ -47,8 +47,4 @@ dd { margin: 0; word-break: break-word; }
 
 /* The two settings that belong to Mine rather than to one app. */
 .prefs { margin: 1rem 0; }
-.prefrow { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px solid var(--line); }
-.prefrow span { flex: 1; font-size: .85rem; }
-.prefrow select { width: auto; min-width: 8rem; margin: 0; padding: .5rem; font: inherit;
-  color: var(--fg); background: var(--raise); border: 1px solid var(--line); border-radius: .45rem; }
 .prefs .note { margin: .5rem 0 0; font-size: .75rem; color: var(--muted); }

@@ -128,8 +128,8 @@ const settings = await ev(`(() => ({
   screen: [...document.querySelectorAll('section')].filter(s => !s.hidden).map(s => s.id),
   info: [...document.querySelectorAll('#settings-info dt')].map(d => d.textContent),
   token: document.querySelector('#settings-info').textContent,
-  prefs: [...document.querySelectorAll('#mine-prefs .prefrow')].map(r => ({
-    label: r.querySelector('span').textContent,
+  prefs: [...document.querySelectorAll('#mine-prefs .srow')].map(r => ({
+    label: r.querySelector('.slab').textContent,
     options: [...r.querySelectorAll('option')].map(o => o.value)
   })),
   over: document.documentElement.scrollWidth - document.documentElement.clientWidth

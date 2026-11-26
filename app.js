@@ -3,6 +3,7 @@ import { getConfig, setConfig, persist } from './shared/store.js';
 import { THEMES, DATE_FORMATS, loadPrefs, setPref, applyTheme } from './shared/prefs.js';
 import { testConnection } from './shared/github.js';
 import { createSync } from './shared/sync.js';
+import { el, row, choose } from './shared/ui.js';
 
 const $ = s => document.querySelector(s);
 const show = id => document.querySelectorAll('section').forEach(s => s.hidden = s.id !== id);
@@ -94,36 +95,15 @@ $('#to-home').addEventListener('click', home);
 // here and in every app's settings.
 async function minePrefs() {
   const prefs = await loadPrefs();
+  const set = key => async v => {
+    await setPref(key, v);
+    if (key === 'theme') applyTheme(v);
+  };
   $('#mine-prefs').replaceChildren(
-    prefRow('Theme', THEMES, prefs.theme, 'theme'),
-    prefRow('Date format', DATE_FORMATS, prefs.dateFormat, 'dateFormat'),
-    row('p', 'note', 'Both apply to all of Mine. They follow the device until you choose otherwise.')
+    row('Theme', choose(THEMES.map(t => [t, t]), prefs.theme, set('theme'))),
+    row('Date format', choose(DATE_FORMATS.map(f => [f, f]), prefs.dateFormat, set('dateFormat'))),
+    el('p', 'note', 'Both apply to all of Mine. They follow the device until you choose otherwise.')
   );
-}
-
-const row = (tag, cls, text) => {
-  const n = document.createElement(tag);
-  n.className = cls;
-  n.textContent = text;
-  return n;
-};
-
-function prefRow(label, options, current, key) {
-  const wrap = row('div', 'prefrow', '');
-  const select = document.createElement('select');
-  for (const v of options) {
-    const o = document.createElement('option');
-    o.value = v;
-    o.textContent = v;
-    o.selected = v === current;
-    select.append(o);
-  }
-  select.addEventListener('change', async () => {
-    await setPref(key, select.value);
-    if (key === 'theme') applyTheme(select.value);
-  });
-  wrap.append(row('span', '', label), select);
-  return wrap;
 }
 
 $('#forget').addEventListener('click', () => {
