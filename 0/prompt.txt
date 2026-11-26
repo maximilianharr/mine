@@ -1,0 +1,22 @@
+<task-notification>
+<task-id>bb3btg0tt</task-id>
+<summary>Monitor event: "calendar suite finishing"</summary>
+<event>[Monitor expired after 15m with no events delivered. Re-arm it if you still need the watch — and widen the filter if silence was unexpected.]</event>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b95iolj80</task-id>
+<summary>Monitor event: "full test suite finishing"</summary>
+<event>[Monitor expired after 15m with no events delivered. Re-arm it if you still need the watch — and widen the filter if silence was unexpected.]</event>
+</task-notification>
+
+---
+
+there is a Strange bug in the notes app. The last Note is visible for a while, then dissapears. When the next note is written, then it reappears. bit the next not dissapears then. Any ideas? after a while the notes appear again. maybe after they are pushed?
+Furthermore, add a frontmatter "pinned" boolean to pin the apps to the top.  Show the pin icon in the note on the top row at the left, same row where delete etc is. In settings the user shall be able to set the Number of columns. By default it is two for mobile und four for desktop view
+
+---
+
+continue
