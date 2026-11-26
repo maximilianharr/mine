@@ -1,0 +1,5 @@
+great. last task. swap the theme names: light/neutral. As i like the neutral theme more. when system as theme is selected then use light/dark (after renaming) as default
+
+---
+
+yes
