@@ -220,8 +220,13 @@ const typeAndEnter = async value => {
     n.value = ${JSON.stringify(value)}; n.focus(); })()`);
   await pressEnter('#fpop input');
 };
-// The hamburger names its three errands before any opens: one tap to show them, one to pick.
+// The hamburger names its two errands before any opens: one tap to show them, one to pick.
 const menu = async which => {
+  if (which === 'filter') {           // the filter has a button of its own in the pane
+    await ev(`document.querySelector('#filter-btn').click()`);
+    await sleep(400);
+    return;
+  }
   await ev(`document.querySelector('#menu-btn').click()`);
   await sleep(350);
   if (!which) return;
@@ -826,9 +831,13 @@ await closeForm();
 // are filled by icon() at boot. An empty one is what a missed id or a renamed table entry leaves
 // behind, and it would otherwise still pass the position and colour checks below.
 const bare = await ev(`[...document.querySelectorAll(
-  '#zoom-btn, #menu-btn, #board, #home, #day-add, #day-close, #sub-close, #settings-close')]
+  '#search-btn, #filter-btn, #menu-btn, #board, #home, #day-add, #day-close, #sub-close, #settings-close')]
   .filter(b => !b.querySelector('svg')).map(b => b.id)`);
 eq('every shell button got its icon from the table', bare, []);
+// The zoom draws no icon in a calendar view: it reads the period it is in.
+eq('the zoom reads the period it is in', await ev(
+  `[document.querySelector('#zoom-btn').textContent, !!document.querySelector('#zoom-btn svg')]`),
+  ['M', false]);
 
 // One popup: clicking an entry opens it, shown as text, with no input in it until a row is
 // clicked, and its top row runs trashcan, x - no pen and no disk, nothing having changed yet.
@@ -932,18 +941,16 @@ await closeForm();
 
 // ---- 4. the filter and the top pane ------------------------------------------------------------
 
-// The hamburger names its three errands and opens none: one tap shows `filter`, `settings` and
-// `logs`, a second opens the one that was meant. There is still no gear and no filter button in
-// the pane, because all three are behind this one button.
+// The filter has a button of its own in the pane; the hamburger names its two errands and opens
+// neither: one tap shows `settings` and `logs`, a second opens the one that was meant.
 await viewport(900);
 await open();
-eq('there is no gear and no filter button in the pane',
-  await ev(`document.querySelectorAll('#gear, #filter-btn').length`), 0);
+eq('there is no gear in the pane', await ev(`document.querySelectorAll('#gear').length`), 0);
 await menu();
-eq('the hamburger opens a menu naming its three errands', await ev(
+eq('the hamburger opens a menu naming its two errands', await ev(
   `(() => { const p = document.querySelector('#menu-pop');
     return !p.hidden && [...p.querySelectorAll('.mrow')].map(b => b.textContent); })()`),
-  ['filter', 'settings', 'logs']);
+  ['settings', 'logs']);
 eq('and opens none of them yet', await ev(
   `[document.querySelector('#filter-pop').hidden,
     document.querySelector('#settings-panel').hidden,
@@ -954,15 +961,17 @@ eq('the menu hangs off the hamburger, within its right edge', await ev(
     return [p.top > b.bottom, Math.round(p.right) <= Math.round(b.right) + 1]; })()`),
   [true, true]);
 
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(200);
 await menu('filter');
-eq('filter opens the filter alone', await ev(
+eq('the filter button opens the filter alone', await ev(
   `[document.querySelector('#filter-pop').hidden,
     document.querySelector('#settings-panel').hidden,
     document.querySelector('#menu-pop').hidden]`), [false, true, true]);
-// Hanging off the hamburger rather than centred: the view it narrows has to stay in sight while
+// Hanging off its button rather than centred: the view it narrows has to stay in sight while
 // it is narrowed, which a centred card over the middle of the screen cannot do.
-ok('and hangs off the hamburger rather than being centred', await ev(
-  `(() => { const b = document.querySelector('#menu-btn').getBoundingClientRect();
+ok('and hangs off its button rather than being centred', await ev(
+  `(() => { const b = document.querySelector('#filter-btn').getBoundingClientRect();
     const p = document.querySelector('#filter-pop').getBoundingClientRect();
     return p.top > b.bottom && p.top < b.bottom + 20; })()`), 'the filter is not under the button');
 // The two lists are behind a row each, so the dropdown stays short however many groups there are.
@@ -1172,7 +1181,8 @@ eq('and the calendar icon returns to the month', await ev(`!!document.querySelec
 // Read from the left edges, so a reordering that looks right but wires the wrong button cannot
 // pass - and at 320 px every control has to share one line.
 const pane = `(() => {
-  const on = ['#board', '#zoom-btn', '#prev', '#period', '#next', '#menu-btn', '#home']
+  const on = ['#board', '#zoom-btn', '#search-btn', '#prev', '#period', '#next', '#filter-btn', '#menu-btn',
+    '#home']
     .map(id => [id, document.querySelector(id)])
     .filter(([, n]) => n && n.getClientRects().length)
     .map(([id, n]) => { const r = n.getBoundingClientRect();
@@ -1185,8 +1195,9 @@ const pane = `(() => {
 
 await viewport(900);
 await open();
-eq('the pane reads view, zoom, period, panel, home', (await ev(pane)).order,
-  ['#board', '#zoom-btn', '#prev', '#period', '#next', '#menu-btn', '#home']);
+eq('the pane reads view, zoom, search, period, filter, menu, home', (await ev(pane)).order,
+  ['#board', '#zoom-btn', '#search-btn', '#prev', '#period', '#next', '#filter-btn', '#menu-btn',
+    '#home']);
 
 // About half an arrow glyph either side of the label: the point is a visible separation, not a
 // number, so it is measured against the arrow's own font size.
@@ -1206,7 +1217,8 @@ await open();
 // Rows are clustered by vertical centre rather than compared exactly, so a one-pixel difference
 // between two controls of unequal height cannot read as a third row.
 const narrow = await ev(`(() => {
-  const on = ['#board', '#zoom-btn', '#prev', '#period', '#next', '#menu-btn', '#home']
+  const on = ['#board', '#zoom-btn', '#search-btn', '#prev', '#period', '#next', '#filter-btn', '#menu-btn',
+    '#home']
     .map(id => [id, document.querySelector(id)])
     .filter(([, n]) => n && n.getClientRects().length)
     .map(([id, n]) => { const r = n.getBoundingClientRect();
@@ -1227,8 +1239,8 @@ const narrow = await ev(`(() => {
     arrowFs: fs('#prev'), iconPx: (on.find(o => o.id === '#board') || { svg: 0 }).svg };
 })()`);
 eq('on a phone the pane is two rows', narrow.rows, 2);
-eq('the first holds the four that go somewhere', narrow.first,
-  ['#board', '#zoom-btn', '#menu-btn', '#home']);
+eq('the first holds the six that go somewhere', narrow.first,
+  ['#board', '#zoom-btn', '#search-btn', '#filter-btn', '#menu-btn', '#home']);
 ok('sharing the row equally', Math.max(...narrow.firstW) - Math.min(...narrow.firstW) <= 2,
   narrow.firstW.join('px, ') + 'px');
 eq('and the second the period, its arrows back', narrow.second,
@@ -1283,7 +1295,7 @@ for (const mode of ['M', 'W', 'D', 'Y', 'K']) {
 await viewport(900);
 await open();
 
-// ---- 4b. the filter narrows every view, and says so on the hamburger ---------------------------
+// ---- 4b. the filter narrows every view, and says so on its button ------------------------------
 // The groups were always applied everywhere; the stages and importance were the board's alone
 // and were forgotten on a reload. All three are one switch each now, applied in one place, and
 // a filter that is on is visible from the pane without opening anything.
@@ -1296,7 +1308,7 @@ eq('the stage icon opens the three stages', await ev(
   `[...document.querySelectorAll('#filter-sub .glab')].map(l => l.textContent.trim())`),
   ['Todo', 'Doing', 'Done']);
 
-const countOn = () => ev(`(() => { const b = document.querySelector('#menu-btn .fcount');
+const countOn = () => ev(`(() => { const b = document.querySelector('#filter-btn .fcount');
   return b ? b.textContent : ''; })()`);
 eq('and nothing is on it while nothing is filtered', await countOn(), '');
 
@@ -1315,7 +1327,7 @@ ok('a stage switched off hides those tasks from the month',
   noDone.length < all.length && !noDone.includes('Weekly shop'), JSON.stringify(noDone));
 ok('and leaves every event where it was',
   noDone.includes('Sprint planning') && noDone.includes('Dentist'), JSON.stringify(noDone));
-eq('the hamburger says one filter is on', await countOn(), '1');
+eq('its button says one filter is on', await countOn(), '1');
 
 await tick('important only');
 const onlyImportant = await titles();
@@ -1340,6 +1352,60 @@ eq('switching them back off clears the count', await countOn(), '');
 eq('and puts everything back', (await titles()).length, all.length);
 await ev(`document.querySelector('#scrim').click()`);
 await sleep(250);
+
+// ---- 4c. search ---------------------------------------------------------------------------------
+// The magnifier opens Mine's search over the calendar folder. It lists as you type, a result
+// opens its entry over the search, and closing the entry comes back to the query as it was.
+
+await viewport(900);
+await open();
+const searchFor = async q => {
+  await ev(`(() => { const i = document.querySelector('#search-pop .sq');
+    i.value = ${JSON.stringify(q)}; i.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await sleep(150);
+  return ev(`[...document.querySelectorAll('#search-pop .hit .hit-title')].map(t => t.textContent)`);
+};
+await ev(`document.querySelector('#search-btn').click()`);
+await sleep(400);
+eq('the magnifier opens the search with the cursor in it', await ev(
+  `[!document.querySelector('#search-pop').hidden,
+    document.activeElement === document.querySelector('#search-pop .sq')]`), [true, true]);
+eq('and an empty query lists nothing', await searchFor(''), []);
+const plants = await searchFor('wat pla');
+eq('a repeating entry is found once, by the start of its words', plants.filter(t => /water the plants/i.test(t)).length, 1);
+eq('a word no entry holds finds nothing', await searchFor('zzqx'), []);
+eq('and says so', await ev(`document.querySelector('#search-pop .hit-more').textContent`), 'Nothing found.');
+eq('the settings and groups files are never results', await ev(`(async () => {
+  const i = document.querySelector('#search-pop .sq');
+  i.value = 'kanban'; i.dispatchEvent(new Event('input', { bubbles: true }));
+  return [...document.querySelectorAll('#search-pop .hit')].map(h => h.dataset.path)
+    .filter(p => /groups|settings/.test(p));
+})()`), []);
+await searchFor('water plants');
+ok('the matched words are marked', await ev(
+  `[...document.querySelectorAll('#search-pop .hit mark')].some(m => /^water$/i.test(m.textContent))`),
+  'no mark on "water"');
+await ev(`[...document.querySelectorAll('#search-pop .hit')]
+  .find(h => /water the plants/i.test(h.textContent)).click()`);
+await sleep(400);
+eq('a result opens its entry', await ev(`!document.querySelector('#popup').hidden`), true);
+ok('the one it names', /water the plants/i.test(await ev(`document.querySelector('#f-rows').textContent`)),
+  'the popup is not the plants');
+await closeForm();
+eq('closing it comes back to the search as it was', await ev(
+  `[!document.querySelector('#search-pop').hidden, document.querySelector('#search-pop .sq').value]`),
+  [true, 'water plants']);
+await ev(`document.querySelector('#search-pop [aria-label="Close"]').click()`);
+await sleep(200);
+eq('its x closes it', await ev(`document.querySelector('#search-pop').hidden`), true);
+ok('it hangs from the top of the screen', await ev(`(() => {
+  document.querySelector('#search-btn').click();
+  return new Promise(r => setTimeout(() => {
+    const t = document.querySelector('#search-pop').getBoundingClientRect().top;
+    document.querySelector('#scrim').click();
+    r(t < 40);
+  }, 300));
+})()`), 'the search is not at the top');
 
 // ---- 5. the month cell and the year view -------------------------------------------------------
 

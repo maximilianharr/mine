@@ -103,6 +103,38 @@ It is hand-written rather than vendored. It is small enough to be, and the depen
 [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md) asks of everything in it what would be
 wrong with hand-rolling it — for this, nothing.
 
+## Search
+
+Every app gets the same search, **in `shared/`, over that app's own folder**: the calendar's
+magnifier searches `calendar/` and nothing else, and a zettelkasten's would search its own. It
+runs on the device's full copy of the repo, so it works offline and **lists as you type**.
+
+It is **one search for every app, so it knows no app's format.** Each app says when it calls it
+which folder is its own, which frontmatter key holds the title and which the date, which further
+keys are worth searching, and what opening a result does. Every markdown file in Mine should have
+a **title** and a **date**; where an app names no key for one, the search falls back — the title
+to the first `#` heading and then the file name, the date to a `YYYY-MM-DD` in the path — so a
+hand-written note with no frontmatter at all is still found. Where an app *does* name its title
+key, a file without that key is not a document: that is how a folder's own settings files stay
+out of the results.
+
+What is matched:
+
+- **The body as text, not as markdown.** Emphasis, heading marks, list and checkbox markers and
+  backticks are dropped before matching, and a link matches on its words rather than its URL.
+- **Every word of the query**, each one anywhere in the title, the body or a named key, and each
+  one **at the start of a word**: `dent` finds "dentist", `entist` finds nothing. Case and accents
+  are ignored, so `cafe` finds "Café". There is no fuzzy or typo matching.
+- **Titles first**: a file whose title holds every word is listed before one where the body had
+  to help. Within each, the nearest date to today first, what is coming before what has been,
+  and an undated file last.
+
+A result is a row with the title, the date and a line of the body around the first match, the
+matched words marked. The list stops at 50 and says there are more; an empty query lists nothing.
+It hangs from the top of the screen rather than being centred, because the list grows as you
+type and a centred box would move its own input on every keystroke — and on a phone the keyboard
+covers the lower half anyway.
+
 ## Using it
 
 - Changes appear instantly and are queued for GitHub in the background.

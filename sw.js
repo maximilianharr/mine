@@ -1,12 +1,13 @@
 import { APPS } from './shared/apps.js';
 
-const VERSION = '2026-11-26.4';
+const VERSION = '2026-11-26.5';
 const CACHE = `mine-${VERSION}`;
 
 const SHELL = [
   './', './index.html', './app.js', './style.css', './home.css', './manifest.json', './icon.svg',
   './shared/apps.js', './shared/store.js', './shared/github.js', './shared/md.js',
   './shared/markdown.js', './shared/prefs.js', './shared/ui.js', './shared/sync.js',
+  './shared/search.js',
   './shared/vendor/js-yaml.mjs', './shared/vendor/rrule.mjs', './shared/vendor/tslib.mjs',
   ...APPS.flatMap(a => [`./${a.slug}/`, `./${a.slug}/icon.svg`,
     ...(a.files || []).map(f => `./${a.slug}/${f}`)])

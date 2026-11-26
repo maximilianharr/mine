@@ -4,16 +4,17 @@ import { getConfig, getKV, setKV } from '../shared/store.js';
 import { createSync } from '../shared/sync.js';
 import {
   loadModel, todayKey, addDays, addMonths, partsOf, weekStartOf, isoWeek, setZone,
-  sprintRange, sprintOf
+  sprintRange, sprintOf, occurrences
 } from './data.js';
 import {
   S, $, el, phone, dayLabel, icon, monthDays, currentSprint, openPop, closePops, registerPops
 } from './ui.js';
 import { renderView, wireView, openDayPop } from './views.js';
 import { renderKanban } from './kanban.js';
-import { escapeEntry } from './popup.js';
+import { escapeEntry, openEntry } from './popup.js';
 import { openFilter, openPanel, openLogs, renderFilter, renderFilterCount } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
+import { openSearch, refreshSearch } from '../shared/search.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
 
@@ -34,6 +35,7 @@ function render() {
   renderZoom();
   renderFilter();
   renderFilterCount();
+  refreshSearch();
 }
 
 // The pane has to fit a phone, so every label is short. The month name is the device locale's
@@ -58,7 +60,7 @@ function periodLabel() {
 }
 
 // ---- the zoom ------------------------------------------------------------------------------
-// A magnifier beside the view switch, offering what the view it was opened in can do and nothing
+// A button beside the view switch, reading the view it is in and offering what the view it was opened in can do and nothing
 // else: the four periods in a calendar view, the board's two orientations on the board. It
 // replaces the label's old cycle, which asked up to three taps to reach a view and never said
 // which one you were in.
@@ -68,6 +70,12 @@ const ORIENTS = [['vert', 'vertical'], ['horz', 'horizontal']];
 
 function renderZoom() {
   const board = S.view.mode === 'K';
+  const btn = $('#zoom-btn');
+  btn.replaceChildren(board ? icon(S.prefs.boardOrientation === 'vert' ? 'vert' : 'horz')
+    : el('span', 'glyph', S.view.mode));
+  btn.setAttribute('aria-label', board
+    ? `Zoom: ${S.prefs.boardOrientation === 'vert' ? 'vertical' : 'horizontal'}`
+    : `Zoom: ${PERIODS.find(([v]) => v === S.view.mode)[1]}`);
   const rows = board
     ? ORIENTS.map(([v, text]) => [v, text, S.prefs.boardOrientation === v, setOrientation])
     : PERIODS.map(([v, text]) => [v, text, S.view.mode === v, setMode]);
@@ -133,21 +141,47 @@ $('#next').addEventListener('click', () => step(1));
 // dropdown, and an entry is created where it will live - a cell, the day preview, or a kanban
 // column header.
 
-for (const [id, name] of [['#home', 'house'], ['#zoom-btn', 'zoom'], ['#menu-btn', 'menu'],
+for (const [id, name] of [['#home', 'house'], ['#search-btn', 'search'], ['#filter-btn', 'filter'],
+  ['#menu-btn', 'menu'],
   ['#day-add', 'plus'], ['#day-close', 'x'], ['#sub-close', 'x'], ['#settings-close', 'x'],
   ['#filter-close', 'x'], ['#filter-sub-close', 'x'], ['#fpop-close', 'x'], ['#logs-close', 'x']])
   $(id).append(icon(name));
 
-// ---- the hamburger's menu ------------------------------------------------------------------
-// Three errands behind one button, each named before it is opened and each opening on its own.
-// The first two used to open at once in a single panel, where a heading was the only thing
-// telling a group you hide this afternoon from the week's first day, and the filter had no room
-// to list its groups without pushing the settings off the screen.
-//
-// The third is the one you reach for when the sync line says something you did not expect: what
-// the last attempt did, what is still waiting, and the two ways out of it.
-const MENU = [['filter', 'filter', openFilter], ['gear', 'settings', openPanel],
-  ['logs', 'logs', openLogs]];
+// ---- search --------------------------------------------------------------------------------
+// The search is Mine's, in ../shared/search.js; what the calendar tells it is its folder, which
+// keys hold the title and the date, and what opening a result is. A file without a title is not
+// an entry - groups.md, settings.md and an override recording only what it changed - so a
+// repeating entry is one result, its rule file.
+
+$('#search-btn').addEventListener('click', () => openSearch({
+  folder: 'calendar/', title: 'title', date: 'start', fields: ['group', 'participants', 'location'],
+  open: openFound
+}));
+
+// A dated entry opens as itself. A repeating one opens on its next occurrence from today, or on
+// its last if the series is over.
+function openFound(path) {
+  const today = todayKey();
+  const rule = S.model.rules.find(r => r.path === path);
+  if (rule) {
+    const mine = (from, to) => occurrences(S.model, from, to).filter(o => o.seriesPath === path);
+    const start = String(rule.data.start).slice(0, 10);
+    const next = mine(today, addDays(today, 3660)).find(o => o.dayKey >= today);
+    return openEntry(next || mine(start < today ? start : today, today).pop());
+  }
+  const e = S.model.dated.find(d => d.path === path)
+    || [...S.model.overrides.values()].find(d => d.path === path);
+  if (!e) return;
+  const day = String(e.data.start ?? e.data['recurrence-id']).slice(0, 10);
+  openEntry(occurrences(S.model, addDays(day, -1), addDays(day, 1)).find(o => o.path === path));
+}
+
+// ---- the filter, and the hamburger's menu --------------------------------------------------
+// The filter has a button of its own in the pane: it is opened daily, and a menu in front of it
+// was a tap spent naming the one errand you came for. The hamburger keeps the two you open
+// rarely, each named before it is opened - the settings, and the logs, which you reach for when
+// the sync line says something you did not expect.
+const MENU = [['gear', 'settings', openPanel], ['logs', 'logs', openLogs]];
 
 function openMenu() {
   if (!$('#menu-pop').hidden) return closePops();
@@ -163,6 +197,7 @@ function openMenu() {
 }
 
 $('#menu-btn').addEventListener('click', openMenu);
+$('#filter-btn').addEventListener('click', openFilter);
 $('#filter-close').addEventListener('click', closePops);
 // The one `x` that leaves what is under it open.
 $('#filter-sub-close').addEventListener('click', () => { $('#filter-sub').hidden = true; });
@@ -305,7 +340,7 @@ wireView();
 
 // The overlays this app closes together. closePops() takes them from here rather than from a
 // list of its own, so it can live in ../shared/ui.js without knowing what the calendar has.
-registerPops(['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#filter-sub',
+registerPops(['#search-pop', '#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#filter-sub',
   '#settings-panel',
   '#logs-panel']);
 

@@ -54,6 +54,8 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   color: var(--fg); background: var(--soft); border: 0; border-radius: .55rem;
 }
 .nav.ic svg { width: 1.8rem; height: 1.8rem; display: block; }
+/* The zoom in a calendar view reads the period it is in rather than drawing an icon. */
+.nav.ic .glyph { font-size: 1.5rem; font-weight: 700; line-height: 1; min-width: 1.8rem; }
 
 /* A week or sprint label is long - "Sprint 7 - 02.11.2026 - 15.11.2026" is wider than a narrow
    phone on its own - so the label shrinks and ellipsises rather than pushing the page sideways.
@@ -404,6 +406,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   .tb-mid .nav { flex: 1 1 0; min-width: 0; }
   .nav { min-width: 2.2rem; }
   .nav.ic svg { width: clamp(1.3rem, 5.2vw, 1.9rem); height: clamp(1.3rem, 5.2vw, 1.9rem); }
+  .nav.ic .glyph { font-size: clamp(1.1rem, 4.6vw, 1.6rem); min-width: 0; }
   /* The second row's arrows are drawn at the size of the icons on the row above: they were
      larger than everything over them, which made the row that steps the period the loudest
      thing in the pane. */
@@ -589,6 +592,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   .tb-mid { gap: 1rem; }
   .period { font-size: 1.9rem; }
   .nav.ic svg { width: 2.1rem; height: 2.1rem; }
+  .nav.ic .glyph { font-size: 1.7rem; min-width: 2.1rem; }
   .nav { min-width: 3rem; min-height: 3rem; }
   .weekhead { font-size: .75rem; padding: .5rem .3rem .2rem; }
   .day { padding: .22rem; }

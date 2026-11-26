@@ -292,9 +292,9 @@ That the timed span is in the **top strip on both its days and in the hour grid 
 reading its start on the first and its end **arrowed** on the last, and that the strip's corner
 no longer says `all-day`. That the day preview for a day in the **middle** of a span lists it.
 
-**The filter, and the count on the hamburger.** That the stage row opens the three stages. That switching a stage off **hides those tasks from the month
+**The filter, and the count on its button.** That the stage row opens the three stages. That switching a stage off **hides those tasks from the month
 view** and leaves every event where it was; that `important only` keeps what is marked, **events
-included**, and drops what is not. That the hamburger carries **one per kind of narrowing** — two
+included**, and drops what is not. That the filter button carries **one per kind of narrowing** — two
 switches on reads `2`, not the number of things hidden — that it is empty when nothing is
 filtered, and that **both survive a reload**, which is what the per-device storage is for.
 
@@ -361,14 +361,14 @@ with no disk showing, so merely activating a row is not a change. That the promp
 agree in both
 directions: nothing typed means no disk and no prompt, something typed means both.
 
-**The hamburger's menu.** That **one button still covers both and opens neither**: the hamburger
-is the only way in, there is no gear and no filter button anywhere in the pane, and one tap opens
-a menu whose rows read `filter` and `settings` with the filter dropdown and the settings panel
-both still hidden. That the menu hangs under the hamburger and within its right edge, read from
-the two bounding boxes. That tapping `filter` opens the filter **alone** and tapping `settings`
-opens the panel **alone**, each with the other and the menu hidden — a check that fails the moment
-the two are merged back into one overlay. That the filter hangs under the hamburger rather than
-being centred, because the view it narrows has to stay in sight while it is narrowed.
+**The hamburger's menu, and the filter's own button.** That there is no gear in the pane, and
+that one tap on the hamburger opens a menu whose rows read `settings` and `logs` — no `filter` —
+with the settings panel and the logs both still hidden. That the menu hangs under the hamburger
+and within its right edge, read from the two bounding boxes. That the filter button opens the
+filter **alone** and tapping `settings` opens the panel **alone**, each with the other and the
+menu hidden — a check that fails the moment the two are merged back into one overlay. That the
+filter hangs under its own button rather than being centred, because the view it narrows has to
+stay in sight while it is narrowed.
 
 **The settings panel.** That it holds the nine rows and **no filter section** — `#filter-body` is
 not inside it. That the nine are two halves — every label's box in the left half of the row and
@@ -406,7 +406,8 @@ calendar icon there, returning to the month view, and that the home icon leaves 
 screen. That the label reads `NOV/26`, `W47/NOV`, `FR 20/NOV`, `2026` and `7` in the five views,
 and that the week label keeps its ISO number with *show calendar weeks* off.
 
-**The zoom.** That the magnifier opens a dropdown **anchored under itself** — its top edge below
+**The zoom.** That the button reads the period it is in — `M` on opening, with no icon drawn
+— and that it opens a dropdown **anchored under itself** — its top edge below
 the button's bottom, as the picker's is — and not a centred card, which is the check that keeps
 the app at two overlay mechanisms. That in a calendar view it lists exactly `day`, `week`,
 `month`, `year` and marks the current one; that picking each lands in that view; and that it
@@ -416,15 +417,25 @@ period on the board is the view switcher growing a second head. That the orienta
 reload** and the zoom level does not: reopening lands on the month view with the orientation last
 picked.
 
-**The pane's order and its phone layout.** That on a desktop the controls run board, zoom, then
-the centred period group, then hamburger and home — read from their left edges, so a reordering
-that looks right but wires the wrong button cannot pass. That at 320 px the pane is **two rows**:
-board, zoom, hamburger and home share the first with their bounding boxes on one line and none
-dropped, and `‹`, the label and `›` share the second. That the four on the first row are of equal
+**The pane's order and its phone layout.** That on a desktop the controls run board, zoom,
+search, then the centred period group, then filter, hamburger and home — read from their left
+edges, so a reordering that looks right but wires the wrong button cannot pass. That at 320 px
+the pane is **two rows**: the six share the first with their bounding boxes on one line and none
+dropped, and `‹`, the label and `›` share the second. That the six on the first row are of equal
 width, and that the label on the second is **wider than either arrow** — which is the whole
 reason the second row exists, so a layout that splits the pane but leaves the label narrow has
 not done the job. That **no horizontal swipe does anything**: the same gesture on the label, on a
 grid and on the board leaves the period, the sprint and the layout exactly as they were.
+
+**Search.** That the magnifier opens the search with the cursor in its input, and that an empty
+query lists nothing. That `wat pla` finds the weekly plants task **once** — a repeating entry is
+its rule file, by the start of its words — that a word nothing holds lists nothing and says so,
+and that `groups.md` and `settings.md` are never results. That the matched word is marked. That
+a result opens its entry, the one it names, and that closing the entry **comes back to the search
+with the query still in it**. That its `x` closes it, and that it hangs from the top of the screen
+rather than being centred. What is matched and in which order — markdown read as text, accents
+folded, every word at the start of a word, titles first and then the nearest date, the title-key
+rule and the fallbacks for an app that names no keys — is pure and checked in `unit.mjs`.
 
 **The dropdown's month of days.** That it draws seven weekday letters and a month of day
 buttons with **today marked once**, and that picking a day moves the period and closes the

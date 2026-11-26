@@ -22,10 +22,12 @@
 
 <main id="cal" hidden>
   <div class="topbar">
-    <!-- leftmost: the way to the other kind of view, and the zoom -->
+    <!-- leftmost: the way to the other kind of view, the zoom, which shows the view it is in,
+         and the search -->
     <div class="tb-side">
       <button id="board" class="nav ic" aria-label="Kanban"></button>
       <button id="zoom-btn" class="nav ic" aria-label="Zoom" aria-haspopup="true" aria-expanded="false"></button>
+      <button id="search-btn" class="nav ic" aria-label="Search"></button>
     </div>
     <!-- centred: the period. The label opens the picker, and that is all it does. -->
     <div class="tb-mid">
@@ -33,9 +35,11 @@
       <button id="period" class="period" aria-label="Pick a date" aria-haspopup="true" aria-expanded="false"><span id="period-label">—</span></button>
       <button id="next" class="nav" aria-label="Next">›</button>
     </div>
-    <!-- rightmost: the hamburger, and the way out -->
+    <!-- rightmost: the filter, the hamburger, and the way out -->
     <div class="tb-side end">
-      <button id="menu-btn" class="nav ic" aria-label="Filter and settings"
+      <button id="filter-btn" class="nav ic" aria-label="Filter"
+              aria-haspopup="true" aria-expanded="false"></button>
+      <button id="menu-btn" class="nav ic" aria-label="Settings and logs"
               aria-haspopup="true" aria-expanded="false"></button>
       <a class="nav ic" id="home" href="../" aria-label="Back to Mine"></a>
     </div>
@@ -117,7 +121,7 @@
   <div id="sub-body"></div>
 </div>
 
-<!-- the hamburger's three errands, named before any is opened -->
+<!-- the hamburger's two errands, named before either is opened -->
 <div class="pop" id="menu-pop" hidden>
   <div id="menu-body"></div>
 </div>
@@ -132,7 +136,7 @@
   <div id="logs-body"></div>
 </div>
 
-<!-- the filter: a dropdown off the hamburger, because the view it narrows has to stay in sight -->
+<!-- the filter: a dropdown off its own button, because the view it narrows has to stay in sight -->
 <div class="pop" id="filter-pop" hidden>
   <div class="pop-head">
     <h2>Filter</h2><span class="spacer"></span>

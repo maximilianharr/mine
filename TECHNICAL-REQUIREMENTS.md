@@ -23,7 +23,7 @@ IndexedDB — that is the whole mechanism behind "enter the token once".
 /index.html /manifest.json /sw.js
 /style.css  the shared base      /home.css  the tile screen's own
 /shared/  apps.js  store.js  github.js  md.js  markdown.js  prefs.js
-          ui.js  sync.js  vendor/
+          ui.js  sync.js  search.js  vendor/
 /calendar/  index.html  app.js  data.js  ui.js  views.js  kanban.js  popup.js  settings.js
             style.css  icon.svg  sample/
 /test/    run.sh  unit.mjs  serve.py  cdp.mjs  check-mine.mjs  check-calendar.mjs
@@ -51,6 +51,18 @@ icon set is shared for the verbs and the two conventions REQUIREMENTS.md states 
 a green disk saves, a red trashcan deletes - and an app merges its own subjects in with
 `addIcons()`; a second app drawing its own trashcan is how those conventions would quietly stop
 being conventions.
+
+`shared/search.js` is the search every app opens over its own folder. It reads the mirror with
+`allFiles(folder)` and nothing else, so it is offline by construction, and it is given its
+format rather than knowing one: `openSearch({ folder, title, date, fields, open })` names the
+folder, the frontmatter keys for the title and the date, the further keys to search, and what a
+result does when pressed. Its matching - `index()`, `find()`, `snippet()` - is pure and checked in
+`test/unit.mjs`; the popup it builds itself and appends to the page, as `#search-pop`, so an app
+needs no markup for it, only that id in its `registerPops()` list so its scrim and Escape close
+it. Opening it re-reads the folder; `refreshSearch()`, called from an app's render, re-reads it
+while it is open, so a result edited from the search reads as saved. The index is rebuilt on
+every open rather than kept: a few thousand small files parse in milliseconds, and a kept index
+is a second copy of the mirror that can disagree with it.
 
 `shared/apps.js` exports the app list and is imported by the tile screen, `sw.js` and
 `github.js`, so adding an app means editing one array, and its `files` are what the worker

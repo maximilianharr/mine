@@ -166,6 +166,32 @@ button.danger { color: var(--bad); background: none; border: 1px solid var(--lin
 .mrow:hover { background: var(--soft); }
 .mrow svg { flex: none; width: 1.05rem; height: 1.05rem; }
 
+/* ---- search ---- */
+/* Hung from the top rather than centred: the list grows as you type, and a centred box would
+   move its own input under the finger on every keystroke - and on a phone the keyboard covers
+   the lower half anyway. */
+.pop.search {
+  top: max(.75rem, env(safe-area-inset-top)); transform: translateX(-50%);
+  width: min(34rem, calc(100vw - 1.5rem)); max-height: 80dvh;
+  display: flex; flex-direction: column;
+}
+.search .pop-head { margin-bottom: .3rem; }
+.search .sq { flex: 1; min-width: 0; margin: 0; }
+.hits { overflow-y: auto; display: flex; flex-direction: column; gap: .15rem; }
+.hit {
+  display: block; width: 100%; margin: 0; padding: .5rem; text-align: left;
+  color: var(--fg); background: none; border: 0; border-radius: .45rem; cursor: pointer;
+}
+.hit:hover { background: var(--soft); }
+.hit-top { display: flex; align-items: baseline; gap: .5rem; }
+.hit-title { flex: 1; min-width: 0; font-family: var(--serif); font-weight: 600;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hit-date { flex: none; font-size: .75rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hit-snip { display: block; margin-top: .1rem; font-size: .78rem; color: var(--muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.hit-snip mark { color: var(--fg); background: var(--soft); font-weight: 600; border-radius: .15rem; }
+.hit-more { margin: .4rem .5rem; font-size: .78rem; color: var(--muted); }
+
 /* ---- settings rows ---- */
 /* Every row is two halves: the label in the left, its control in the right. A grid rather than
    a flex row, so the controls' left edges agree down the whole panel however long a label is -

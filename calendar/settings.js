@@ -1,6 +1,6 @@
-// The hamburger's three errands, each its own overlay. The filter is a dropdown off the hamburger,
-// because it is the half you open often and the view it narrows has to stay in sight while you
-// narrow it; the settings are the nine rows that change once, so they are a centred panel. One
+// The filter, and the hamburger's two errands, each its own overlay. The filter is a dropdown off
+// its own button in the pane, because it is the one you open often and the view it narrows has to
+// stay in sight while you narrow it; the settings are the nine rows that change once, so they are a centred panel. One
 // panel held both until the two were told apart by a heading alone - which is a weak way to
 // separate a thing you open daily from a thing you open twice, and it cost the filter the room
 // to show its groups. The logs are a centred panel too; what goes in it is drawn by
@@ -26,9 +26,10 @@ import {
 } from './ui.js';
 
 export function openFilter() {
+  if (!$('#filter-pop').hidden) return closePops();
   closePops();
   renderFilter();
-  openPop($('#filter-pop'), $('#menu-btn'), 'right');
+  openPop($('#filter-pop'), $('#filter-btn'), 'right');
 }
 
 export function openPanel() {
@@ -134,7 +135,7 @@ export function renderFilter() {
   // The stages and importance narrow **every** view, not only the board: a month with the done
   // ones out of it is as much a thing to want as a board of them, and importance is on an event
   // now. All of it is remembered per device - a filter that empties a month is one you want to
-  // find still on after a reload, and the hamburger's count says it is.
+  // find still on after a reload, and the filter button's count says it is.
   const kids = [...Object.keys(LISTS).map(listBtn), el('div', 'fsep')];
 
   const imp = el('label', 'glab imp');
@@ -162,8 +163,8 @@ export function renderFilter() {
   renderFilterCount();
 }
 
-// A filter that is on says so on the hamburger, which is otherwise the one button in the pane
-// that looks the same whatever it is doing. The count is **one per kind of narrowing** - the
+// A filter that is on says so on the filter's own button, which otherwise looks the same
+// whatever it is doing. The count is **one per kind of narrowing** - the
 // groups, the stages, importance, the assignee - rather than one per switched-off thing: a repo
 // with twenty groups and fifteen hidden would read 16, which is a true number nobody can act
 // on, where 4 says there are four things to look at in the one place that lists them.
@@ -174,10 +175,10 @@ export function filterCount() {
 
 export function renderFilterCount() {
   const n = filterCount();
-  $('#menu-btn').querySelector('.fcount')?.remove();
-  $('#menu-btn').setAttribute('aria-label',
-    n ? `Filter and settings — ${n} filter${n > 1 ? 's' : ''} on` : 'Filter and settings');
-  if (n) $('#menu-btn').append(el('span', 'fcount', String(n)));
+  $('#filter-btn').querySelector('.fcount')?.remove();
+  $('#filter-btn').setAttribute('aria-label',
+    n ? `Filter — ${n} filter${n > 1 ? 's' : ''} on` : 'Filter');
+  if (n) $('#filter-btn').append(el('span', 'fcount', String(n)));
 }
 
 // Nine rows and nothing after them: there is no paragraph explaining what is stored where,

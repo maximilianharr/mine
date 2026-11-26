@@ -269,9 +269,10 @@ calendar/ui.js        DOM helpers, the icon set, and the state every view reads
 calendar/views.js     year, month, week, day, and the day preview
 calendar/kanban.js    the board
 calendar/popup.js     the one entry popup: its rows, their inline editors, their writes
-calendar/settings.js  the filter dropdown, the settings panel and the logs panel: the hamburger's
-                      three errands
-calendar/app.js       the top pane, navigation, the picker, the zoom, the menu, the sync line
+calendar/settings.js  the filter dropdown, the settings panel and the logs panel: the filter
+                      button's and the hamburger's two errands
+calendar/app.js       the top pane, navigation, the picker, the zoom, the menu, the search's
+                      wiring, the sync line
 shared/prefs.js       theme and date format, which belong to Mine rather than to one app
 ```
 
@@ -284,7 +285,9 @@ which is the same serialised drain-then-pull the app runs on open and on focus.
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.
 
 **There are three overlay mechanisms.** `openPop` positions a dropdown under the button that
-opened it — the date picker, the zoom, the hamburger's menu and the filter. `openCentred` only
+opened it — the date picker, the zoom, the hamburger's menu and the filter. The search, which is
+`shared/search.js`'s, is a `.pop` hung from the top of the screen and opened with `openCentred`'s
+scrim. `openCentred` only
 unhides something already placed by `.centred` — the settings panel, the day preview, the group
 manager. `openRowPop` is the third, and the one thing that distinguishes it is what it does *not*
 do: it raises **no scrim**. That is deliberate and it is the reason it cannot be one of the other

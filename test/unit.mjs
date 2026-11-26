@@ -12,6 +12,7 @@ import {
   sprintOf, sprintRange, pathFor, idTail, entryFile, groupName, setZone, toInstant, wallParts,
   timeLabel, DEFAULT_ANCHOR
 } from '../calendar/data.js';
+import { plain, fold, index, find, snippet } from '../shared/search.js';
 
 let failed = 0;
 const ok = (name, pass, detail = '') => {
@@ -309,6 +310,40 @@ const late = buildModel([file('calendar/2026/01/a.md', 'title: Late\nstart: 2026
 eq('a late UTC instant lands on the next Berlin day',
   occurrences(late, '2026-01-16', '2026-01-16').map(o => o.title), ['Late']);
 eq('and not on the UTC one', occurrences(late, '2026-01-15', '2026-01-15'), []);
+
+// ---- search ----------------------------------------------------------------------------------
+// Mine's search reads files, so it is checked here against files: what counts as a document,
+// what of it is matched, and in which order the matches come.
+
+eq('markdown is matched as text', plain('# Head\n- [x] **bold** _it_ `code` [link](http://x.io) snake_case'),
+  'Head\nbold it code link snake_case');
+eq('accents and case fold away', fold('Café ÜBER'), 'cafe uber');
+const sfiles = [
+  file('calendar/groups.md', 'groups:\n  work: { color: "#000" }'),
+  file('calendar/2026/05/a.md', 'title: Dentist\nstart: 2026-05-02\ngroup: health', 'Bring the **x-ray**.'),
+  file('calendar/2026/03/b.md', 'title: Call about teeth\nstart: 2026-03-01', 'The dentist said [see here](https://dentist.example).'),
+  file('calendar/2026/06/c.md', 'title: Dentist again\nstart: 2026-06-10'),
+  file('calendar/2026/04/o.md', 'series: r\nrecurrence-id: 2026-04-01\nstage: done'),
+  file('notes/z.md', 'title: Dentist elsewhere')
+];
+const sdocs = index(sfiles, { folder: 'calendar/', title: 'title', date: 'start', fields: ['group'] });
+eq('a file without the named title key is not a document',
+  sdocs.map(d => d.path).sort(), ['calendar/2026/03/b.md', 'calendar/2026/05/a.md', 'calendar/2026/06/c.md']);
+eq('title matches first, then the nearest coming date, then the past',
+  find(sdocs, 'dent', '2026-04-01').map(d => d.title), ['Dentist', 'Dentist again', 'Call about teeth']);
+eq('every word has to match', find(sdocs, 'dentist xray', '2026-04-01').map(d => d.title), []);
+eq('a hyphenated word matches by its parts', find(sdocs, 'dentist ray', '2026-04-01').map(d => d.title), ['Dentist']);
+eq('a word must begin a word', find(sdocs, 'entist', '2026-04-01'), []);
+eq('a link does not match on its URL', find(sdocs, 'example', '2026-04-01'), []);
+eq('a named field is searched', find(sdocs, 'health', '2026-04-01').map(d => d.title), ['Dentist']);
+eq('an empty query finds nothing', find(sdocs, '  ', '2026-04-01'), []);
+const zettel = index([file('zk/1.md', '', '# A *thought*\n\nAbout Éclairs.'), { path: 'zk/2026-01-03-x.md', text: 'plain' }],
+  { folder: 'zk/' });
+eq('with no keys named, the title is the first heading, else the file name',
+  zettel.map(d => d.title), ['A thought', '2026-01-03-x']);
+eq('and the date comes from the path', zettel.map(d => d.date), ['', '2026-01-03']);
+eq('a snippet marks the matched word in the original spelling',
+  snippet('About Éclairs.', 'eclair'), [['About ', false], ['Éclair', true], ['s.', false]]);
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nall unit checks passed');
 process.exit(failed ? 1 : 0);

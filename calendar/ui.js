@@ -140,7 +140,11 @@ addIcons({
   // glyphs - there is no icon for either, deliberately: the sun was taken for weather and a flag
   // needed a digit.
   tick:   { d: 'M3.2 8.4 6.5 11.7 12.8 4.6', stroke: 2 },
-  // The two ways out of a view: the board, and the zoom that picks a period by name.
+  // The way to the board. The zoom beside it draws no icon in a calendar view - it reads the
+  // period it is in, D W M or Y - and on the board it draws the orientation it is in: three
+  // columns side by side, or three bands stacked. Bars rather than lines, so the stacked one
+  // cannot be read as the hamburger two buttons along.
   board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
-  zoom:   { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 }
+  horz:   { d: 'M2.5 3h3v10h-3zM6.5 3h3v10h-3zM10.5 3h3v10h-3z', stroke: 1.3 },
+  vert:   { d: 'M3 2.5h10v3H3zM3 6.5h10v3H3zM3 10.5h10v3H3z', stroke: 1.3 }
 });

@@ -45,12 +45,12 @@ centred — three columns stretched across a wide monitor are three columns of m
 and a card is read at the width a sentence is read at, not at a third of the screen. The pane
 itself is full width in both, so it never changes shape when you switch between them.
 
-In the top pane, three groups: the two view controls at the left, the period in the middle, the
-two ways out at the right.
+In the top pane, three groups: the two view controls and the search at the left, the period in
+the middle, the filter, the hamburger and the way out at the right.
 
 ```
-[board]    [zoom]     [‹]   [NOV/26]   [›]     [☰] [⌂]     a calendar view
-[calendar] [zoom]     [‹]   [7]        [›]     [☰] [⌂]     the kanban
+[board]    [M]  [search]     [‹]   [NOV/26]   [›]     [filter] [☰] [⌂]     a calendar view
+[calendar] [▥]  [search]     [‹]   [7]        [›]     [filter] [☰] [⌂]     the kanban
 ```
 
 Everything in the pane is drawn at **twice the size** it was: this is the row reached for on
@@ -59,14 +59,15 @@ every visit, and it was the smallest thing on the screen.
 **On a phone the pane is two rows**, each one filling the width:
 
 ```
-[board]  [zoom]  [☰]   [⌂]         the four that go somewhere
-[‹]     [ NOV/26 ]     [›]         the period, and the way to another
+[board] [M] [search] [filter] [☰] [⌂]     the six that go somewhere
+[‹]        [ NOV/26 ]        [›]          the period, and the way to another
 ```
 
 Five controls across one line left the period label — the one thing in the pane you read rather
 than aim at — no wider than the buttons beside it, and the arrows that step it had to be dropped
-to make even that fit. A second row buys back both. **The four controls that go somewhere share
-the first row equally**; the period takes the second, where **the two arrows are equal in size
+to make even that fit. A second row buys back both. **The six controls that go somewhere share
+the first row equally**, three from each side, so neither side's buttons are wider than the
+other's; the period takes the second, where **the two arrows are equal in size
 and the label between them is larger**, because the label carries a date to be read and an arrow
 carries only a direction. The pane still fits a 320 px viewport, and neither row drops a control
 or lets one wrap away.
@@ -74,8 +75,8 @@ or lets one wrap away.
 - **Leftmost, the view switch and the zoom.** One slot always holds the way to the other kind
   of view: a board icon in a calendar view, and on the board a calendar icon, which returns to
   the month view. The board is not a zoom step, which is why it has a slot of its own rather
-  than a place in the zoom's list. Beside it the **zoom**, drawn as a magnifier — described
-  below.
+  than a place in the zoom's list. Beside it the **zoom**, which shows the view you are in —
+  described below — and then the **search**, a magnifier, described under *Search*.
 - **Centred, the period.** Left/right buttons, with the period label between them, to move to
   the previous/next day, week, month, year or sprint, depending on the current view. The label
   is short, because the pane has to fit a phone:
@@ -121,22 +122,28 @@ or lets one wrap away.
   they are, and a gesture doing what a visible button does is the same second mechanism this
   document refuses a card on a desktop. So no sideways gesture does anything, in any view, and
   nothing ever has to be told apart from a card drag on the board or from a scroll in a grid.
-- **Rightmost, the two ways out.** A **hamburger** button that names its three errands — `filter`,
-  `settings` and `logs` — and opens whichever is tapped, and a home icon back to the Mine tile
-  screen. A house rather than an arrow, because a third arrow beside the two that step through
+- **Rightmost, the filter and the two ways out.** A **filter** button, a funnel, that opens the
+  filter directly; a **hamburger** button that names its two errands — `settings` and `logs` —
+  and opens whichever is tapped; and a home icon back to the Mine tile screen. A house rather than an arrow, because a third arrow beside the two that step through
   periods reads as another way to move inside the calendar.
 
 ### The zoom
 
-A magnifier beside the view switch, opening a short list under itself. **It offers what the view
-it was opened in can do, and nothing else:**
+A button beside the view switch, opening a short list under itself. **It draws the view you are
+in rather than an icon of its own**: in a calendar view the letter of the period — `D`, `W`, `M`
+or `Y` — and on the board the orientation, three columns side by side or three bands stacked.
+No single drawing says "change the view" without also looking like one of the views, and a
+button that names where you are tells you that and where to tap in one. The bands are filled
+bars rather than lines, so the stacked one cannot be read as the hamburger.
+
+**The list offers what the view it was opened in can do, and nothing else:**
 
 | view | the list |
 | --- | --- |
 | day, week, month, year | `day` · `week` · `month` · `year` |
 | kanban | `vertical` · `horizontal` |
 
-The current one is marked. In a calendar view this is the whole of the zoom: it replaces the
+The current one is marked in the list. In a calendar view this is the whole of the zoom: it replaces the
 label's cycle, which walked year → month → week → day → year and so asked for up to three taps
 to reach the view you wanted and gave you no way to see which one you were in without reading
 the label. A list of four names you point at is one tap and says both. There is still no `-` and
@@ -152,6 +159,22 @@ about this screen, like *confirm discard*, so it is kept where the rest of them 
 row in neither the panel nor the repo. The calendar's own zoom is **not** remembered: the app
 opens on the month, on today, on the current sprint, as it always has — which view you were last
 in is where you were, not what you prefer.
+
+### Search
+
+The magnifier opens Mine's search (see the root REQUIREMENTS.md) over the `calendar/` folder, and
+nothing else. The cursor is in its input, so on a phone the keyboard is up at once, and **the
+list follows every keystroke**: an entry's title, body, category, participants and location
+are searched. A repeating entry is one result, its rule file — an override that records only
+what it changed has no title and is not a result of its own, and neither are `groups.md` and
+`settings.md`.
+
+A dated result opens that entry. **A repeating one opens on its next occurrence from today**, or
+on its last if the series is over. The entry opens **over** the search, and closing it comes back
+to the search with the query and the list as they were, so the next result is one tap away; a
+change saved from there is in the list straight away. The search's `x`, a tap outside it and
+Escape close it. It ignores the filter: looking for something is when a quietly hidden group
+would be the most confusing.
 
 All views show **seven columns beginning with the configured first day of the week**, with
 Saturday and Sunday tinted wherever they land. A Saturday task has to be visible.
@@ -259,7 +282,7 @@ is already showing the one day the preview would list.
 The popup **opens in the middle of the screen**, on a phone as much as on a desktop — and so do
 the settings panel and the day preview. Nothing rises from the bottom edge any more. A centred
 card is reached with either thumb and does not pretend to be a drawer that can be dragged. The
-hamburger's menu and the filter hang off the hamburger instead, as dropdowns, and a field's own
+hamburger's menu and the filter hang off their buttons instead, as dropdowns, and a field's own
 popup hangs off its row; those three name the thing they came from, which a centred card cannot.
 
 **There is one popup, and it is both.** Clicking an entry — in any grid, in the day preview, or
@@ -729,8 +752,8 @@ that is readable at night. There is no colour dot and no
 card count: the dot said what the coloured name now says, and a count is a number nobody acts
 on. The name is **centred and drawn at twice the size**; the `+` stays at the right of the
 header, where it is the board's only way to make a task, since the top pane has none. The sprint
-selector sits in the top pane, because one board shows one sprint, and the filter is behind the
-hamburger like everywhere else. On the board that filter gains an assignee and a single
+selector sits in the top pane, because one board shows one sprint, and the filter is its own button
+in the pane like everywhere else. On the board that filter gains an assignee and a single
 **important only** toggle — one switch, now that importance is a yes or no, where four priority
 chips used to ask which tiers you meant.
 
@@ -828,17 +851,19 @@ first, each block by start date.
 
 ## The filter, the settings and the logs
 
-**One button, three errands, named before any opens.** The hamburger opens a short dropdown
-reading `filter`, `settings` and `logs`, and opens none of them; a second tap opens the one that
-was meant. One button still covers them all, so the pane stays at four controls and the phone's
-first row does not gain a fifth — but the button no longer decides which of them you came for.
+**The filter has a button of its own.** It is the overlay you open daily, and a menu in front
+of it spent a tap naming the one errand you came for. Its funnel sits at the right of the pane,
+beside the hamburger.
+
+**The hamburger holds the other two, named before either opens.** It opens a short dropdown
+reading `settings` and `logs`, and opens neither; a second tap opens the one that was meant.
 
 They were one panel for a while, under a heading each. A heading is a weak way to separate a thing
 you open daily from a thing you open twice, and it cost the filter the room to show its groups:
 the list had to be folded away or it pushed the nine settings rows below the fold. Naming the two
 and opening them apart costs one tap and buys each of them its own shape.
 
-**The filter is a dropdown off the hamburger.** It is the half you open often — a group hidden
+**The filter is a dropdown off its button.** It is the overlay you open often — a group hidden
 this afternoon, the board narrowed to what is important — and the view it narrows has to stay in
 sight while it is narrowed, which a centred card over the middle of the screen cannot do.
 
@@ -882,9 +907,9 @@ A stage switched off hides **tasks** and nothing else: an event has no stage to 
 `important only` hides whatever is not marked, **events included**, because that is what the
 words say and a month of what matters is the thing worth having. Both are remembered per device,
 like the groups: a filter that empties a month is one you want to find still on after a reload —
-and the hamburger says it is.
+and the filter button says it is.
 
-**A filter that is on says so on the hamburger**: a small count at its top right, in a circle.
+**A filter that is on says so on its button**: a small count at its top right, in a circle.
 It counts **one per kind of narrowing** — the groups, the stages, importance, the assignee — so
 it never passes four. One per switched-off thing would read `16` in a repo with twenty groups
 and fifteen hidden, which is a true number nobody can act on; `3` says there are three things to
@@ -955,7 +980,8 @@ shows the same two rows.
 
 The views above describe the desktop. The same screens adapt:
 
-- The top pane is **two rows**: `[board] [zoom] [☰] [⌂]` sharing the first equally, and
+- The top pane is **two rows**: `[board] [zoom] [search] [filter] [☰] [⌂]` sharing the first
+  equally, and
   `[‹] [NOV/26] [›]` filling the second, at twice their old size and at every phone width, 320
   px included. The two arrows are equal, **drawn at the size of the icons on the row above**, and
   the label between them is larger than either and opens the picker. Nothing is swiped.
