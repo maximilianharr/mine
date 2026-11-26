@@ -1,0 +1,82 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "01M8C3MCXXCJN0ASVPG5DCKHPD",
+  "session_id": "38d3fdc8-bc44-47ec-8c6f-77bb7edbe82d",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-26T14:19:57.970915799Z",
+  "branch": "main",
+  "checkpoints_count": 3,
+  "save_step_count": 3,
+  "files_touched": [
+    "REQUIREMENTS.md",
+    "TECHNICAL-REQUIREMENTS.md",
+    "TEST-REQUIREMENTS.md",
+    "calendar/REQUIREMENTS.md",
+    "calendar/index.html",
+    "calendar/style.css",
+    "index.html",
+    "shared/prefs.js",
+    "style.css",
+    "test/check-mine.mjs"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "05f007ce6d82",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 74,
+    "cache_creation_tokens": 49486,
+    "cache_read_tokens": 1929052,
+    "output_tokens": 21019,
+    "api_call_count": 33
+  },
+  "session_token_usage": {
+    "input_tokens": 74,
+    "cache_creation_tokens": 49486,
+    "cache_read_tokens": 1929052,
+    "output_tokens": 21019,
+    "api_call_count": 33
+  },
+  "redaction": {
+    "replacements": 7,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 7,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-grill-me-2026-11-26T13:51:25.107574942Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "grill-me"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "d08aef7a05b3",
+      "timestamp": "2026-11-26T13:51:25.107574942Z",
+      "native": {
+        "command": "/grill-me"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/grill-me",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 3
+  }
+}
