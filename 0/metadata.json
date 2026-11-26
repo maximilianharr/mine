@@ -1,0 +1,80 @@
+{
+  "cli_version": "0.13.4",
+  "checkpoint_id": "01M8B91GDJ3T3K6H78KDGJGTC5",
+  "session_id": "1b38c925-6b95-4b81-95b0-35be199d5563",
+  "strategy": "manual-commit",
+  "created_at": "2026-11-26T06:35:17.746639324Z",
+  "branch": "main",
+  "checkpoints_count": 4,
+  "files_touched": [
+    "TEST-REQUIREMENTS.md",
+    "calendar/REQUIREMENTS.md",
+    "calendar/TECHNICAL-REQUIREMENTS.md",
+    "calendar/app.js",
+    "calendar/index.html",
+    "calendar/settings.js",
+    "calendar/style.css",
+    "sw.js",
+    "test/check-calendar.mjs"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5",
+  "turn_id": "b854e99fca5d",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 124035,
+    "cache_read_tokens": 1989739,
+    "output_tokens": 23510,
+    "api_call_count": 27
+  },
+  "session_token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 124035,
+    "cache_read_tokens": 1989739,
+    "output_tokens": 23510,
+    "api_call_count": 27
+  },
+  "redaction": {
+    "replacements": 12,
+    "layers": {
+      "betterleaks": 0,
+      "connection_string": 0,
+      "credential_key": 0,
+      "credential_value": 0,
+      "credentialed_uri": 0,
+      "entropy": 12,
+      "key_context": 0,
+      "provider_token": 0,
+      "shell_stdin": 0
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "prompt-skill-claude-code-context-2026-11-26T06:13:07.404409377Z",
+      "event_type": "prompt_invocation",
+      "skill": {
+        "name": "context"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "prompt_slash_command",
+        "confidence": "explicit"
+      },
+      "turn_id": "39ba03c9c637",
+      "timestamp": "2026-11-26T06:13:07.404409377Z",
+      "native": {
+        "command": "/context"
+      },
+      "collapse": {
+        "target": "user_message",
+        "label": "/context",
+        "default_collapsed": true
+      }
+    }
+  ],
+  "session_metrics": {
+    "turn_count": 4
+  }
+}

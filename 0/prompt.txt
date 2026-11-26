@@ -1,0 +1,21 @@
+I need you to change the styling of the calendar app a bit. Do not overthink or overcomplicate. Changes are small. When a change is done, commit and push so that I can test.
+
+---
+
+in calendar/kanban popup the 'stage' icon is a checkmark in a rectange. but it is way smaller than the important/allday/repeat/... icons. Make it a checkmark and add a background rectangle in the stage color (red, orange, green). The background color changes with the stage. This is simply styling and not functionality
+
+---
+
+/context
+
+---
+
+I see it on my desktop directly but not yet on my android pwa?
+
+---
+
+I swiped down and this removed the 'reload' button. Add a 'reload' button to home settings
+
+---
+
+worked. great. in the calendar filter popup instead of showing all category/stages (which bloats the selection) I want a category and stage icon that the user can click which then opens a popup with the category/stages item that the user can check and uncheck.
