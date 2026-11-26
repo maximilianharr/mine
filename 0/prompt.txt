@@ -1,0 +1,1 @@
+ok, so this works fine. But make Category and stage a row item with icon on the left and 'Category' / 'Stage' on the right next to it.
