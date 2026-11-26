@@ -1,0 +1,1 @@
+ok great work. rename dark->coffee, rename ink->dark. Remove plum and forest. Add a color matrix which is derived from the matrix movie colors, especially green on dark background. Only change the colors. Make this a quick fix. No tests as only some themes are renamed and one is added. Directly commit and push so I can test.
