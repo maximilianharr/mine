@@ -119,6 +119,15 @@ not pressable. That `<script>alert(1)</script>` puts that text on the screen and
 script element to the document**: the renderer builds nodes and never markup, and this is the
 check that keeps it so.
 
+**A pull that dies partway**, against a GitHub stubbed in the page with `window.fetch`: commit
+`c2` adds a file, and the first tree request throws the `NetworkError` a phone resuming without a
+network gets. That the failed pull **leaves the ETag it started from**, so the next pull fetches
+the commit again and the file arrives — stored on the 200, it answered 304 and `in sync` for
+good. That the tree is read **by the commit's tree SHA**, not the branch name. And that two
+`createSync()`s refreshing at once — the calendar and notes open side by side — **never have two
+requests in flight together**, which is the Web Lock and not the per-page chain. Each of the six
+goes red with the fixes in `shared/github.js` and `shared/sync.js` reverted.
+
 ### The calendar
 
 **Every view fits a phone.** Day, week, month, year and kanban, at 320 and 360 CSS px, in light

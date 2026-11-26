@@ -7,8 +7,10 @@
 //
 // Two rules are built in here rather than left to each caller to remember:
 //
-//   * One attempt at a time. The queue is shared, and two drains over it would build two commits
-//     out of the same items.
+//   * One attempt at a time, across every open tab and installed app. The queue and the mirror
+//     live in one IndexedDB for the whole origin, so a chain in this page is not enough: a pull in
+//     the calendar holding the tree from before the notes app's push deletes the note just pushed
+//     from the mirror. A Web Lock spans the origin; the chain still orders this page's own calls.
 //   * A queue is drained first and the pull waits for it, and runs only if the drain got through.
 //     Whatever fails a drain - the token, the network - fails a pull too, and pulling over a
 //     dirty queue rewrites the mirror underneath the changes still in it.
@@ -26,7 +28,8 @@ export function createSync({ line, onPulled = () => {}, hint = '' }) {
   };
 
   let chain = Promise.resolve();
-  const serial = fn => (chain = chain.then(fn).catch(() => {}));
+  const locked = fn => () => navigator.locks.request('mine-sync', fn);
+  const serial = fn => (chain = chain.then(locked(fn)).catch(() => {}));
 
   const showQueue = async () => {
     const n = await queuedCount();

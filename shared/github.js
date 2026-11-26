@@ -119,11 +119,13 @@ async function pullNow() {
     { config: c, headers: etag ? { 'If-None-Match': etag } : {} });
   if (r.status === 304) return { changed: 0, unchanged: true };
   if (r.status === 409) return { changed: 0, empty: true };
-  await ok(r, 'commit check');
-  await setKV('commitEtag', r.headers.get('ETag'));
+  const head = await ok(r, 'commit check');
 
+  // The tree of the commit just checked, not of the branch: the branch can move between the two
+  // requests, and the ETag stored below must name the commit this mirror actually holds.
   const tree = await ok(await rest(
-    `/repos/${c.owner}/${c.repo}/git/trees/${c.branch}?recursive=1`, { config: c }), 'tree read');
+    `/repos/${c.owner}/${c.repo}/git/trees/${head.commit.tree.sha}?recursive=1`, { config: c }),
+    'tree read');
   if (tree.truncated) throw new SyncError('Tree listing truncated - repo too large for a flat pull.');
 
   const remote = new Map(tree.tree
@@ -142,6 +144,10 @@ async function pullNow() {
   const pending = new Set((await queued()).map(i => i.path));
   for (const path of local.keys())
     if (!remote.has(path) && !pending.has(path)) { await delFile(path); changed++; }
+  // Last, once the mirror holds this commit. Stored any earlier, a pull that died on the tree or
+  // a blob - a phone's dropped connection - left the ETag of a commit it never mirrored, and
+  // every pull after it was a 304 that reported `in sync` without the files it was missing.
+  await setKV('commitEtag', r.headers.get('ETag'));
   return { changed };
 }
 

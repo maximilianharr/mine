@@ -220,4 +220,60 @@ ok('the unsafe one stays text', md.text.includes('javascript:alert(1)'), md.text
 eq('and no script element is added', md.scripts, 0);
 ok('a script tag shows as text', md.text.includes('<script>alert(1)</script>'), md.text);
 
+// ---- 8. a pull that dies partway ------------------------------------------------------------
+// GitHub is stubbed in the page: commit c2 adds notes/new.md, and the first tree request fails the
+// way a phone resuming without a network does. The ETag must not be stored until the mirror holds
+// the commit, or every pull after it is a 304 that reports `in sync` with the new file missing.
+// The tree must be the commit's own, by its tree SHA, and two screens syncing at once - two
+// createSync()s, as the calendar and notes open side by side are - must not overlap.
+
+await seed('mine', { commitEtag: '"c1"' });
+await goto('/');
+const partial = await ev(`(async () => {
+  const { pull } = await import('/shared/github.js');
+  const { putFile, allFiles, getKV } = await import('/shared/store.js');
+  const { createSync } = await import('/shared/sync.js');
+  await putFile({ path: 'notes/old.md', text: 'old', oid: 'a1' });
+  const urls = [];
+  let failTree = 1, active = 0, most = 0;
+  const json = (status, body, etag) => new Response(status === 304 ? null : JSON.stringify(body),
+    { status, headers: etag ? { ETag: etag } : {} });
+  window.fetch = async (url, o = {}) => {
+    const p = new URL(url).pathname;
+    urls.push(p.split('/').slice(4).join('/'));
+    most = Math.max(most, ++active);
+    await new Promise(r => setTimeout(r, 20));
+    active--;
+    if (p.includes('/commits/')) return o.headers?.['If-None-Match'] === '"c2"'
+      ? json(304) : json(200, { sha: 'c2', commit: { tree: { sha: 't2' } } }, '"c2"');
+    if (p.endsWith('/git/trees/t2')) {
+      if (failTree-- > 0) throw new TypeError('NetworkError when attempting to fetch resource.');
+      return json(200, { tree: [{ type: 'blob', path: 'notes/old.md', sha: 'a1' },
+                                { type: 'blob', path: 'notes/new.md', sha: 'b2' }] });
+    }
+    if (p.endsWith('/git/blobs/b2')) return json(200, { content: btoa('new') });
+    return json(404, {});
+  };
+  let first = '';
+  try { await pull(); } catch (e) { first = e.message; }
+  const etagAfterFailure = await getKV('commitEtag');
+  const second = await pull();
+  const mirror = (await allFiles()).map(f => f.path).sort();
+  const treeAsked = urls.find(u => u.startsWith('git/trees/'));
+
+  // Two screens at once: each refresh is a commit check, and the lock keeps one from starting
+  // before the other has finished - so no two requests are ever in flight together.
+  most = 0;
+  const line = () => document.createElement('p');
+  await Promise.all([createSync({ line: line() }).refresh(), createSync({ line: line() }).refresh()]);
+  return { first, etagAfterFailure, second, mirror, treeAsked, inFlight: most };
+})()`);
+ok('a pull that dies partway fails', /NetworkError/.test(partial.first), partial.first);
+eq('and leaves the ETag it started from', partial.etagAfterFailure, '"c1"');
+eq('so the next pull fetches the commit again', partial.second, { changed: 1 });
+eq('and the file it missed arrives', partial.mirror, ['notes/new.md', 'notes/old.md']);
+ok('the tree read is the checked commit\'s, not the branch\'s',
+  partial.treeAsked?.startsWith('git/trees/t2'), partial.treeAsked);
+eq('two screens syncing at once take turns', partial.inFlight, 1);
+
 report('mine');

@@ -183,8 +183,14 @@ way, and everything after drains normally once a history exists.
 
 1. `GET /repos/{o}/{r}/commits/{branch}` with `If-None-Match`. A 304 means nothing changed and
    costs no rate-limit quota, and no ETag at all means a first mirror.
-2. On 200: fetch the tree, diff blob SHAs, fetch only changed files, drop deleted paths — except
-   a path still in the queue, which is a save made while the pull ran and not in the remote yet.
+2. On 200: fetch the tree **of that commit** (its `commit.tree.sha`, not the branch name, which
+   can move between the two requests), diff blob SHAs, fetch only changed files, drop deleted
+   paths — except a path still in the queue, which is a save made while the pull ran and not in
+   the remote yet.
+3. Only then store the commit's ETag. Stored on the 200, a pull that died on the tree or a blob —
+   a phone resuming before its network is back — kept the ETag of a commit it never mirrored, and
+   every pull after it answered 304 and reported `in sync` with the newest files missing, until
+   someone committed again.
 
 **Every request is `cache: 'no-store'`.** GitHub answers `cache-control: max-age=60`, and a push
 clears the stored ETag, so the pull after it is a plain GET the browser would answer from its own
@@ -205,6 +211,12 @@ foreground.
 **A queue is drained first and the pull waits for it**, and the pull runs only if the drain got
 through: whatever fails a drain — the token, the network — fails a pull too, and pulling over a
 dirty queue rewrites the mirror underneath the changes still in it.
+
+**One sync at a time across the whole origin**, under the Web Lock `mine-sync`. The queue and the
+mirror are one IndexedDB shared by every tab and installed app, so ordering attempts within one
+page is not enough: with the calendar and notes both open, a pull in one holding the tree from
+before the other's push deleted the note just pushed from the mirror, and could store the older
+ETag along with it.
 
 ## Writes — one commit per drain
 
