@@ -1,0 +1,10 @@
+/grill-me Your task is to implement this in the calendar PWA
+
+```
+- event/task item in week/day calendar view shall also be moveable vertically to change the time
+- multi-day or all-day events seem to not have cropped text in week view which yields an task/event item exceeding the borders of the calendar. Fix this.
+```
+
+---
+
+did you commit and push? I want to check the app.
