@@ -965,11 +965,11 @@ ok('and hangs off the hamburger rather than being centred', await ev(
   `(() => { const b = document.querySelector('#menu-btn').getBoundingClientRect();
     const p = document.querySelector('#filter-pop').getBoundingClientRect();
     return p.top > b.bottom && p.top < b.bottom + 20; })()`), 'the filter is not under the button');
-// The two lists are behind an icon each, so the dropdown stays short however many groups there are.
-eq('the filter itself holds two icons and important only, no list', await ev(
-  `[[...document.querySelectorAll('#filter-body .ib')].map(b => b.dataset.list),
+// The two lists are behind a row each, so the dropdown stays short however many groups there are.
+eq('the filter itself holds two rows and important only, no list', await ev(
+  `[[...document.querySelectorAll('#filter-body .mrow')].map(b => b.textContent),
     document.querySelectorAll('#filter-body .glab.grp, #filter-body .glab.stg').length]`),
-  [['group', 'stage'], 0]);
+  [['Category', 'Stage'], 0]);
 const listIcon = key => ev(`document.querySelector('#filter-body [data-list="${key}"]').click()`);
 await listIcon('group');
 await sleep(250);
@@ -985,7 +985,7 @@ const ticks = await ev(
   `[...document.querySelectorAll('#filter-sub .glab.grp input')].map(i => i.checked)`);
 eq('unticking one leaves the rest on', [ticks[0], ticks.slice(1).every(Boolean)], [false, true]);
 eq('and lights its icon', await ev(
-  `[...document.querySelectorAll('#filter-body .ib')].map(b => b.classList.contains('on'))`),
+  `[...document.querySelectorAll('#filter-body .mrow')].map(b => b.classList.contains('on'))`),
   [true, false]);
 await ev(`document.querySelectorAll('#filter-sub .glab.grp input')[0].click()`);
 await sleep(500);
@@ -995,7 +995,7 @@ eq('the list\'s x leaves the filter open', await ev(
   [true, false]);
 await listIcon('stage');
 await listIcon('stage');
-eq('and a second tap on an icon shuts its list', await ev(
+eq('and a second tap on a row shuts its list', await ev(
   `document.querySelector('#filter-sub').hidden`), true);
 await listIcon('stage');
 await ev(`document.querySelector('#scrim').click()`);

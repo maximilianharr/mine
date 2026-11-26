@@ -21,7 +21,7 @@ import { STAGES, saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
 import {
-  S, $, el, iconBtn, closePops, openPop, openRowPop, openCentred, colorOf, labelOf, STAGE_COLOR, STAGE_LABEL,
+  S, $, el, icon, closePops, openPop, openRowPop, openCentred, colorOf, labelOf, STAGE_COLOR, STAGE_LABEL,
   row, choose, toggle, numberField, dateField
 } from './ui.js';
 
@@ -58,8 +58,8 @@ function groupNames() {
   return out;
 }
 
-// The categories and the stages each open a list of their own off an icon, so that a repo with
-// twenty groups does not make a twenty-row dropdown of the filter. An icon is lit while its list
+// The categories and the stages each open a list of their own off a row, so that a repo with
+// twenty groups does not make a twenty-row dropdown of the filter. A row's icon is lit while its list
 // has something switched off, which is all that says so with the list shut.
 
 function groupRows() {
@@ -122,20 +122,20 @@ function toggleList(key) {
 
 function listBtn(key) {
   const { ic, title, hidden } = LISTS[key];
-  const b = iconBtn(ic, title, hidden().size ? 'on' : '');
+  const b = el('button', hidden().size ? 'mrow on' : 'mrow');
+  b.type = 'button';
   b.dataset.list = key;
+  b.append(icon(ic), el('span', '', title));
   b.addEventListener('click', () => toggleList(key));
   return b;
 }
 
 export function renderFilter() {
-  const icons = el('div', 'ficons');
-  icons.append(...Object.keys(LISTS).map(listBtn));
   // The stages and importance narrow **every** view, not only the board: a month with the done
   // ones out of it is as much a thing to want as a board of them, and importance is on an event
   // now. All of it is remembered per device - a filter that empties a month is one you want to
   // find still on after a reload, and the hamburger's count says it is.
-  const kids = [icons, el('div', 'fsep')];
+  const kids = [...Object.keys(LISTS).map(listBtn), el('div', 'fsep')];
 
   const imp = el('label', 'glab imp');
   const impBox = el('input');

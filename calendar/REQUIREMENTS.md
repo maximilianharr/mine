@@ -871,7 +871,7 @@ there.
 
 | overlay | holds |
 | --- | --- |
-| Filter (a dropdown) | a **category** icon, a **stage** icon and **important only**; on the board also an **assignee** |
+| Filter (a dropdown) | a **Category** row, a **Stage** row and **important only**; on the board also an **assignee** |
 | Settings (a centred panel) | the nine rows below |
 | Logs (a centred panel) | the last sync attempt, the changes still queued, `push now`, `discard all` |
 
@@ -890,10 +890,10 @@ it never passes four. One per switched-off thing would read `16` in a repo with 
 and fifteen hidden, which is a true number nobody can act on; `3` says there are three things to
 look at in the one place that lists them.
 
-**The categories and stages are each behind an icon**, so the filter stays short however many
+**The categories and stages are each behind a row** — an icon with `Category` or `Stage` beside it — so the filter stays short however many
 there are. A tap opens that list as a popup over the filter, one checkbox per item, each showing
-its colour; only one of the two is open at a time. Its `x` or a second tap on the icon shuts it
-and leaves the filter; a tap outside shuts both. **An icon is lit while its list has something
+its colour; only one of the two is open at a time. Its `x` or a second tap on the row shuts it
+and leaves the filter; a tap outside shuts both. **A row's icon is lit while its list has something
 switched off.** A long list scrolls inside its popup. This is a view filter and is remembered per
 device; groups are *named and coloured* in the settings panel's **edit groups**, not here.
 

@@ -292,7 +292,7 @@ That the timed span is in the **top strip on both its days and in the hour grid 
 reading its start on the first and its end **arrowed** on the last, and that the strip's corner
 no longer says `all-day`. That the day preview for a day in the **middle** of a span lists it.
 
-**The filter, and the count on the hamburger.** That the stage icon opens the three stages. That switching a stage off **hides those tasks from the month
+**The filter, and the count on the hamburger.** That the stage row opens the three stages. That switching a stage off **hides those tasks from the month
 view** and leaves every event where it was; that `important only` keeps what is marked, **events
 included**, and drops what is not. That the hamburger carries **one per kind of narrowing** — two
 switches on reads `2`, not the number of things hidden — that it is empty when nothing is
@@ -390,10 +390,10 @@ that still stretches to the bottom edge is the old sheet in new paint. **And the
 centred on a desktop too**, measured at 900 px, because it is no longer anchored to the cell that
 opened it — the check that catches a third overlay mechanism growing back.
 
-**The filter dropdown.** That it holds a category icon, a stage icon and no list of either. That
-the category icon opens a checkbox per group, each with its colour; that unticking one leaves the
-rest on and **lights the icon**; that the list's `x` leaves the filter open, a second tap on an
-icon shuts its list, and a tap outside shuts both. That on the board the filter adds an assignee and **one** important
+**The filter dropdown.** That it holds a `Category` row, a `Stage` row and no list of either. That
+the category row opens a checkbox per group, each with its colour; that unticking one leaves the
+rest on and **lights the row's icon**; that the list's `x` leaves the filter open, a second tap on
+a row shuts its list, and a tap outside shuts both. That on the board the filter adds an assignee and **one** important
 toggle, that neither appears in a calendar view, and that no `P1`, `P2` or `P3` chip is left
 anywhere in it.
 
