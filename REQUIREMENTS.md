@@ -26,9 +26,6 @@ in the main app, and every app in a subfolder uses them.** Verified on iPhone an
 
 A tile per app: its `icon.svg` above its folder name.
 
-Above the tiles, apps may contribute a summary. The calendar's shows today's entries and the
-next one — which matters, because opening the app is the only reminder that works (see below).
-
 ## First run
 
 1. Open the app URL and add it to the home screen (iOS: Share → Add to Home Screen;
@@ -159,7 +156,7 @@ covers the lower half anyway.
 
 **Mine cannot notify you while it is closed.** No browser can schedule a notification for later;
 this is a platform limitation, not a missing feature. Alerts are stored with each entry and
-exported, and they fire while the app is open. The summary on the tile screen is the reminder.
+exported, and nothing fires. Opening the calendar is the reminder.
 
 ## Updates
 

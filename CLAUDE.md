@@ -12,15 +12,15 @@ sees tracked files only and is the right default here.
 
 ## What is big, and what to do about it
 
-Reading the whole project costs ~140k tokens. Four files are half of that, so read none of them
+Reading the whole project costs ~160k tokens. Four files are half of that, so read none of them
 whole — `git grep -n` for the symbol or the rule, then `sed -n 'A,Bp'` the range you need.
 
 | | lines | ~tokens | |
 | --- | --- | --- | --- |
-| `test/check-calendar.mjs` | 2172 | 29k | the browser suite; 73% of all test bytes |
+| `test/check-calendar.mjs` | 2484 | 33k | the browser suite; 72% of all test bytes |
 | `calendar/popup.js` | 1368 | 15k | the entry popup, its rows and its four field editors |
-| `calendar/REQUIREMENTS.md` | 987 | 16k | |
-| `TEST-REQUIREMENTS.md` | 575 | 11k | |
+| `calendar/REQUIREMENTS.md` | 1077 | 18k | |
+| `TEST-REQUIREMENTS.md` | 628 | 12k | |
 
 The rest of the source is 350 lines or under and is fine to read whole.
 
