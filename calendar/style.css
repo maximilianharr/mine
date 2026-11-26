@@ -301,7 +301,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 }
 .dragging { opacity: .35; }
 /* The target under the pointer: a stage, a day, or one of the strip's three zones. */
-.kcol.drop-on, .day.drop-on, .tcol.drop-on, .adcell.drop-on {
+.kcol.drop-on, .day.drop-on, .tcol.drop-on, .adcell.drop-on, .tgd.drop-on {
   background: color-mix(in srgb, var(--link) 12%, transparent);
   outline: 2px dashed var(--link); outline-offset: -2px;
 }

@@ -1885,6 +1885,93 @@ await sleep(450);
 eq('a click that does not move still opens the card', await ev(`!document.querySelector('#popup').hidden`), true);
 await closeForm();
 
+// ---- 6c. dragging an entry to another day -------------------------------------------------------
+// In the month and the week. The day it is dropped on is its new start; the time stays; a span's
+// end moves with it; a repeating entry moves one occurrence, as an override.
+
+const files = () => ev(`(async () => {
+  const all = await new Promise(r => {
+    const q = indexedDB.open('mine', 1);
+    q.onsuccess = () => {
+      const t = q.result.transaction('files', 'readonly').objectStore('files').getAll();
+      t.onsuccess = () => r(t.result);
+    };
+  });
+  return all.filter(f => f.path.startsWith('calendar/')).map(f => f.text || '');
+})()`);
+// A value as written, quotes off: the fixture quotes its titles and a save writes them bare.
+const fm = (text, key) => ((text.match(new RegExp(`^${key}: (.*)$`, 'm')) || [])[1] || '')
+  .replace(/^"(.*)"$/, '$1');
+const entryText = async title => (await files())
+  .find(t => fm(t, 'title') === title && !/^series:/m.test(t)) || '';
+const lineOn = (title, day) => `[...document.querySelectorAll('.day[data-day$="-${day}"]:not(.out) .eline')]
+  .find(l => l.querySelector('.what').textContent === ${JSON.stringify(title)})`;
+const cellOn = day => q(`.day[data-day$="-${day}"]:not(.out)`);
+const dd = n => String(n).padStart(2, '0');
+const hourOf = iso => ev(`new Date(${JSON.stringify(iso)}).getHours() + ':' + new Date(${JSON.stringify(iso)}).getMinutes()`);
+
+await viewport(900);
+await open('M');
+await mouseDrag(lineOn('Family lunch', '07'), cellOn('14'));
+eq('an all-day entry dropped on another day starts there', fm(await entryText('Family lunch'), 'start').slice(8), '14');
+eq('and the popup stays shut', await ev(`document.querySelector('#popup').hidden`), true);
+
+const tap0 = fm(await entryText('Fix the bathroom tap'), 'start');
+await mouseDrag(lineOn('Fix the bathroom tap', '06'), cellOn('13'));
+const tap1 = fm(await entryText('Fix the bathroom tap'), 'start');
+eq('a timed entry moves its day', [tap0.slice(8, 10), tap1.slice(8, 10)], ['06', '13']);
+eq('and keeps its time', await hourOf(tap1), await hourOf(tap0));
+ok('its end moves with it', fm(await entryText('Fix the bathroom tap'), 'end').slice(8, 10) === '13',
+  fm(await entryText('Fix the bathroom tap'), 'end'));
+
+// Picked up by its middle day, dropped on the 16th: the 16th is the new start, whichever day of it
+// was held.
+await mouseDrag(lineOn('Berlin conference', '10'), cellOn('16'));
+const berlin = await entryText('Berlin conference');
+eq('a span starts on the day it is dropped on, whichever day was held',
+  [fm(berlin, 'start').slice(8), fm(berlin, 'end').slice(8)], ['16', '18']);
+
+const series0 = await seriesFile();
+await mouseDrag(lineOn('Water the plants', '10'), cellOn('11'));
+const ov = (await files()).find(t => /^series:/m.test(t) && fm(t, 'start').slice(8, 10) === '11');
+ok('a repeating entry moves one occurrence, as an override', !!ov, 'no override starting on the 11th');
+eq('and the rule file is untouched', await seriesFile(), series0);
+ok('the moved occurrence is drawn on its new day',
+  await ev(`!!${lineOn('Water the plants', '11')}`), 'not on the 11th');
+
+await viewport(360);
+await open('M');
+const dent = await touchDrag(lineOn('Dentist', '02'), cellOn('04'));
+ok('on a phone a held line lifts', dent.lifted, 'no ghost');
+eq('and drops on the day under the finger', fm(await entryText('Dentist'), 'start').slice(8), '04');
+eq('opening nothing', [await ev(`document.querySelector('#popup').hidden`),
+  await ev(`document.querySelector('#day-pop').hidden`)], [true, true]);
+
+// The week: dropped anywhere in another day's column, a timed block keeps its time.
+await viewport(900);
+await open('W');
+for (let i = 0; i < 4 && !await ev(`!!document.querySelector('.tcol .tev')`); i++) {
+  await ev(`document.querySelector('#prev').click()`);
+  await sleep(300);
+}
+const block = await ev(`(() => { const b = document.querySelector('.tcol .tev');
+  b.scrollIntoView({ block: 'center' });
+  const cols = [...document.querySelectorAll('.tcol')]; const i = cols.indexOf(b.parentElement);
+  return { key: b.dataset.key, title: b.querySelector('.what').textContent,
+    to: cols[i < 6 ? i + 1 : i - 1].dataset.day }; })()`);
+const wk0 = fm(await entryText(block.title), 'start');
+// Aimed at the next column, a little below the block's own height - another hour in that day.
+await mouseDrag(`document.querySelector('.tev[data-key=${JSON.stringify(block.key)}]')`,
+  `(() => { const c = document.querySelector('.tcol[data-day="${block.to}"]').getBoundingClientRect();
+    const b = document.querySelector('.tev[data-key=${JSON.stringify(block.key)}]').getBoundingClientRect();
+    return { getBoundingClientRect: () => ({ left: c.left, width: c.width, top: b.bottom + 20, height: 0 }) }; })()`);
+const wk1 = fm(await entryText(block.title), 'start');
+eq('in the week a block moves to the column it is dropped in', (await ev(`(() => {
+  const d = new Date(${JSON.stringify(wk1)});
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+})()`)), block.to);
+eq('keeping its time wherever in the column it lands', await hourOf(wk1), await hourOf(wk0));
+
 // ---- 7. what a saved task actually writes ------------------------------------------------------
 
 await viewport(900);

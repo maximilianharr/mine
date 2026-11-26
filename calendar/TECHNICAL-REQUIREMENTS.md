@@ -91,6 +91,16 @@ day outside UTC and shifts twice a year on DST.
 The markdown body is the entry's content and is preserved byte-for-byte by anything that does not
 explicitly edit it.
 
+## Moving by whole days
+
+A drag onto another day is `moveToDay(occ, day)` in `data.js`: the difference in days from the
+occurrence's own day, applied to `start` and to `end` alike by `shiftDays`. A bare date moves as
+a bare date; an instant is read as wall-clock date and time in the configured zone, the date is
+moved, and the same time is resolved back to an instant with `toInstant` — so a 09:00 stays 09:00
+across a DST change, which adding 24 hours a day would not do. The write is `patchOccurrence`,
+so a plain entry is renamed into its new date folder and an occurrence of a series becomes an
+override, exactly as a date changed in the popup would.
+
 ## Overrides
 
 A recurring file states the rule only. Anything that happens to a *single* occurrence — ticked,
@@ -108,7 +118,11 @@ would be read by nothing and shown nowhere.
 1. Collect dated entries whose `start` falls in the range.
 2. Expand every rule in `recurring/` over the range; drop dates in `exdate`, add `rdate`.
 3. Replace an occurrence with the override matching `series` + `recurrence-id`; an override
-   marked cancelled removes it.
+   marked cancelled removes it. **An override that moves its occurrence is expanded where it
+   now is**: its `recurrence-id` joins the rule's own dates whenever the override carries a
+   `start`, and the covers test that follows keeps it only where it lands. Looking overrides up
+   by the rule's dates alone drew an occurrence dragged from the 1st to the 30th in no view that
+   held the 30th without the 1st.
 4. Drop groups switched off in the filter.
 5. Sort: all-day first, then by start time.
 

@@ -269,6 +269,28 @@ person reading the repo by hand would mean, and an `.ics` export adds the day ba
 
 Groups switched off in the filter are not shown in any view.
 
+### Moving an entry to another day
+
+**In the month and the week, an entry is dragged onto another day.** A mouse picks it up by
+moving it a few pixels; a finger by holding still on it for a moment, so a grid still scrolls
+under a finger that only means to scroll — the same press-and-drag the board's cards use. The
+day under it is marked, releasing moves the entry there, and the drop never also opens the entry
+or the day preview. The day view has only one day to drop on and the year view draws coloured
+days rather than entries, so neither has it. Only what is drawn can be picked up: an entry hidden
+behind a month cell's `+3`, or listed in the day preview, is moved from its popup.
+
+- **The day changes and the time does not.** A 09:00 meeting dropped on Thursday is at 09:00 on
+  Thursday, read in the configured zone, so it is still 09:00 across a DST change. In the week the
+  target is the day's column and only that: dropped lower or higher in the hour grid, the entry
+  keeps its time.
+- **A span moves whole.** Whichever of its days was picked up, **the day it is released on is its
+  new start**, and its end moves by the same number of days: a three-day trip held by its middle
+  day and dropped on a Friday runs Friday to Sunday.
+- **A repeating entry moves this one occurrence**, as an override — the same thing the board does
+  when it moves one. There is no "move the whole series" by dragging; that is the popup's.
+- **A task's sprint follows its date**, as it always has: a task dragged out of its sprint's
+  range is on the next board.
+
 ### The day preview
 
 Clicking a day opens that day's entries as a list, each one tappable. Its top right carries a

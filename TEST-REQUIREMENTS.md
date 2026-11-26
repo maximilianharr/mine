@@ -513,6 +513,19 @@ moves at once lifts nothing and moves nothing. At 900 px: that a mouse drags a c
 the done column with no strip shown and no popup, and that a click that does not move still opens
 the card.
 
+**Dragging an entry to another day.** Through the same input domain. At 900 px in the month:
+that an all-day entry dropped on another cell starts there, with the popup shut; that a timed
+entry moves its day and **keeps its hour and minute**, read back through the browser's clock, and
+that its end moves with it; that the three-day span **held by its middle day** and dropped on the
+16th runs 16th to 18th — the day released on is the start, whichever day was held; that dragging
+one occurrence of the weekly task writes an **override** starting on the new day, leaves the rule
+file byte for byte as it was, and is drawn on the new day. At 360 px: that a held line lifts and
+lands on the day under the finger, opening neither the popup nor the day preview. In the week:
+that a timed block dropped in the next column, lower than it was, lands on that column's day at
+its old time. The arithmetic itself — a date moves as a date, an instant keeps its wall-clock
+time across a DST change, a moved occurrence is listed on its new day and not its old — is in
+`unit.mjs`.
+
 **What is full width and what is capped.** At 1920 px: that the month grid's right edge reaches
 the window's, within the pane's own padding, in the day, week, month and year views — a calendar
 that still stops at 78 rem leaves a margin this check measures. That the **board does not**: the

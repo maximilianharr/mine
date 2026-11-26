@@ -303,6 +303,11 @@ function expandRule(rule, overrides, fromKey, toKey, out) {
 
   const ids = new Set(rr.between(from, to, true).map(d => occIdOf(d, allDay)));
   for (const v of list(rule.data.rdate)) ids.add(String(v));
+  // An occurrence moved by its override is in the range where it now is, wherever the rule put
+  // it: one dragged from the 1st to the 30th must be on screen in a view that holds the 30th and
+  // not the 1st. `covers` below drops it again where it is not.
+  for (const [k, ov] of overrides)
+    if (k.startsWith(`${rule.id}|`) && ov.data.start != null) ids.add(k.slice(rule.id.length + 1));
   // An exdate may be written as a bare date even for a timed series; that skips the day.
   const ex = new Set(list(rule.data.exdate).map(String));
 
@@ -466,6 +471,25 @@ export async function saveOverride(occ, data, body) {
 }
 
 const same = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
+// A start or an end moved by whole days, keeping its wall-clock time in the configured zone: a
+// 09:00 dragged across a DST change is still 09:00. A bare date stays a bare date.
+export function shiftDays(v, n) {
+  const s = String(v);
+  if (isAllDay(s)) return addDays(s.slice(0, 10), n);
+  const [d, t] = wallParts(s);
+  return toInstant(addDays(d, n), t);
+}
+
+// An occurrence moved so that it starts on `day`. Its end moves by the same number of days, so a
+// three-day trip dropped on a Friday runs Friday to Sunday.
+export function moveToDay(occ, day) {
+  const n = diffDays(occ.dayKey, day);
+  if (!n) return null;
+  const p = { start: shiftDays(occ.start, n) };
+  if (occ.end) p.end = shiftDays(occ.end, n);
+  return patchOccurrence(occ, p);
+}
 
 // Setting a field on one occurrence of a series is an override; on a plain entry it is an edit.
 // A null in the patch clears the key.

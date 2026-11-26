@@ -10,7 +10,7 @@ import {
   isoWeek, addDays, addMonths, diffDays, dayKeyOf, dowOf, weekStartOf, monthGrid,
   isAllDay, stageOf, importantOf, buildModel, occurrences, byStart, byImportance,
   sprintOf, sprintRange, pathFor, idTail, entryFile, groupName, setZone, toInstant, wallParts,
-  timeLabel, DEFAULT_ANCHOR
+  timeLabel, DEFAULT_ANCHOR, shiftDays
 } from '../calendar/data.js';
 import { plain, fold, index, find, snippet } from '../shared/search.js';
 
@@ -310,6 +310,23 @@ const late = buildModel([file('calendar/2026/01/a.md', 'title: Late\nstart: 2026
 eq('a late UTC instant lands on the next Berlin day',
   occurrences(late, '2026-01-16', '2026-01-16').map(o => o.title), ['Late']);
 eq('and not on the UTC one', occurrences(late, '2026-01-15', '2026-01-15'), []);
+
+// ---- moving by whole days ---------------------------------------------------------------------
+// What a drag onto another day writes: the date moves and the wall-clock time stays, across a DST
+// change too.
+setZone('Europe/Berlin');
+eq('a bare date moves as a date', shiftDays('2026-04-18', 3), '2026-04-21');
+eq('a timed start keeps its wall-clock time', shiftDays('2026-04-18T07:00:00Z', -2), '2026-04-16T07:00:00Z');
+eq('and keeps it across a spring DST change', wallParts(shiftDays('2026-03-27T08:00:00Z', 2)),
+  ['2026-03-29', '09:00']);
+// A moved occurrence is in the range it moved to, wherever the rule put it.
+const moved = buildModel([
+  file('calendar/recurring/w-abcd.md', 'title: Weekly\nstart: 2026-06-01\nrecurrence: "FREQ=WEEKLY"'),
+  file('calendar/2026/06/o.md', 'series: w-abcd\nrecurrence-id: 2026-06-01\nstart: 2026-06-29')
+]);
+eq('an occurrence moved weeks later is listed on its new day',
+  occurrences(moved, '2026-06-29', '2026-06-29').map(o => o.recId).sort(), ['2026-06-01', '2026-06-29']);
+eq('and not on its old one', occurrences(moved, '2026-06-01', '2026-06-01').map(o => o.recId), []);
 
 // ---- search ----------------------------------------------------------------------------------
 // Mine's search reads files, so it is checked here against files: what counts as a document,

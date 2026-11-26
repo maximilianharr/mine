@@ -3,7 +3,7 @@
 // be visible.
 import {
   occurrences, timeLabel, todayKey, isoWeek, monthGrid, addDays, partsOf, weekStartOf,
-  isAllDay, patchOccurrence, byStart, covers, pad
+  isAllDay, patchOccurrence, byStart, covers, pad, moveToDay
 } from './data.js';
 import {
   S, $, el, phone, colorOf, labelOf, inkOn, longDayLabel, viewRange, isWeekend, weekLetters,
@@ -11,6 +11,7 @@ import {
 } from './ui.js';
 import { openEntry, openNew } from './popup.js';
 import { weekdayName } from '../shared/prefs.js';
+import { draggable } from './drag.js';
 
 // What the range holds, narrowed by the filter, recorded for click handling. The three
 // narrowings are applied here rather than per view, so the month, the week, the day, the year
@@ -305,6 +306,7 @@ function fillDayPop(key) {
 
 export function wireView() {
   $('#view').addEventListener('click', onClick);
+  wireDrag($('#view'));
   $('#day-list').addEventListener('click', onClick);
   $('#day-add').addEventListener('click', () => openNew({ dayKey: $('#day-pop').dataset.day }));
   $('#day-close').addEventListener('click', closePops);
@@ -332,6 +334,35 @@ function onClick(e) {
   const r = cell.getBoundingClientRect();
   openNew({ dayKey: key, hour: Math.max(0, Math.min(23,
     Math.floor((e.clientY - r.top) / r.height * 24))) });
+}
+
+// ---- dragging an entry to another day -----------------------------------------------------
+// In the month and the week, by the same press-and-drag the board uses (./drag.js). The target
+// is a day and only a day: dropped in the week's hour grid, an entry keeps its time whatever
+// height it lands at. Whichever day of a span was picked up, the day it is dropped on is its new
+// start, and the end moves by as many days. A repeating entry moves this one occurrence, as an
+// override - the same thing the board does when it moves one.
+function wireDrag(view) {
+  draggable(view, {
+    item: n => (S.view.mode === 'M' || S.view.mode === 'W') && !n.closest('button')
+      ? n.closest('.eline, .tev') : null,
+    target: (x, y) => {
+      const t = document.elementFromPoint(x, y)?.closest('[data-day]');
+      return t && view.contains(t) ? t : null;
+    },
+    drop: async (line, t) => {
+      const o = S.visible.get(line.dataset.key);
+      if (!o) return;
+      try {
+        if (!await moveToDay(o, t.dataset.day)) return;
+      } catch (err) {
+        return S.status(err.message, true);
+      }
+      S.model = await S.reload();
+      S.render();
+      S.push(`calendar: ${o.title} -> ${t.dataset.day}`);
+    }
+  });
 }
 
 // Zooming from the year view into the month that was clicked, not the one the anchor is in.
