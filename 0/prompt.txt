@@ -1,0 +1,21 @@
+I keep getting issues in calendar and notes app/pwa in syncing. latest tickets vanishing or not being pulled on other app. Your task is to investigate the issue. ```
+
+<pasted_content id="0303">
+last attempt
+
+pull failed
+
+NetworkError when attempting to fetch resource.
+
+11/26/26, 8:42 PM · from notes
+</pasted_content id="0303">
+
+```
+
+---
+
+yes, apply both fixes with the lock
+
+---
+
+yes, commit and push
