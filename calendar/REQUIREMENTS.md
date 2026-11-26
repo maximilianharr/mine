@@ -229,7 +229,8 @@ selected sprint. In the year view it is the day preview's `+`, as everywhere els
   and a rule of it at full strength down the left edge.** A month of solid bars is a month that
   cannot be read past, and the tint says the same thing while leaving the page its own colour.
   The two mixes differ between the light theme and the dark one, a dark page needing more tint
-  and a lighter ink. Lines are sorted by time, all-day items first. On desktop a timed
+  and a lighter ink. Coffee takes none of the colour into the ink: its entries are written in
+  the page's own caramel-white, and the tint and the rule alone carry the group. Lines are sorted by time, all-day items first. On desktop a timed
   entry's line is prefixed with its time; on a phone it is the title alone, because seven columns
   across a phone have no room for both and the title is the part worth reading — the time is one
   tap away in the day preview. A cell shows at most four on desktop and two on a phone, then

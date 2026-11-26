@@ -37,13 +37,13 @@
   :root:not([data-theme="light"]) { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
     --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
     --soft: #221a15; --link: #f08a4b;
-    --chip-bg: 22%; --chip-ink: 44%;
+    --chip-bg: 22%; --chip-ink: 0%;
     --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
 }
 :root[data-theme="coffee"] { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
     --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
     --soft: #221a15; --link: #f08a4b;
-    --chip-bg: 22%; --chip-ink: 44%;
+    --chip-bg: 22%; --chip-ink: 0%;
     --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
 
 /* Chosen rather than followed: picking one pins it day and night. Dark is a deep navy with paper
