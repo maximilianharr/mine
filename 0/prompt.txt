@@ -1,0 +1,5 @@
+i think this might be due to entire being installed / enabled here?
+
+---
+
+leave it. Then continue with this. Remove all themes except dark/light/coffee/neutral. For all themes use the main font color (which is also used in the date/sprint) as the color for the task/event title in the kanban/calendar view. Currently these have a slight category color. Commit and push.
