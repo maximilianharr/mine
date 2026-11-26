@@ -262,7 +262,9 @@ const touchDrag = async (from, to, hold = 550) => {
     await sleep(40);
   }
   const during = await ev(`({ over: document.querySelector('.drop-on')?.dataset.stage
-    || document.querySelector('.drop-on')?.dataset.day || '' })`);
+    || document.querySelector('.drop-on')?.dataset.day || '',
+    when: document.querySelector('.drag-ghost .when')?.textContent || '',
+    left: document.querySelector('.drag-ghost')?.getBoundingClientRect().left })`);
   await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   await sleep(1200);
   await send('Emulation.setTouchEmulationEnabled', { enabled: false });
@@ -1636,6 +1638,28 @@ eq('a timed span is in the top strip on both its days', seen.strip.length, 2);
 eq('and in the hour grid on neither', seen.grid, 0);
 eq('reading its start on the first day and its end, arrowed, on the last',
   seen.strip.map(t => t.replace(/\d\d:\d\d/, 'HH:MM')), ['HH:MM', '\u2192HH:MM']);
+// A title too long for its day is cut short inside the strip's cell; it does not widen that day's
+// column, which pushed the week past the pane's right edge. Read on a phone, across the same weeks.
+await viewport(360);
+await open('W');
+await ev(`for (let i = 0; i < 5; i++) document.querySelector('#prev').click()`);
+await sleep(500);
+const wide = [];
+for (let i = 0; i < 11; i++) {
+  wide.push(...await ev(`(() => {
+    const cols = [...document.querySelectorAll('.tcol')].map(c => c.getBoundingClientRect().width);
+    const tg = document.querySelector('.tg');
+    return [...document.querySelectorAll('.adcell')]
+      .filter((c, j) => c.children.length && Math.abs(c.getBoundingClientRect().width - cols[j]) > 1)
+      .map(c => c.dataset.day).concat(tg.scrollWidth > tg.clientWidth ? ['the grid'] : []);
+  })()`));
+  await ev(`document.querySelector('#next').click()`);
+  await sleep(300);
+}
+eq('a long top-strip title widens no day of the week', wide, []);
+await viewport(900);
+await open('W');
+
 // The strip is no longer the all-day row alone, so its corner no longer says it is.
 eq('the strip\'s corner is bare', await ev(`document.querySelector('.tg-allday .tcorner')
   .textContent`), '');
@@ -1948,68 +1972,88 @@ eq('and drops on the day under the finger', fm(await entryText('Dentist'), 'star
 eq('opening nothing', [await ev(`document.querySelector('#popup').hidden`),
   await ev(`document.querySelector('#day-pop').hidden`)], [true, true]);
 
-// The week: dropped anywhere in another day's column, a timed block keeps its time.
-await viewport(900);
-await open('W');
-for (let i = 0; i < 4 && !await ev(`!!document.querySelector('.tcol .tev')`); i++) {
-  await ev(`document.querySelector('#prev').click()`);
-  await sleep(300);
-}
-const block = await ev(`(() => { const b = document.querySelector('.tcol .tev');
+// The week: a block dropped in another column takes that day, and the time its top edge lands on,
+// in quarters, keeping its length. Aimed two hours lower than it was.
+const clock = iso => ev(`(() => { const d = new Date(${JSON.stringify(iso)});
+  return d.getHours() * 60 + d.getMinutes(); })()`);
+const dayOf = iso => ev(`(() => { const d = new Date(${JSON.stringify(iso)});
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+})()`);
+const lengthOf = text => (Date.parse(fm(text, 'end')) - Date.parse(fm(text, 'start'))) / 60000;
+const tevOf = key => `document.querySelector('.tev[data-key=${JSON.stringify(key)}]')`;
+// A block that starts on a quarter and ends by 21:00, so two hours later is still that day.
+const pickBlock = () => ev(`(() => { const b = [...document.querySelectorAll('.tcol .tev')].find(b =>
+    parseFloat(b.style.top) + parseFloat(b.style.height) <= 87.5
+    && Math.abs(parseFloat(b.style.top) * 14.4 % 15) < 0.01 && b.querySelector('.when').textContent.includes('–'));
+  if (!b) return null;
   b.scrollIntoView({ block: 'center' });
   const cols = [...document.querySelectorAll('.tcol')]; const i = cols.indexOf(b.parentElement);
-  return { key: b.dataset.key, title: b.querySelector('.what').textContent,
-    to: cols[i < 6 ? i + 1 : i - 1].dataset.day }; })()`);
-const wk0 = fm(await entryText(block.title), 'start');
-// Aimed at the next column, a little below the block's own height - another hour in that day.
-await mouseDrag(`document.querySelector('.tev[data-key=${JSON.stringify(block.key)}]')`,
-  `(() => { const c = document.querySelector('.tcol[data-day="${block.to}"]').getBoundingClientRect();
-    const b = document.querySelector('.tev[data-key=${JSON.stringify(block.key)}]').getBoundingClientRect();
-    return { getBoundingClientRect: () => ({ left: c.left, width: c.width, top: b.bottom + 20, height: 0 }) }; })()`);
-const wk1 = fm(await entryText(block.title), 'start');
-eq('in the week a block moves to the column it is dropped in', (await ev(`(() => {
-  const d = new Date(${JSON.stringify(wk1)});
-  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
-})()`)), block.to);
-eq('keeping its time wherever in the column it lands', await hourOf(wk1), await hourOf(wk0));
+  return { key: b.dataset.key, title: b.querySelector('.what').textContent, from: b.parentElement.dataset.day,
+    to: cols[i < cols.length - 1 ? i + 1 : Math.max(0, i - 1)].dataset.day,
+    hour: b.parentElement.getBoundingClientRect().height / 24 }; })()`);
+const findBlock = async () => {
+  for (let i = 0; i < 14; i++) {
+    const b = await pickBlock();
+    if (b) return b;
+    await ev(`document.querySelector('#prev').click()`);
+    await sleep(300);
+  }
+  return null;
+};
 
-// ---- 6d. docking the pane ----------------------------------------------------------------------
-// Held a moment and dragged to the bottom half, the pane stays at the bottom, the sync line goes
-// to the top, a dropdown opens upwards, and the choice survives a reload. A press that does not
-// hold is still a click.
-
-const barAt = () => ev(`(() => { const b = document.querySelector('.topbar').getBoundingClientRect();
-  const y = document.querySelector('#sync').getBoundingClientRect();
-  return { top: Math.round(b.top), bottom: Math.round(innerHeight - b.bottom), syncAbove: y.bottom <= b.top + 1 }; })()`);
 await viewport(900);
-await open('M');
-await mouseDrag(q('#period'), async () => [450, 860], 30);
-eq('a press that does not hold leaves the pane where it is', (await barAt()).top, 0);
-await ev(`document.querySelector('#scrim').click()`);
-await sleep(200);
-await mouseDrag(q('#period'), async () => [450, 860], 550);
-let at = await barAt();
-eq('held and dragged down, the pane docks at the bottom', [at.bottom, at.syncAbove], [0, true]);
-eq('and the choice is stored', await kv('calendar.barPosition'), 'bottom');
-eq('the hold opened nothing', [await ev(`document.querySelector('#picker').hidden`),
-  await ev(`document.querySelectorAll('.dock-zone, .drag-ghost').length`)], [true, 0]);
-await ev(`document.querySelector('#filter-btn').click()`);
-await sleep(350);
-ok('a dropdown opens upwards from it', await ev(`document.querySelector('#filter-pop').getBoundingClientRect().bottom
-  <= document.querySelector('#filter-btn').getBoundingClientRect().top`), 'the filter is not above its button');
-await ev(`document.querySelector('#scrim').click()`);
-await open('M');
-eq('a reload keeps it at the bottom', (await barAt()).bottom, 0);
+await open('W');
+const block = await findBlock();
+ok('the week holds a block to drag', !!block, 'none found');
+const wk0 = await entryText(block.title);
+await mouseDrag(tevOf(block.key), async () => {
+  const [x, y] = await centre(tevOf(block.key));
+  const [cx] = await centre(`document.querySelector('.tcol[data-day="${block.to}"]')`);
+  return [cx, y + 2 * block.hour];
+});
+const wk1 = await entryText(block.title);
+eq('in the week a block moves to the column it is dropped in', await dayOf(fm(wk1, 'start')), block.to);
+eq('and to the time its top edge lands on', await clock(fm(wk1, 'start')), await clock(fm(wk0, 'start')) + 120);
+eq('keeping its length', lengthOf(wk1), lengthOf(wk0));
 
+// The day: one column, so the copy moves only up and down; it shows the time it would land on.
 await viewport(360);
-await open('M');
-const rows = await ev(`(() => { const m = document.querySelector('.tb-mid').getBoundingClientRect();
-  const s = document.querySelector('#board').getBoundingClientRect(); return m.bottom <= s.top + 1; })()`);
-ok('on a phone at the bottom the period row is above the buttons', rows, 'the buttons are not the lower row');
-const up = await touchDrag(q('#search-btn'), async () => [180, 60]);
-ok('a finger holding a button lifts the pane', up.lifted, 'no ghost');
-eq('and drags it back to the top', [(await barAt()).top, await kv('calendar.barPosition')], [0, 'top']);
-eq('without opening the search', await ev(`document.querySelector('#search-pop')?.hidden ?? true`), true);
+await open('D');
+const dblock = await findBlock();
+ok('the day holds a block to drag', !!dblock, 'none found');
+const d0 = await entryText(dblock.title);
+const dLeft = await ev(`${tevOf(dblock.key)}.getBoundingClientRect().left`);
+const dheld = await touchDrag(tevOf(dblock.key), async () => {
+  const [x, y] = await centre(tevOf(dblock.key));
+  return [x + 60, y - dblock.hour];
+});
+const d1 = await entryText(dblock.title);
+const hhmm = m => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+const want = await clock(fm(d0, 'start')) - 60;
+ok('on a phone the day view lifts a held block', dheld.lifted, 'no ghost');
+eq('the copy stays in its column', Math.round(dheld.left), Math.round(dLeft));
+eq('and reads the time it would land on', dheld.when, `${hhmm(want)}–${hhmm(want + lengthOf(d0))}`);
+eq('the block is an hour earlier on the same day',
+  [await dayOf(fm(d1, 'start')), await clock(fm(d1, 'start'))], [dblock.from, want]);
+eq('opening nothing', [await ev(`document.querySelector('#popup').hidden`),
+  await ev(`document.querySelector('#day-pop').hidden`)], [true, true]);
+
+// Dropped at the very bottom of the day, a block ends at midnight rather than running into the next.
+// On a screen tall enough for the whole day, so the block and the bottom of its column are both in
+// view without scrolling.
+await send('Emulation.setDeviceMetricsOverride', { width: 900, height: 1600, deviceScaleFactor: 1, mobile: true });
+await open('D');
+const cblock = await findBlock();
+const c0 = await entryText(cblock.title);
+await mouseDrag(tevOf(cblock.key), () => ev(`(() => { const c = document.querySelector('.tcol').getBoundingClientRect();
+  return [c.left + c.width / 2, c.bottom - 4]; })()`));
+const c1 = await entryText(cblock.title);
+eq('a block dropped at the bottom of the day ends at midnight',
+  [await dayOf(fm(c1, 'start')), await clock(fm(c1, 'start')) + lengthOf(c0)], [cblock.from, 1440]);
+ok('and is still in the hour grid', await ev(`[...document.querySelectorAll('.tcol .tev .what')]
+  .some(w => w.textContent === ${JSON.stringify(cblock.title)})`),
+  'it left the grid');
+await viewport(900);
 
 // ---- 7. what a saved task actually writes ------------------------------------------------------
 

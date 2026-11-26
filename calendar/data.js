@@ -482,9 +482,18 @@ export function shiftDays(v, n) {
 }
 
 // An occurrence moved so that it starts on `day`. Its end moves by the same number of days, so a
-// three-day trip dropped on a Friday runs Friday to Sunday.
-export function moveToDay(occ, day) {
+// three-day trip dropped on a Friday runs Friday to Sunday. Given `mins`, a timed entry also
+// starts at that minute of the day in the configured zone, and keeps its length.
+export function moveToDay(occ, day, mins) {
   const n = diffDays(occ.dayKey, day);
+  if (mins != null && !occ.allDay) {
+    const start = toInstant(day, `${pad(Math.floor(mins / 60))}:${pad(mins % 60)}`);
+    if (Date.parse(start) === Date.parse(occ.start)) return null;
+    const p = { start };
+    if (occ.end) p.end = isAllDay(occ.end) ? shiftDays(occ.end, n)
+      : instant(new Date(Date.parse(start) + Date.parse(occ.end) - Date.parse(occ.start)));
+    return patchOccurrence(occ, p);
+  }
   if (!n) return null;
   const p = { start: shiftDays(occ.start, n) };
   if (occ.end) p.end = shiftDays(occ.end, n);

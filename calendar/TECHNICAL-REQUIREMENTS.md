@@ -91,7 +91,7 @@ day outside UTC and shifts twice a year on DST.
 The markdown body is the entry's content and is preserved byte-for-byte by anything that does not
 explicitly edit it.
 
-## Moving by whole days
+## Moving by whole days, and to another time
 
 A drag onto another day is `moveToDay(occ, day)` in `data.js`: the difference in days from the
 occurrence's own day, applied to `start` and to `end` alike by `shiftDays`. A bare date moves as
@@ -100,6 +100,14 @@ moved, and the same time is resolved back to an instant with `toInstant` — so 
 across a DST change, which adding 24 hours a day would not do. The write is `patchOccurrence`,
 so a plain entry is renamed into its new date folder and an occurrence of a series becomes an
 override, exactly as a date changed in the popup would.
+
+Dropped in the hour grid, a timed block is `moveToDay(occ, day, mins)`: `mins` is where the
+copy's top edge is in the column, in quarters, worked out in `views.js` as the copy moves and
+capped so that the block's length still ends by 24:00. The start is that wall-clock time on that
+day, resolved with `toInstant`; the end is the start plus the block's old length in milliseconds,
+so a block keeps its length exactly. `drag.js` hands the view an `over(ghost, target)` call on
+every move for this, which is also what rewrites the copy's time, and takes `axis` as a function
+so the day view can lock the copy to its column at pick-up.
 
 ## Overrides
 

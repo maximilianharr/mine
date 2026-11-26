@@ -268,6 +268,9 @@ the days between.
 span goes there too: an entry running from Saturday evening to Sunday morning has no place in a
 column of 24 hours, and the strip is where a span is read in every other view. That row is no
 longer the all-day row alone, so its corner no longer says `all-day`.
+**A title too long for its day is cut short, with an ellipsis, inside that day's cell.** It never
+widens the day: seven columns of the week are seven equal columns whatever the strip holds, and
+a long trip on a phone once pushed the whole week past the pane's right edge.
 
 In a month cell a span is the **first line**, above that day's timed entries, so the bars of a
 week line up. It counts against the cell's two or four lines like any other: a long trip is the
@@ -284,20 +287,30 @@ person reading the repo by hand would mean, and an `.ics` export adds the day ba
 
 Groups switched off in the filter are not shown in any view.
 
-### Moving an entry to another day
+### Moving an entry to another day, or to another time
 
-**In the month and the week, an entry is dragged onto another day.** A mouse picks it up by
-moving it a few pixels; a finger by holding still on it for a moment, so a grid still scrolls
-under a finger that only means to scroll — the same press-and-drag the board's cards use. The
-day under it is marked, releasing moves the entry there, and the drop never also opens the entry
-or the day preview. The day view has only one day to drop on and the year view draws coloured
-days rather than entries, so neither has it. Only what is drawn can be picked up: an entry hidden
-behind a month cell's `+3`, or listed in the day preview, is moved from its popup.
+**In the month, the week and the day, an entry is dragged onto another day or another time.** A
+mouse picks it up by moving it a few pixels; a finger by holding still on it for a moment, so a
+grid still scrolls under a finger that only means to scroll — the same press-and-drag the board's
+cards use. The day under it is marked, releasing moves the entry there, and the drop never also
+opens the entry or the day preview. The day view has only one day to drop on, so there a block
+moves up and down only and the copy under the finger stays in its column. The year view draws
+coloured days rather than entries, so it has no dragging. Only what is drawn can be picked up: an
+entry hidden behind a month cell's `+3`, or listed in the day preview, is moved from its popup.
 
-- **The day changes and the time does not.** A 09:00 meeting dropped on Thursday is at 09:00 on
-  Thursday, read in the configured zone, so it is still 09:00 across a DST change. In the week the
-  target is the day's column and only that: dropped lower or higher in the hour grid, the entry
-  keeps its time.
+- **In the month the day changes and the time does not.** A 09:00 meeting dropped on Thursday is
+  at 09:00 on Thursday, read in the configured zone, so it is still 09:00 across a DST change.
+- **In the hour grid of the week and the day, a timed block also takes a new time**: the time
+  its **top edge** lands on, in quarters of an hour — so a two-hour meeting held by its middle
+  does not jump by an hour when it is picked up. The copy under the pointer reads the time it
+  would land on, `10:15–11:15`, while it moves. The block **keeps its length**, and it **ends by
+  midnight**: dropped lower than that, it starts as late as still ends at 24:00, rather than
+  quietly becoming an entry across two days and leaving the grid for the top strip. An entry with
+  no end keeps having none, and is placed as the hour it is drawn as.
+- **The top strip and the hour grid do not convert.** A timed block dropped on the strip, or on a
+  day's header, moves to that day at its old time; an all-day entry or a span dropped in the hour
+  grid moves to that day and stays what it was. Making an entry all-day, or giving it a time, is
+  the popup's.
 - **A span moves whole.** Whichever of its days was picked up, **the day it is released on is its
   new start**, and its end moves by the same number of days: a three-day trip held by its middle
   day and dropped on a Friday runs Friday to Sunday.

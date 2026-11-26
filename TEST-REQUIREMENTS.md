@@ -290,7 +290,10 @@ across midnight: that the month shows the span **on all three days**, **rounded 
 and ends and flat where it goes on**, **first in each cell**, with its **title on every day**.
 That the timed span is in the **top strip on both its days and in the hour grid on neither**,
 reading its start on the first and its end **arrowed** on the last, and that the strip's corner
-no longer says `all-day`. That the day preview for a day in the **middle** of a span lists it.
+no longer says `all-day`. That the day preview for a day in the **middle** of a span lists it. At
+360 px, across the weeks of the fixture's month: that **no cell of the top strip is wider than its
+day's column** and the week grid does not scroll sideways — a title too long for its day is cut
+short inside it, where it used to widen the column and push the week past the pane's edge.
 
 **The filter, and the count on its button.** That the stage row opens the three stages. That switching a stage off **hides those tasks from the month
 view** and leaves every event where it was; that `important only` keeps what is marked, **events
@@ -521,8 +524,12 @@ that its end moves with it; that the three-day span **held by its middle day** a
 one occurrence of the weekly task writes an **override** starting on the new day, leaves the rule
 file byte for byte as it was, and is drawn on the new day. At 360 px: that a held line lifts and
 lands on the day under the finger, opening neither the popup nor the day preview. In the week:
-that a timed block dropped in the next column, lower than it was, lands on that column's day at
-its old time. The arithmetic itself — a date moves as a date, an instant keeps its wall-clock
+that a timed block dropped in the next column, two hours lower than it was, lands on that column's
+day **two hours later, keeping its length**. In the day at 360 px, held and moved an hour up and
+sideways: that the copy stays in its column, reads the time it would land on while it is held,
+and the block lands an hour earlier on the same day. On a screen tall enough for the whole day,
+that a block dropped at the bottom of the column **ends at midnight** and is still in the hour
+grid. The arithmetic itself — a date moves as a date, an instant keeps its wall-clock
 time across a DST change, a moved occurrence is listed on its new day and not its old — is in
 `unit.mjs`.
 

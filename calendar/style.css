@@ -209,7 +209,7 @@ body.dock-bottom { padding-bottom: 0; }
 /* ---- week and day: columns are the days, rows are the 24 hours ---- */
 .tg { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .tg-head, .tg-allday, .tg-body {
-  display: grid; grid-template-columns: var(--tcol) repeat(var(--cols), 1fr);
+  display: grid; grid-template-columns: var(--tcol) repeat(var(--cols), minmax(0, 1fr));
 }
 .tg-head { border-bottom: 1px solid var(--line); }
 .tcorner { font-size: .6rem; color: var(--muted); align-self: center; text-align: center; }

@@ -254,8 +254,7 @@ function timeBlock(o, detailed) {
   b.style.setProperty('--c', colorOf(o.group));
   b.style.top = `${o.minutes / 1440 * 100}%`;
   b.style.height = `${Math.min(1440 - o.minutes, minutes(o)) / 1440 * 100}%`;
-  b.append(el('span', 'when', o.end && !isAllDay(o.end)
-    ? `${timeLabel(o.start)}–${timeLabel(o.end)}` : timeLabel(o.start)));
+  b.append(el('span', 'when', blockTime(o)));
   b.append(el('span', 'what', o.title));
   if (detailed) {
     const meta = [labelOf(o.group), o.location, o.seriesId ? 'repeats' : ''].filter(Boolean);
@@ -264,6 +263,9 @@ function timeBlock(o, detailed) {
   if (o.type === 'task') b.append(tickButton(o));
   return b;
 }
+
+const blockTime = o => o.end && !isAllDay(o.end)
+  ? `${timeLabel(o.start)}–${timeLabel(o.end)}` : timeLabel(o.start);
 
 // How tall a block is. No end, or an end that is not an instant, reads as an hour.
 function minutes(o) {
@@ -336,31 +338,49 @@ function onClick(e) {
     Math.floor((e.clientY - r.top) / r.height * 24))) });
 }
 
-// ---- dragging an entry to another day -----------------------------------------------------
-// In the month and the week, by the same press-and-drag the board uses (./drag.js). The target
-// is a day and only a day: dropped in the week's hour grid, an entry keeps its time whatever
-// height it lands at. Whichever day of a span was picked up, the day it is dropped on is its new
-// start, and the end moves by as many days. A repeating entry moves this one occurrence, as an
-// override - the same thing the board does when it moves one.
+// ---- dragging an entry to another day, or to another time ---------------------------------
+// In the month, the week and the day, by the same press-and-drag the board uses (./drag.js).
+// Whichever day of a span was picked up, the day it is dropped on is its new start, and the end
+// moves by as many days. A timed block dropped in the hour grid also takes the time its top edge
+// lands on, in quarters, keeping its length and ending by midnight; the copy shows that time as it
+// moves. The day view has one column, so there it moves only up and down. A repeating entry moves
+// this one occurrence, as an override - the same thing the board does when it moves one.
 function wireDrag(view) {
+  let mins = null;
+  const hm = m => `${pad(Math.floor(m / 60))}:${pad(m % 60)}`;
   draggable(view, {
-    item: n => (S.view.mode === 'M' || S.view.mode === 'W') && !n.closest('button')
-      ? n.closest('.eline, .tev') : null,
+    item: n => n.closest('button') ? null
+      : S.view.mode === 'D' ? n.closest('.tev')
+        : S.view.mode === 'M' || S.view.mode === 'W' ? n.closest('.eline, .tev') : null,
+    axis: () => S.view.mode === 'D' ? 'y' : undefined,
     target: (x, y) => {
       const t = document.elementFromPoint(x, y)?.closest('[data-day]');
       return t && view.contains(t) ? t : null;
+    },
+    over: (ghost, t) => {
+      const o = S.visible.get(ghost.dataset.key);
+      const when = ghost.querySelector('.tev > .when');
+      mins = null;
+      if (!when) return;
+      if (!t?.classList.contains('tcol')) return void (when.textContent = blockTime(o));
+      const timed = o.end && !isAllDay(o.end);
+      const len = timed ? Math.round((Date.parse(o.end) - Date.parse(o.start)) / 60000) : 60;
+      const r = t.getBoundingClientRect();
+      mins = Math.max(0, Math.min(Math.round((ghost.getBoundingClientRect().top - r.top)
+        / r.height * 96) * 15, Math.floor((1440 - len) / 15) * 15));
+      when.textContent = timed ? `${hm(mins)}–${hm(mins + len)}` : hm(mins);
     },
     drop: async (line, t) => {
       const o = S.visible.get(line.dataset.key);
       if (!o) return;
       try {
-        if (!await moveToDay(o, t.dataset.day)) return;
+        if (!await moveToDay(o, t.dataset.day, mins)) return;
       } catch (err) {
         return S.status(err.message, true);
       }
       S.model = await S.reload();
       S.render();
-      S.push(`calendar: ${o.title} -> ${t.dataset.day}`);
+      S.push(`calendar: ${o.title} -> ${t.dataset.day}${mins == null ? '' : ` ${hm(mins)}`}`);
     }
   });
 }

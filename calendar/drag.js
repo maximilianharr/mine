@@ -24,7 +24,9 @@ addEventListener('contextmenu', e => { if (st) e.preventDefault(); });
 // target(x, y)      the drop target under the point, or null
 // drop(el, target)  what releasing on a target does
 // start(el), end()  optional: set up and take down anything shown while dragging
-export function draggable(host, { item, target, drop, start, end, hold = 'touch', axis, scroll = true }) {
+// over(ghost, t)    optional: called as the copy moves, with the target under it
+// axis              'y' keeps the copy in its column; a function is asked at each pick-up
+export function draggable(host, { item, target, drop, start, end, over, hold = 'touch', axis, scroll = true }) {
   host.addEventListener('pointerdown', e => {
     if (st || e.button !== 0) return;
     const el = item(e.target);
@@ -32,7 +34,8 @@ export function draggable(host, { item, target, drop, start, end, hold = 'touch'
     const mouse = e.pointerType === 'mouse';
     if (mouse) e.preventDefault();          // no text selection under a mouse drag
     st = { el, id: e.pointerId, x0: e.clientX, y0: e.clientY, x: e.clientX, y: e.clientY,
-      live: false, over: null, opts: { target, drop, start, end, axis, scroll } };
+      live: false, over: null,
+      opts: { target, drop, start, end, onMove: over, axis: typeof axis === 'function' ? axis() : axis, scroll } };
     if (!mouse || hold === 'always') st.timer = setTimeout(lift, HOLD);
     addEventListener('pointermove', move, true);
     addEventListener('pointerup', up, true);
@@ -82,6 +85,7 @@ function follow() {
     t?.classList.add('drop-on');
     st.over = t;
   }
+  opts.onMove?.(ghost, t);
 }
 
 function scrollerOf(n) {
