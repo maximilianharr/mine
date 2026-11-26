@@ -189,6 +189,25 @@ function versionOf(worker) {
   });
 }
 
+// Skip-waiting, then reload once the new worker has taken over.
+function takeOver(worker) {
+  navigator.serviceWorker.addEventListener('controllerchange',
+    () => location.reload(), { once: true });
+  worker.postMessage('skip-waiting');
+}
+
+// The way to the newest version that does not depend on the banner being there. A plain reload
+// would leave a waiting worker waiting, so look for one first and hand over to it.
+$('#reload-app').addEventListener('click', async () => {
+  const reg = await navigator.serviceWorker?.getRegistration();
+  // Offline there is nothing to fetch, and the reload still happens.
+  await reg?.update().catch(() => {});
+  const w = reg?.installing;
+  if (w) await new Promise(done => w.addEventListener('statechange', done, { once: true }));
+  if (reg?.waiting) takeOver(reg.waiting);
+  else location.reload();
+});
+
 function registerSW() {
   if (!navigator.serviceWorker) return;
   navigator.serviceWorker.register('./sw.js', { type: 'module', scope: './' }).then(reg => {
@@ -205,11 +224,7 @@ function registerSW() {
       const w = reg.installing;
       w?.addEventListener('statechange', () => { if (w.state === 'installed') offer(); });
     });
-    $('#reload').addEventListener('click', () => {
-      reg.waiting?.postMessage('skip-waiting');
-      navigator.serviceWorker.addEventListener('controllerchange',
-        () => location.reload(), { once: true });
-    });
+    $('#reload').addEventListener('click', () => { if (reg.waiting) takeOver(reg.waiting); });
   }).catch(() => { /* an app that cannot cache still works online */ });
 }
 

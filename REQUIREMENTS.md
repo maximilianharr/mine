@@ -134,6 +134,10 @@ running. A new worker can sit waiting while being identical to the active one, s
 waiting" is not the test — if it were, the banner would appear on an app with no update at all
 and never go away. Reloading twice with no deploy in between must leave no banner.
 
+Mine's own settings carry a **Reload app** button, the way to a new version when the banner is not
+there: it looks for one, lets it take over, and reloads. With nothing new, or offline, it just
+reloads.
+
 ## Privacy
 
 Your data lives in a **private** repo. The app itself is public, but it contains no data, and the

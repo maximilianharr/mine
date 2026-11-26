@@ -253,7 +253,8 @@ cache; install precaches the shell. Same-origin requests are cache-then-revalida
 Requests to `api.github.com` **bypass the worker entirely** — caching an API response would hand
 back a stale ETag and silently break sync.
 
-A new worker waits; the UI offers "Update ready — reload" and `skipWaiting()` runs only on tap.
+A new worker waits; the UI offers "Update ready — reload" and `skipWaiting()` runs only on tap —
+of that banner, or of **Reload app** in Mine's settings, which calls `registration.update()` first.
 
 **The offer is gated on the version, not on a worker waiting.** The worker answers a `version`
 message over a `MessageChannel` port with its `VERSION` constant, and the page compares the
