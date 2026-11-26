@@ -20,13 +20,14 @@
 :root[data-theme="coffee"] { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
 :root[data-theme="dark"] { --todo: #f08a7a; --doing: #eac46a; --done: #8fd0a0; }
 :root[data-theme="matrix"] { --todo: #ff3b3b; --doing: #e8ff3a; --done: #00ff41; }
-/* In matrix an entry is not a tint: it is a solid block of code-green with black ink, ringed by
-   a glow in its category's colour. The tokens are redefined on the block so whatever inside it
-   reads --fg or --muted stays dark on the green. */
+/* In matrix an entry is not a tint: it is a dark block ringed in glowing code-green, its text in
+   its category's colour lifted towards white so it reads as neon. --fg is redefined on the block
+   so whatever inside it reads --fg glows in that colour too. */
 :root[data-theme="matrix"] :is(.eline, .tev, .dentry, .kcard) {
-  --fg: #000; --muted: #0b4a1c; --line: #0b4a1c;
-  background: #00ff41; color: #000; text-shadow: none; border-color: transparent;
-  box-shadow: 0 0 0 1.5px var(--c, #00ff41), 0 0 8px 1px var(--c, #00ff41);
+  --fg: color-mix(in srgb, var(--c, #00ff41) 70%, #fff);
+  background: #031007; color: var(--fg); border-color: transparent;
+  text-shadow: 0 0 4px color-mix(in srgb, var(--c, #00ff41) 60%, transparent);
+  box-shadow: 0 0 0 1px #00ff41, 0 0 6px rgb(0 255 65 / .55);
 }
 
 body { padding-bottom: env(safe-area-inset-bottom); }
