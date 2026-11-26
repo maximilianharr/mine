@@ -500,9 +500,18 @@ are reachable from each other and not a one-way door.
 
 **The kanban on a desktop.** That a column header has no `‹` `›` at all in either orientation,
 since every stage is on screen, and that **a card has none either** — the stage is changed by
-dragging, **in both orientations**: a drop onto a stacked stage moves the card exactly as a drop
-onto a column does. On a phone the card keeps its pair, so the same check must come out the other
+dragging, **in both orientations**. On a phone the card keeps its pair, so the same check must come out the other
 way at 320 px.
+
+**Dragging a card.** Through the DevTools input domain — a real touch and a real mouse, not
+synthetic events — because what is being checked is that a held finger lifts and a moving one
+scrolls, which only the browser's own gesture handling can say. At 360 px on the horizontal
+board: that holding a todo card still lifts it; that the strip of three stages appears and marks
+`doing` under the finger; that releasing there moves the card from todo to doing; that the strip
+and the lifted copy are gone afterwards; and that the drop opened no popup. That a finger that
+moves at once lifts nothing and moves nothing. At 900 px: that a mouse drags a card from todo onto
+the done column with no strip shown and no popup, and that a click that does not move still opens
+the card.
 
 **What is full width and what is capped.** At 1920 px: that the month grid's right edge reaches
 the window's, within the pane's own padding, in the day, week, month and year views — a calendar

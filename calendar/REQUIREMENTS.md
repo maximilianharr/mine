@@ -773,9 +773,9 @@ down — the direction everything else in Mine is read in.
   on screen and it is the only way to see another; stacked, all three are already there, so
   there is nothing to page and the header carries neither arrow. The rule that **exactly one
   column is visible** likewise describes horizontal on a phone and says nothing about vertical.
-- **A card keeps its own `<` `>` on a phone in both**, because a phone has nothing to drag onto,
-  and **a desktop card is dragged between stages in both**, because a stacked stage is as good a
-  drop target as a column.
+- **A card is dragged between stages in both, at every width**, because a stacked stage is as
+  good a drop target as a column. **On a phone it keeps its own `<` `>` as well**: a held finger
+  is slower than a tap, and two ways to move a card are fine where one of them is a button.
 - Vertical is not a phone layout: it is offered at every width, since a desktop board can be as
   lopsided as a phone's.
 
@@ -790,6 +790,19 @@ A card shows:
   there and the card is dragged between them, so arrows on every card are a second way to do what
   the drag already does, in the one place they are also easiest to mistake for the header's pager;
 - below it two lines of the markdown body, and the day the task sits on.
+
+**Dragging a card.** A mouse picks a card up by moving it a few pixels, as a desktop drag always
+has. **A finger picks it up by holding still on it for a moment** — moving before then is a
+scroll, and scrolls the column exactly as it always did — and a phone gives a short buzz where it
+can. The card then follows the finger, its old place faded, and the stage under it is marked;
+releasing moves it there, and holding it near the top or bottom edge scrolls the board. Releasing
+it where it was, or outside any stage, moves nothing, and a drop never also opens the card.
+
+**On a phone's horizontal board** the other two stages are off screen, so the moment a card is
+lifted **a strip of the three stages appears over the column's header** — `todo · doing · done`,
+each in its colour — and the card is dropped on one of them. Pushing the card against the screen
+edge to page the columns was the alternative, and it is fiddly to aim and easy to set off by
+accident. Stacked, all three stages are on screen and there is no strip.
 
 **That is the whole card.** The sprint number and the priority chip are gone from it. The
 importance is set in the entry popup's toggle row, which is one tap further away and is where the
@@ -814,7 +827,7 @@ card and nothing else follows — the click must not also reach the card beneath
 popup on top of the move. This holds for every control a card may ever carry, and it is the
 reason a card may carry none that is not worth the care.
 
-On desktop all three columns are shown and a card can be dragged between them, and each header is
+On desktop all three columns are shown, and each header is
 its stage's name, centred, with the `+` at its right and **no `‹` `›`** — with every column on
 screen there is nothing for a per-column pager to page. On a phone, **horizontally**, one column
 fills the screen and its header pages between the three: `[‹] doing [›]`, the two buttons
@@ -838,7 +851,8 @@ todo and at done, which is what tells it from the one that still works; the pair
 rather than wrapping.
 
 **There is no swipe on the board**, and none anywhere else in the calendar either. A sideways
-gesture on a column or on a card does nothing; the sprint is stepped by the `‹` `›` in the top
+gesture on a column or on a card does nothing — a drag starts only from a hold or, with a mouse,
+from a press; the sprint is stepped by the `‹` `›` in the top
 pane's second row — so no gesture here ever has to be told apart from a drag.
 
 **Exactly one column is visible at a time**, on a phone, horizontally. No part of the next
@@ -993,8 +1007,9 @@ The views above describe the desktop. The same screens adapt:
   finger. Tapping a month's name in the year view zooms into that month instead.
 - The kanban, **horizontally**, shows one column at a time, paged by the `‹` `›` in its header,
   which **fill the header's width** either side of the stage name on a background brighter than
-  it. Stacked, all three stages are on screen and no header carries an arrow. Either way its
-  cards keep their own `<` `>`, because there is nothing to drag a card onto.
+  it. Stacked, all three stages are on screen and no header carries an arrow. Either way a card
+  is held to be dragged — onto the strip of three stages that appears over the header when
+  horizontal — and keeps its own `<` `>` as well.
 
 **Every view fits a 320 CSS px viewport**, with the week gutter on and whatever the entries happen
 to be — the two-row top pane and the double-size kanban header included. **Nothing in the app

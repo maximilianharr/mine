@@ -288,6 +288,36 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   box-shadow: 0 1px 2px rgb(90 60 30 / .06);
 }
 .kbar { flex: none; width: 3px; border-radius: 2px; }
+
+/* ---- dragging ---- */
+/* What can be held is not text to select and has no long-press menu, or a held finger would
+   select a word or raise the system's callout instead of picking it up. */
+.kcard, .eline, .tev, .topbar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.kcard, .eline, .tev { cursor: grab; }
+/* The copy that follows the pointer, and the original it was lifted from. */
+.drag-ghost {
+  position: fixed; z-index: 20; margin: 0; pointer-events: none; opacity: .92;
+  box-shadow: var(--shadow); transform: rotate(1deg);
+}
+.dragging { opacity: .35; }
+/* The target under the pointer: a stage, a day, or one of the strip's three zones. */
+.kcol.drop-on, .day.drop-on, .tcol.drop-on, .adcell.drop-on {
+  background: color-mix(in srgb, var(--link) 12%, transparent);
+  outline: 2px dashed var(--link); outline-offset: -2px;
+}
+/* A phone's horizontal board shows one column, so the three stages appear over its header while
+   a card is held, each in its own colour. */
+.kdrop {
+  position: fixed; z-index: 19; display: grid; grid-template-columns: repeat(3, 1fr); gap: .3rem;
+  padding: .3rem; background: var(--raise); border: 1px solid var(--line); border-radius: .7rem;
+  box-shadow: var(--shadow);
+}
+.kzone {
+  padding: .8rem .2rem; text-align: center; font-family: var(--serif); font-size: 1.1rem;
+  font-weight: 600; text-transform: capitalize; color: var(--c);
+  border: 2px solid color-mix(in srgb, var(--c) 40%, transparent); border-radius: .5rem;
+}
+.kzone.drop-on { color: var(--raise); background: var(--c); border-color: var(--c); }
 .kmain { flex: 1; min-width: 0; }
 .ktop { display: flex; align-items: center; gap: .1rem; }
 /* A marker, not a button: it is read on the card and set in the entry popup's toggle row. */

@@ -268,6 +268,7 @@ calendar/data.js      the model, the date and sprint arithmetic, and the writes
 calendar/ui.js        DOM helpers, the icon set, and the state every view reads
 calendar/views.js     year, month, week, day, and the day preview
 calendar/kanban.js    the board
+calendar/drag.js      press-and-drag, for a card, an entry and the top pane
 calendar/popup.js     the one entry popup: its rows, their inline editors, their writes
 calendar/settings.js  the filter dropdown, the settings panel and the logs panel: the filter
                       button's and the hamburger's two errands
@@ -280,6 +281,18 @@ shared/prefs.js       theme and date format, which belong to Mine rather than to
 slots the shell fills in, so a view can ask for a redraw or a background push without importing
 `app.js` back and making an import cycle. The logs panel's `push now` goes through `refresh`,
 which is the same serialised drain-then-pull the app runs on open and on focus.
+
+**Dragging is pointer events, in `drag.js`**, not HTML5 drag and drop, which never fires for a
+finger. `draggable(host, { item, target, drop, start, end })` listens for a press on the host;
+`item` says what the press picks up and `target(x, y)` what lies under a point, read with
+`elementFromPoint` while the lifted copy has `pointer-events: none`. A touch lifts after a 400 ms
+hold with less than 8 px of movement, and anything more is left to the browser as a scroll; a
+mouse lifts after 5 px. Once lifted, a non-passive `touchmove` listener on the window cancels the
+page's own scrolling — it is registered once, at load, because a listener added mid-gesture is
+too late on iOS — and the scroller under the item is scrolled by the pointer's distance into its
+48 px edge. The first click within 400 ms of a release is swallowed, so a drop is never also a
+click on whatever it landed on. A held element carries `user-select: none` and
+`-webkit-touch-callout: none`, or iOS raises its callout instead.
 
 `FIELDS` in `popup.js` is built while the module is still evaluating, so anything it calls must
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.

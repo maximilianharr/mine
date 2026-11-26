@@ -8,6 +8,7 @@ import { STAGES, sprintRange, byImportance, patchOccurrence } from './data.js';
 import { S, el, phone, colorOf, iconBtn, dayLabel, STAGE_COLOR } from './ui.js';
 import { collect } from './views.js';
 import { openNew } from './popup.js';
+import { draggable } from './drag.js';
 
 // Stacked, the three stages sit one under the other, each full width, and the board is read by
 // scrolling down - which is the right way round for a stage holding fifteen cards beside one
@@ -41,7 +42,7 @@ export function renderKanban(host) {
   // `one` is the strip shifted by whole column widths, which only horizontal on a phone is.
   host.className = `view vK${phone() && !vert ? ' one' : ''}`;
   host.replaceChildren(board);
-  wire(board);
+  wire(board, vert);
 }
 
 // A column header carries its state, in that state's colour, and a `+` that creates a task in
@@ -89,7 +90,6 @@ const passes = o => !S.kfilter.assignee || o.participants.includes(S.kfilter.ass
 function card(o) {
   const c = el('div', 'kcard');
   c.dataset.key = o.key;
-  if (!phone()) c.draggable = true;       // on a phone the columns are paged from the header
 
   const bar = el('span', 'kbar');
   bar.style.background = colorOf(o.group);
@@ -104,7 +104,8 @@ function card(o) {
 
   // On a desktop the card is dragged between the columns, so a pair of arrows on every card is a
   // second way to do what the drag already does - in the one place it is also easiest to mistake
-  // for the header's pager. On a phone there is nothing to drag onto, so the pair stays.
+  // for the header's pager. A phone has the drag too, but a held finger is slower than a tap and
+  // the other columns are off screen, so the pair stays there as well.
   if (phone()) {
     const back = iconBtn('chev', 'Previous stage', 'prev');
     const fwd = iconBtn('chev', 'Next stage', 'next');
@@ -151,22 +152,42 @@ async function act(what, fn) {
 }
 
 // ---- dragging ------------------------------------------------------------------------------
-// Desktop only, in both orientations: a stacked stage is as good a drop target as a column.
-// There is no swipe anywhere, so a sideways gesture never has to be told apart from a drag.
+// On every device and in both orientations: a stacked stage is as good a drop target as a
+// column. A finger holds the card still to pick it up, so scrolling a column is untouched, and
+// there is no swipe anywhere, so a sideways gesture never has to be told apart from a drag.
+//
+// On a phone's horizontal board one column is on screen and the other two are not, so while a
+// card is held the three stages appear as a strip over the column header, in their colours,
+// and the card is dropped on one of those.
 
-function wire(board) {
-  board.addEventListener('dragstart', e => {
-    const c = e.target.closest('[data-key]');
-    if (!c) return;
-    e.dataTransfer.setData('text/plain', c.dataset.key);
-    e.dataTransfer.effectAllowed = 'move';
+function wire(board, vert) {
+  let strip = null;
+  draggable(board, {
+    item: n => n.closest('button') ? null : n.closest('.kcard'),
+    target: (x, y) => document.elementFromPoint(x, y)?.closest('[data-stage]') || null,
+    start: () => { if (phone() && !vert) strip = dropStrip(board); },
+    end: () => { strip?.remove(); strip = null; },
+    drop: (c, t) => {
+      const o = S.visible.get(c.dataset.key);
+      const stage = t.dataset.stage;
+      if (o && o.stage !== stage) patch(o, { stage }, `-> ${stage}`);
+    }
   });
-  board.addEventListener('dragover', e => { if (e.target.closest('.kcol')) e.preventDefault(); });
-  board.addEventListener('drop', e => {
-    const col = e.target.closest('.kcol');
-    if (!col) return;
-    e.preventDefault();
-    const o = S.visible.get(e.dataTransfer.getData('text/plain'));
-    if (o && o.stage !== col.dataset.stage) patch(o, { stage: col.dataset.stage }, `-> ${col.dataset.stage}`);
-  });
+}
+
+function dropStrip(board) {
+  const head = board.querySelectorAll('.khead')[S.view.col].getBoundingClientRect();
+  const bar = document.querySelector('.topbar').getBoundingClientRect();
+  const strip = el('div', 'kdrop');
+  strip.style.top = `${Math.max(head.top, bar.bottom + 4)}px`;
+  strip.style.left = `${head.left}px`;
+  strip.style.width = `${head.width}px`;
+  for (const stage of STAGES) {
+    const z = el('div', 'kzone', stage);
+    z.dataset.stage = stage;
+    z.style.setProperty('--c', STAGE_COLOR[stage]);
+    strip.append(z);
+  }
+  document.body.append(strip);
+  return strip;
 }

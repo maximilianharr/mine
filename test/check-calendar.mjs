@@ -241,6 +241,44 @@ const box = sel => ev(`(() => {
 })()`);
 const centred = b => b.top > 0 && b.bottom < b.h - 8;
 
+// Dragging, through the DevTools input domain rather than synthetic events: a real touch is
+// what has to hold still to pick something up, and what the page must stop from scrolling. The
+// destination is a function, read once the thing is lifted - the board's drop strip only exists
+// while a card is held.
+// `node` is a JS expression for the element; q() makes one from a selector.
+const q = sel => `document.querySelector(${JSON.stringify(sel)})`;
+const centre = node => ev(`(() => { const r = (${node}).getBoundingClientRect();
+  return [r.left + r.width / 2, r.top + r.height / 2]; })()`);
+const touchDrag = async (from, to, hold = 550) => {
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+  const [x0, y0] = await centre(from);
+  await send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: x0, y: y0 }] });
+  await sleep(hold);
+  const lifted = await ev(`!!document.querySelector('.drag-ghost')`);
+  const [x1, y1] = typeof to === 'function' ? await to() : await centre(to);
+  for (let i = 1; i <= 6; i++) {
+    await send('Input.dispatchTouchEvent', { type: 'touchMove',
+      touchPoints: [{ x: x0 + (x1 - x0) * i / 6, y: y0 + (y1 - y0) * i / 6 }] });
+    await sleep(40);
+  }
+  const during = await ev(`({ over: document.querySelector('.drop-on')?.dataset.stage
+    || document.querySelector('.drop-on')?.dataset.day || '' })`);
+  await send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+  await sleep(1200);
+  await send('Emulation.setTouchEmulationEnabled', { enabled: false });
+  return { lifted, ...during };
+};
+const mouseDrag = async (from, to) => {
+  const [x0, y0] = await centre(from);
+  const [x1, y1] = await centre(to);
+  const m = (type, x, y) => send('Input.dispatchMouseEvent',
+    { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
+  await m('mousePressed', x0, y0);
+  for (let i = 1; i <= 6; i++) { await m('mouseMoved', x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * i / 6); await sleep(30); }
+  await m('mouseReleased', x1, y1);
+  await sleep(1200);
+};
+
 // ---- 1. every view fits a phone, in both schemes ----------------------------------------------
 
 await viewport(360);
@@ -1805,6 +1843,47 @@ const capped = await ev(`(() => {
 ok('a stacked board is capped and centred too', capped.board <= 78 * 16 + 2 &&
   Math.abs(capped.left - capped.right) <= 2, JSON.stringify(capped));
 await orient('horizontal');
+
+// ---- 6b. dragging a card ----------------------------------------------------------------------
+// On every device. A finger holds a card still to lift it; on a phone's one-column board the
+// three stages then appear over the header and the card is dropped on one. A finger that moves
+// before the hold is a scroll and lifts nothing.
+
+const inStage = st => ev(`document.querySelectorAll('.kcol[data-stage="${st}"] .kcard').length`);
+await viewport(360);
+await open('K');
+let todo0 = await inStage('todo'), doing0 = await inStage('doing');
+const firstTodo = `.kcol[data-stage="todo"] .kcard .ktitle`;
+const held = await touchDrag(q(firstTodo),
+  () => centre(`[...document.querySelectorAll('.kdrop .kzone')].find(z => z.dataset.stage === 'doing')`));
+ok('a held card lifts', held.lifted, 'no ghost after holding');
+eq('and the strip marks the stage under the finger', held.over, 'doing');
+eq('releasing there moves it out of todo', await inStage('todo'), todo0 - 1);
+eq('and into doing', await inStage('doing'), doing0 + 1);
+eq('the strip is gone afterwards', await ev(`document.querySelectorAll('.kdrop, .drag-ghost').length`), 0);
+eq('and the drop opened nothing', await ev(`document.querySelector('#popup').hidden`), true);
+
+todo0 = await inStage('todo');
+const twitch = await touchDrag(q(firstTodo),
+  async () => { const [x, y] = await centre(q(firstTodo)); return [x, y + 200]; }, 60);
+eq('a finger that moves at once lifts nothing', twitch.lifted, false);
+eq('and moves nothing', await inStage('todo'), todo0);
+
+await viewport(900);
+await open('K');
+todo0 = await inStage('todo');
+const done0 = await inStage('done');
+await mouseDrag(q(firstTodo), q(`.kcol[data-stage="done"] .khead`));
+eq('a mouse drags a card across the desktop board', [await inStage('todo'), await inStage('done')],
+  [todo0 - 1, done0 + 1]);
+eq('with no strip on a desktop', await ev(`document.querySelectorAll('.kdrop').length`), 0);
+eq('and no popup', await ev(`document.querySelector('#popup').hidden`), true);
+const [cx, cy] = await centre(q(firstTodo));
+for (const type of ['mousePressed', 'mouseReleased'])
+  await send('Input.dispatchMouseEvent', { type, x: cx, y: cy, button: 'left', clickCount: 1 });
+await sleep(450);
+eq('a click that does not move still opens the card', await ev(`!document.querySelector('#popup').hidden`), true);
+await closeForm();
 
 // ---- 7. what a saved task actually writes ------------------------------------------------------
 
