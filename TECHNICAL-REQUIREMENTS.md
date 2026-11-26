@@ -1,7 +1,8 @@
 # Mine — technical requirements
 
 How [REQUIREMENTS.md](REQUIREMENTS.md) is built. Everything here was verified against the live
-API or on device on 2026-11-19; `spike/` re-runs the device checks and needs no token.
+API or on device on 2026-11-19; the device checks were
+run by a throwaway page since removed — see [Platform findings](#platform-findings).
 
 ## Repos
 
@@ -322,5 +323,6 @@ Verified in both installed home-screen apps (iPhone/Safari, Pixel/Chrome) on 202
 Not tested, and no longer relevant: whether separately-installed PWAs get isolated storage. That
 expectation is why the one-app topology was chosen.
 
-Re-run `spike/` after a major iOS release — two of the four results above contradicted the
+Re-run them after a major iOS release — two of the four results above contradicted the
 documented platform behaviour, and that is exactly the kind of thing that regresses silently.
+`git checkout 4039dea -- spike` brings the page back; it needs no token.

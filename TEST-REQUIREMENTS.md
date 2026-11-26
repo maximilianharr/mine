@@ -614,7 +614,8 @@ Headless Chromium on a desktop is not a phone. It does not cover:
   Chrome's own quirks. Serve the tree with `python3 -m http.server` and open it from the phone
   on the same network, or push and open the live URL.
 - **installing to the home screen, the service worker and the update banner** — these need an
-  installed app over HTTPS. `spike/` covers the platform questions and needs no token.
+  installed app over HTTPS. The platform questions are answered in
+  [TECHNICAL-REQUIREMENTS.md](TECHNICAL-REQUIREMENTS.md#platform-findings).
 - **GitHub sync**: pulling, the one-commit drain, conflict files, an expiring token. Only a real
   token against the real data repo exercises those, and that is done by hand.
 

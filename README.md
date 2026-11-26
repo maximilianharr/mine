@@ -24,7 +24,6 @@ shared/   apps.js store.js github.js md.js        used by every app
           markdown.js prefs.js ui.js sync.js
           vendor/
 calendar/                                         one folder per app
-spike/                                            on-device platform checks
 test/                                             the checks: test/run.sh
 ```
 
