@@ -33,16 +33,19 @@ export function noteOf({ path, text }) {
   return {
     path, data, body, title,
     tags: [...new Set(list(data.tags).map(tagOf).filter(Boolean))],
+    pinned: data.pinned === true,
     updated: String(data.updated ?? data.created ?? (path.match(/\d{4}-\d{2}-\d{2}/) || [''])[0])
   };
 }
 
-// Newest first, the path breaking a tie so the order never depends on how the mirror listed them.
+// Pinned first, then newest first, the path breaking a tie so the order never depends on how the
+// mirror listed them.
 export function buildNotes(files) {
   return files
     .filter(f => f.path.startsWith(`${ROOT}/`) && f.path.endsWith('.md') && f.text != null)
     .map(noteOf)
-    .sort((a, b) => a.updated !== b.updated ? (a.updated < b.updated ? 1 : -1)
+    .sort((a, b) => a.pinned !== b.pinned ? (a.pinned ? -1 : 1)
+      : a.updated !== b.updated ? (a.updated < b.updated ? 1 : -1)
       : a.path < b.path ? 1 : -1);
 }
 
@@ -62,14 +65,16 @@ export function pathFor(created, id = rand4()) {
   return `${ROOT}/${y}/${m}/${day}-${time.slice(0, 2)}${time.slice(3, 5)}-${id}.md`;
 }
 
-// The three fields the app owns are written over what the file held, with a new `updated`; every
-// other key stays as it was. Pure: the write path and the unit checks both use it.
-export function noteFile(note, { title, tags, body }, now = nowStamp()) {
-  const { title: _t, created, updated: _u, tags: _g, ...rest } = note?.data ?? {};
+// The fields the app owns are written over what the file held, with a new `updated`; every other
+// key stays as it was. `pinned` is written only when true. Pure: the write path and the unit
+// checks both use it.
+export function noteFile(note, { title, tags, pinned, body }, now = nowStamp()) {
+  const { title: _t, created, updated: _u, tags: _g, pinned: _p, ...rest } = note?.data ?? {};
   const made = created == null ? now : String(created);
   return {
     path: note?.path ?? pathFor(made),
-    text: serialize({ title, created: made, updated: now, tags, ...rest }, body)
+    text: serialize({ title, created: made, updated: now, tags,
+      ...(pinned ? { pinned: true } : {}), ...rest }, body)
   };
 }
 

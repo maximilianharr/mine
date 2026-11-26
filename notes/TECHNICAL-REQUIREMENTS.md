@@ -34,6 +34,7 @@ tags:
 | `created` | UTC instant to the second, set once when the note is first saved |
 | `updated` | UTC instant to the second, set by every save from the app |
 | `tags` | a YAML list, lower case, a space written as `-`; omitted when empty |
+| `pinned` | `true` when the note is pinned; omitted otherwise |
 
 Written by `shared/md.js`'s `serialize`, so empty keys are omitted, never `None`. **A key the app
 does not own survives a save**, and the body is preserved byte-for-byte by anything that does not
@@ -41,8 +42,8 @@ edit it.
 
 A file written by hand is read leniently. A missing `updated` falls back to `created`, then to
 the date in the path; a missing `title` shows the first `#` heading or the file name; a `tags`
-given as a single string is one tag. The grid sorts on `updated`, newest first, with the path as
-the tie-break.
+given as a single string is one tag, and anything but `pinned: true` is unpinned. The grid sorts
+pinned notes first, then on `updated`, newest first, with the path as the tie-break.
 
 ## Modules
 
@@ -60,10 +61,11 @@ Everything else is shared: the store and the sync (`shared/store.js`, `github.js
 the renderer, the search, the prefs, the icon set and overlays (`shared/ui.js`), and the header
 drag (`shared/drag.js` and its `dockable()`). The discard prompt reads and writes
 `mine.confirmDiscard`; the dock position is `mine.barPosition`. The filter is `notes.tags` in
-`kv`, the ticked tags as a list, `''` standing for `untagged`.
+`kv`, the ticked tags as a list, `''` standing for `untagged`. The column count is `notes.columns`,
+`auto` or a number; `auto` leaves it to the stylesheet's two-or-four.
 
-The popup holds a **draft** — title, tags, body — and compares it with the note as opened; the
-disk shows when the two differ. A save rewrites the frontmatter it read with the draft's three
+The popup holds a **draft** — title, tags, pinned, body — and compares it with the note as opened; the
+disk shows when the two differ. A save rewrites the frontmatter it read with the draft's
 fields and a new `updated`, leaving every other key as it was.
 
 ## Service worker

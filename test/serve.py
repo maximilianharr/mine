@@ -95,7 +95,8 @@ def calendar():
 
 
 # Notes with different `updated` times, two tags shared between them, one untagged, one with a
-# long body and one carrying a key the app does not own, which a save must keep.
+# long body, one carrying a key the app does not own, which a save must keep, and the oldest one
+# pinned, so it leads the grid.
 NOTES = [
     ("2026-11-20T08:00:00Z", "2026-11-25T09:00:00Z", "Groceries", ["home", "shopping"],
      "- [x] milk\n- [ ] eggs\n- [ ] **good** coffee", []),
@@ -106,7 +107,8 @@ NOTES = [
      "Outline the `numbers` first.", []),
     ("2026-11-05T09:00:00Z", "2026-11-21T09:00:00Z", "Loose thought", [],
      "Nothing tagged here.", []),
-    ("2026-11-01T09:00:00Z", "2026-11-20T09:00:00Z", "Paint the hallway", ["home"], "", []),
+    ("2026-11-01T09:00:00Z", "2026-11-20T09:00:00Z", "Paint the hallway", ["home"], "",
+     ["pinned: true"]),
 ]
 
 

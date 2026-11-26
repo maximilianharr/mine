@@ -14,10 +14,14 @@ import { dockable } from '../shared/drag.js';
 import { loadNotes, allTags, shows, tagOf, saveNote, deleteNote } from './data.js';
 
 addIcons({
-  tag: { d: 'M2.6 2.6h5.2l5.6 5.6-5.2 5.2-5.6-5.6zM5.4 5.4h.01', stroke: 1.4 }
+  tag: { d: 'M2.6 2.6h5.2l5.6 5.6-5.2 5.2-5.6-5.6zM5.4 5.4h.01', stroke: 1.4 },
+  pin: { d: 'M5.6 2.4h4.8M6.4 2.4l-.4 4.2-2.2 2.6h8.4L10 6.6l-.4-4.2M8 9.2v4.6', stroke: 1.3 }
 });
 
-const S = { notes: [], prefs: {}, ticked: new Set() };
+const S = { notes: [], prefs: {}, ticked: new Set(), columns: 'auto' };
+
+// `auto` is two columns on a phone and four on a wider screen; a number is that many everywhere.
+const COLUMNS = ['auto', '1', '2', '3', '4', '5', '6'];
 
 // ---- the grid ------------------------------------------------------------------------------
 
@@ -55,6 +59,7 @@ function render() {
   const shown = S.notes.filter(n => shows(n, S.ticked));
   if (shown.length) {
     const grid = el('div', 'ngrid');
+    if (S.columns !== 'auto') grid.style.columnCount = S.columns;
     grid.append(...shown.map(card));
     $('#view').replaceChildren(grid);
   } else {
@@ -71,14 +76,14 @@ async function reload() {
 }
 
 // ---- the popup -----------------------------------------------------------------------------
-// A draft of the three fields the app owns, compared with the note as opened: the disk shows
+// A draft of the fields the app owns, compared with the note as opened: the disk shows
 // when they differ, and leaving asks first. A new note always has something to write, and its
 // disk is disabled until it has a title.
 
-let D = null;        // { note, title, tags, body, clean }
+let D = null;        // { note, title, tags, pinned, body, clean }
 let active = null;   // 'title' | 'body' | null: the row being edited
 
-const snap = d => JSON.stringify([d.title.trim(), d.tags, d.body]);
+const snap = d => JSON.stringify([d.title.trim(), d.tags, d.pinned, d.body]);
 const changed = () => !!D && snap(D) !== D.clean;
 const dirty = () => !!D && (!D.note || changed());
 
@@ -88,7 +93,8 @@ function openNote(note) {
 }
 
 function edit(note) {
-  D = { note, title: note?.title ?? '', tags: [...(note?.tags ?? [])], body: note?.body ?? '' };
+  D = { note, title: note?.title ?? '', tags: [...(note?.tags ?? [])], pinned: !!note?.pinned,
+    body: note?.body ?? '' };
   D.clean = snap(D);
   active = note ? null : 'title';
   $('#popup').hidden = false;
@@ -96,7 +102,10 @@ function edit(note) {
 }
 
 function drawBar() {
-  const kids = [el('span', 'spacer')];
+  const pin = iconBtn('pin', D.pinned ? 'Unpin' : 'Pin', D.pinned ? 'on' : '');
+  pin.setAttribute('aria-pressed', String(D.pinned));
+  pin.addEventListener('click', () => { D.pinned = !D.pinned; drawBar(); });
+  const kids = [pin, el('span', 'spacer')];
   if (D.note) {
     const t = iconBtn('trash', 'Delete', 'bad');
     t.addEventListener('click', removeNote);
@@ -238,7 +247,7 @@ async function save() {
   if (!D?.title.trim()) return;
   const fresh = !D.note;
   const title = D.title.trim();
-  await saveNote(D.note, { title, tags: D.tags, body: D.body });
+  await saveNote(D.note, { title, tags: D.tags, pinned: D.pinned, body: D.body });
   discard();
   await reload();
   sync.push(`notes: ${fresh ? 'new' : 'edit'} "${title}"`);
@@ -339,7 +348,12 @@ function openSettings() {
     row('Theme', choose(THEMES.map(t => [t, t]), S.prefs.theme, v => setMine('theme', v))),
     row('Date format', choose(DATE_FORMATS.map(f => [f, f]), S.prefs.dateFormat,
       v => setMine('dateFormat', v))),
-    row('Confirm discard', toggle(S.prefs.confirmDiscard, v => setMine('confirmDiscard', v)))
+    row('Confirm discard', toggle(S.prefs.confirmDiscard, v => setMine('confirmDiscard', v))),
+    row('Columns', choose(COLUMNS.map(c => [c, c]), S.columns, async v => {
+      S.columns = v;
+      await setKV('notes.columns', v);
+      render();
+    }))
   );
   openCentred($('#settings-panel'));
 }
@@ -396,6 +410,7 @@ if (!await getConfig()) {
 } else {
   $('#notes').hidden = false;
   S.ticked = new Set(await getKV('notes.tags') || []);
+  S.columns = await getKV('notes.columns') || 'auto';
   dockable($('.topbar'), S.prefs.barPosition, pos => { S.prefs.barPosition = pos; });
   await reload();
   await sync.refresh();

@@ -183,7 +183,14 @@ way, and everything after drains normally once a history exists.
 
 1. `GET /repos/{o}/{r}/commits/{branch}` with `If-None-Match`. A 304 means nothing changed and
    costs no rate-limit quota, and no ETag at all means a first mirror.
-2. On 200: fetch the tree, diff blob SHAs, fetch only changed files, drop deleted paths.
+2. On 200: fetch the tree, diff blob SHAs, fetch only changed files, drop deleted paths — except
+   a path still in the queue, which is a save made while the pull ran and not in the remote yet.
+
+**Every request is `cache: 'no-store'`.** GitHub answers `cache-control: max-age=60`, and a push
+clears the stored ETag, so the pull after it is a plain GET the browser would answer from its own
+cache: the commit and the tree from before the push. That pull then deletes the note just pushed
+from the mirror, and it reappears a minute later. A conditional GET is unaffected — a request
+carrying its own `If-None-Match` bypasses the cache anyway, so the 304 still reaches the code.
 
 **Always the whole repo, and deliberately no way to ask for one app's folder.** There is a single
 `commitEtag` for the whole mirror, so a pull restricted to `diary/` would store the ETag of a

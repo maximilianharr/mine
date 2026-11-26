@@ -18,13 +18,17 @@ name to be found by.
 colour and no file of their own: a tag exists as long as some note carries it, and the list of
 tags anywhere in the app is the list the notes carry.
 
-There is nothing else — no pin, no archive, no colour, no reminder. A deleted note is deleted;
-the repo's history is the archive. Each of these is one frontmatter key away if it is ever
-wanted.
+**A note can be pinned**, and a pinned note is shown before every unpinned one, whatever their
+dates. The pin is a toggle at the left of the popup's top row, filled while the note is pinned,
+and like any other change it is written by the disk.
+
+There is nothing else — no archive, no colour, no reminder. A deleted note is deleted; the
+repo's history is the archive. Each of these is one frontmatter key away if it is ever wanted.
 
 ## Layout
 
-The header at the top, and a grid of cards below it, **the most recently updated first**.
+The header at the top, and a grid of cards below it, **pinned notes first, then the most recently
+updated first**.
 
 ```
 [+] [search]                       [filter] [☰] [⌂]
@@ -55,8 +59,9 @@ renderer](../REQUIREMENTS.md#markdown-bodies) and cut off after about eight line
 **tags** as `#home #shopping`, and the **updated date** in Mine's date format. A note with an
 empty body is a title, its tags and its date.
 
-**One column on a phone, more as the screen widens** — two, three, four — each column a stack of
-cards of their own heights, as Keep lays them out. The order runs down the first column and then
+**Two columns on a phone and four on a wider screen**, unless the settings name a number from one
+to six, which then holds on every screen. Each column is a stack of cards of their own heights,
+as Keep lays them out. The order runs down the first column and then
 the next, which is what CSS columns do; reading order across the top row is not kept, and a grid
 of notes is scanned rather than read in sequence.
 
@@ -73,9 +78,9 @@ and rendered, and **every value is edited where it is read**: tap the title and 
 tap the body and it is a textarea of raw markdown. There is no pen and no mode.
 
 ```
-                                     [trash] [x]      opened, nothing changed
-                             [trash] [disk] [x]       something has been changed
-                                     [disk] [x]       a new one; the disk is disabled until it has a title
+[pin]                                [trash] [x]      opened, nothing changed
+[pin]                        [trash] [disk] [x]       something has been changed
+[pin]                                [disk] [x]       a new one; the disk is disabled until it has a title
 ```
 
 Below the top row: the **title**, the **tags row**, and the **body** last.
@@ -117,17 +122,18 @@ It is remembered per device, and **a filter that is on says so on its button**: 
 ticked tags, in a small circle at its top right. A tag that no note carries any more drops out of
 the filter by itself.
 
-**The settings** are a centred panel with three rows, all of them Mine-wide:
+**The settings** are a centred panel with four rows, the first three of them Mine-wide:
 
 | row | control |
 | --- | --- |
 | Theme | system, light, dark, coffee or neutral |
 | Date format | `auto`, `dd.mm.yyyy` or `mm/dd/yy` |
 | Confirm discard | whether leaving an edited popup asks first |
+| Columns | `auto` (two on a phone, four wider) or 1 to 6; this device only |
 
 **The logs** are Mine's shared logs panel, as in the calendar.
 
 ## On a phone
 
 Every screen fits a 320 CSS px viewport, light and dark, and nothing moves sideways. The cards
-are one column; the popup and the panels are centred cards, as in the calendar.
+are two columns unless the settings say otherwise; the popup and the panels are centred cards, as in the calendar.

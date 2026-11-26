@@ -610,13 +610,15 @@ does check is the half that used to be unreachable: what the app says when the d
 different `updated` times, tags shared between them, one untagged, and one with a long body.
 
 **The grid.** That the header holds `+`, search, filter, ☰ and ⌂ in one row and fits 320 px; that
-the cards are in `updated` order, newest first; that a card carries its title, its rendered
-body, its tags and its date; that the grid is one column at 360 px and more than one at 1200 px;
+the cards are pinned first and then in `updated` order, newest first; that a card carries its
+title, its rendered body, its tags and its date; that the grid is two columns at 360 px and four
+at 1200 px, and that the `Columns` setting overrides both and is kept across a reload;
 and that nothing scrolls sideways at 320 or 360 px, light and dark.
 
 **The popup.** That a card opens its note with no disk showing; that changing the title shows the
 disk and saving writes the file with the new title, a newer `updated`, the same `created`, and
-any hand-added key kept; that the saved note moves to the front of the grid; that `+` opens an
+any hand-added key kept; that the pin at the left of the top row shows the disk and saving writes
+`pinned: true` and moves the note to the front; that the saved note moves to the front of the grid; that `+` opens an
 empty note whose disk is disabled until it has a title, and whose save writes a file under
 `notes/YYYY/MM/` with `created` and `updated` equal; that a tag can be ticked off and a new one
 typed in the tags popup; that the trashcan, with `confirm` stubbed, deletes the file; and that

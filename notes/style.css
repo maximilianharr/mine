@@ -14,9 +14,11 @@ body { padding-bottom: env(safe-area-inset-bottom); }
 }
 
 /* ---- the grid ---- */
-/* Columns of cards of their own heights, as Keep lays them out: one on a phone, more as the
-   screen widens. The order runs down a column and then the next, which is what CSS columns do. */
-.ngrid { columns: 16rem auto; column-gap: .7rem; padding: .7rem; }
+/* Columns of cards of their own heights, as Keep lays them out: two on a phone and four on a
+   wider screen unless the settings name a number. The order runs down a column and then the
+   next, which is what CSS columns do. */
+.ngrid { column-count: 4; column-gap: .7rem; padding: .7rem; }
+@media (max-width: 599px) { .ngrid { column-count: 2; column-gap: .5rem; padding: .5rem; } }
 .ncard {
   break-inside: avoid; margin: 0 0 .7rem; padding: .7rem .85rem .6rem;
   background: var(--raise); border: 1px solid var(--line); border-radius: .8rem;

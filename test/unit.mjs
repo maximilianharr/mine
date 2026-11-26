@@ -409,5 +409,17 @@ eq('keeps created, sets updated, drops empty tags and keeps a key it does not ow
   { title: 'Renamed', created: '2026-11-20T08:00:00Z', updated: '2026-11-26T10:00:00Z', source: 'phone' });
 eq('and leaves the body as it was', parse(saved.text).body, kept.body);
 
+const pinned = buildNotes([
+  nf('notes/2026/11/2026-11-20-0800-aaaa.md', '---\ntitle: Old pinned\nupdated: 2026-11-20T08:00:00Z\npinned: true\n---\n'),
+  nf('notes/2026/11/2026-11-21-0800-bbbb.md', '---\ntitle: New\nupdated: 2026-11-25T08:00:00Z\n---\n'),
+  nf('notes/2026/11/2026-11-22-0800-cccc.md', '---\ntitle: Quoted\nupdated: 2026-11-26T08:00:00Z\npinned: "true"\n---\n')
+]);
+eq('a pinned note leads, and only a real true pins', pinned.map(n => [n.title, n.pinned]),
+  [['Old pinned', true], ['Quoted', false], ['New', false]]);
+eq('pinning writes pinned: true', parse(noteFile(kept, { title: 'Old', tags: [], pinned: true, body: '' },
+  '2026-11-26T10:00:00Z').text).data.pinned, true);
+ok('and unpinning drops the key', !('pinned' in parse(noteFile(pinned[0],
+  { title: 'Old pinned', tags: [], pinned: false, body: '' }).text).data));
+
 console.log(failed ? `\n${failed} check(s) failed` : '\nall unit checks passed');
 process.exit(failed ? 1 : 0);

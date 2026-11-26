@@ -15,9 +15,13 @@ async function auth() {
   return c;
 }
 
+// `no-store`: GitHub answers `cache-control: max-age=60`, and the browser would otherwise serve
+// the commit and tree from before our own push for a minute after it. A pull over that stale
+// tree deletes the files just pushed from the mirror, and they come back a minute later.
 function rest(path, { method = 'GET', body, headers = {}, config } = {}) {
   return fetch(API + path, {
     method,
+    cache: 'no-store',
     headers: {
       Authorization: `Bearer ${config.token}`,
       Accept: 'application/vnd.github+json',
@@ -134,7 +138,10 @@ async function pullNow() {
     await putFile({ path, text: decode(blob.content), oid: sha });
     changed++;
   }
-  for (const path of local.keys()) if (!remote.has(path)) { await delFile(path); changed++; }
+  // A save made while this pull ran is in the mirror and the queue but not yet in the remote.
+  const pending = new Set((await queued()).map(i => i.path));
+  for (const path of local.keys())
+    if (!remote.has(path) && !pending.has(path)) { await delFile(path); changed++; }
   return { changed };
 }
 

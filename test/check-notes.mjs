@@ -41,16 +41,16 @@ await goto('/notes/');
 ok('fixture seeded', await seed('notes') === 5);
 await open();
 
-eq('the cards are newest update first', await titles(),
-  ['Groceries', 'Trip ideas', 'Quarterly report', 'Loose thought', 'Paint the hallway']);
-const first = await ev(`(() => { const c = document.querySelector('.ncard');
+eq('the cards are pinned first, then newest update first', await titles(),
+  ['Paint the hallway', 'Groceries', 'Trip ideas', 'Quarterly report', 'Loose thought']);
+const first = await ev(`(() => { const c = document.querySelectorAll('.ncard')[1];
   return { tags: c.querySelector('.ntags').textContent, date: c.querySelector('.ndate').textContent,
     boxes: c.querySelectorAll('.nbody input[type=checkbox]').length,
     strong: c.querySelector('.nbody strong')?.textContent }; })()`);
 eq('a card carries its tags', first.tags, '#home #shopping');
 ok('and its date', /\d/.test(first.date), first.date);
 eq('and its body rendered', [first.boxes, first.strong], [3, 'good']);
-const long = await ev(`(() => { const b = [...document.querySelectorAll('.ncard')][1].querySelector('.nbody');
+const long = await ev(`(() => { const b = [...document.querySelectorAll('.ncard')][2].querySelector('.nbody');
   return b.scrollHeight > b.clientHeight; })()`);
 ok('a long body is cut off', long);
 
@@ -61,19 +61,19 @@ for (const scheme of ['light', 'dark']) {
     const head = await ev(`(() => {
       const bs = [...document.querySelectorAll('.topbar .nav')];
       return { n: bs.length, rows: new Set(bs.map(b => Math.round(b.getBoundingClientRect().top))).size,
-        lefts: new Set([...document.querySelectorAll('.ncard')].map(c => Math.round(c.getBoundingClientRect().left))).size,
+        cols: getComputedStyle(document.querySelector('.ngrid')).columnCount,
         over: document.documentElement.scrollWidth - document.documentElement.clientWidth };
     })()`);
     eq(`${scheme} ${width}px: the header is five buttons in one row`, [head.n, head.rows], [5, 1]);
-    eq(`${scheme} ${width}px: the cards are one column`, head.lefts, 1);
+    eq(`${scheme} ${width}px: the cards are two columns`, head.cols, '2');
     eq(`${scheme} ${width}px: nothing scrolls sideways`, head.over, 0);
     await shoot(`notes-grid-${scheme}-${width}`);
   }
 }
 await viewport(1200);
 await open();
-ok('at 1200px the cards are in more than one column', await ev(`new Set([...document.querySelectorAll('.ncard')]
-  .map(c => Math.round(c.getBoundingClientRect().left))).size`) > 1);
+const cols = () => ev(`getComputedStyle(document.querySelector('.ngrid')).columnCount`);
+eq('at 1200px the cards are four columns', await cols(), '4');
 await shoot('notes-grid-1200');
 
 // ---- 2. the popup ----------------------------------------------------------------------------
@@ -82,13 +82,17 @@ await viewport(360);
 await open();
 await openCard('Trip ideas');
 ok('a card opens its note', await shown('#popup'));
-eq('with no disk showing', await icons(), ['Delete', 'Close']);
+eq('with the pin left and no disk showing', await icons(), ['Pin', 'Delete', 'Close']);
+eq('the pin sits at the left edge of the row', await ev(`(() => {
+  const [p, t] = ['Pin', 'Delete'].map(l => document.querySelector('#n-icons [aria-label="' + l + '"]')
+    .getBoundingClientRect().left);
+  return p < document.querySelector('#n-icons').getBoundingClientRect().left + 30 && p < t; })()`), true);
 await shoot('notes-popup');
 
 await click('#n-rows .ttap');
 await sleep(150);
 await typeInto('#n-rows .title-in', 'Trip ideas 2027');
-eq('changing the title shows the disk', await icons(), ['Delete', 'Save', 'Close']);
+eq('changing the title shows the disk', await icons(), ['Pin', 'Delete', 'Save', 'Close']);
 const before = await fileOf('Trip ideas');
 await save();
 ok('saving closes the popup', !(await shown('#popup')));
@@ -99,7 +103,28 @@ ok('keeps created', after?.text.includes('created: 2026-11-18T10:00:00Z'));
 ok('sets a newer updated', /updated: 20\d\d-[^\n]+/.test(after?.text)
   && !after.text.includes('updated: 2026-11-24T19:40:00Z'), after?.text.slice(0, 160));
 ok('and keeps a key it does not own', after?.text.includes('source: phone'));
-eq('the saved note moves to the front', (await titles())[0], 'Trip ideas 2027');
+eq('the saved note moves to the front, behind the pinned one', (await titles()).slice(0, 2),
+  ['Paint the hallway', 'Trip ideas 2027']);
+
+// Pinning.
+await openCard('Paint the hallway');
+eq('a pinned note opens with its pin on',
+  await ev(`document.querySelector('#n-icons [aria-label="Unpin"]')?.getAttribute('aria-pressed')`), 'true');
+await click('#n-icons [aria-label="Close"]');
+await sleep(150);
+await openCard('Loose thought');
+await click('#n-icons [aria-label="Pin"]');
+eq('pinning shows the disk', await icons(), ['Unpin', 'Delete', 'Save', 'Close']);
+await save();
+ok('and saving writes pinned: true', (await fileOf('Loose thought'))?.text.includes('\npinned: true\n'));
+eq('the pinned notes lead the grid, newest first', (await titles()).slice(0, 3),
+  ['Loose thought', 'Paint the hallway', 'Trip ideas 2027']);
+await openCard('Loose thought');
+await click('#n-icons [aria-label="Unpin"]');
+await save();
+ok('unpinning drops the key', !(await fileOf('Loose thought'))?.text.includes('pinned'));
+eq('and the note falls behind the pinned one', (await titles()).slice(0, 2),
+  ['Paint the hallway', 'Loose thought']);
 
 // A new note.
 await click('#new-btn');
@@ -169,14 +194,29 @@ await click('#menu-btn');
 await sleep(250);
 await ev(`[...document.querySelectorAll('#menu-body .mrow')].find(b => b.textContent === 'settings').click()`);
 await sleep(300);
-eq('the settings are theme, date format and confirm discard',
+eq('the settings are theme, date format, confirm discard and columns',
   await ev(`[...document.querySelectorAll('#settings-body .slab')].map(n => n.textContent)`),
-  ['Theme', 'Date format', 'Confirm discard']);
+  ['Theme', 'Date format', 'Confirm discard', 'Columns']);
 await shoot('notes-settings');
 await ev(`(() => { const t = document.querySelectorAll('#settings-body input[type=checkbox]')[0];
   t.click(); })()`);
 await sleep(200);
 eq('and the row turns the prompt back on', await kv('mine.confirmDiscard'), true);
+const setColumns = v => ev(`(() => { const s = document.querySelectorAll('#settings-body select')[2];
+  s.value = ${JSON.stringify(v)}; s.dispatchEvent(new Event('change')); })()`);
+await setColumns('3');
+await sleep(200);
+eq('the columns row sets the grid', await cols(), '3');
+eq('and is kept on the device', await kv('notes.columns'), '3');
+await open();
+eq('across a reload', await cols(), '3');
+await click('#menu-btn');
+await sleep(250);
+await ev(`[...document.querySelectorAll('#menu-body .mrow')].find(b => b.textContent === 'settings').click()`);
+await sleep(300);
+await setColumns('auto');
+await sleep(200);
+eq('auto hands it back to the screen width', await cols(), '2');
 await click('#settings-close');
 
 // ---- 4. the filter ---------------------------------------------------------------------------
