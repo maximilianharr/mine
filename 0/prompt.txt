@@ -1,0 +1,5 @@
+in the dark mode theme, use the default font white/bright caramel font color also for the tasks/events in the calendar/kanban view
+
+---
+
+yes
