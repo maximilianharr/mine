@@ -1,0 +1,17 @@
+<task-notification>
+<task-id>bum8p2xk4</task-id>
+<tool-use-id>toolu_01Bxurnibf21wozAUyRyRdU8</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/1b38c925-6b95-4b81-95b0-35be199d5563/tasks/bum8p2xk4.output</output-file>
+<status>completed</status>
+<summary>Background command "Run calendar checks after the refactor" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bkwrrtt2b</task-id>
+<tool-use-id>toolu_01GULM6L3dEdUuvnTJeEMByT</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/1b38c925-6b95-4b81-95b0-35be199d5563/tasks/bkwrrtt2b.output</output-file>
+<status>completed</status>
+<summary>Background command "Run the full test suite" completed (exit code 0)</summary>
+</task-notification>
