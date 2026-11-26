@@ -54,11 +54,14 @@
     --soft: #171c27; --link: #f0a35c;
     --chip-bg: 22%; --chip-ink: 44%;
     --scrim: rgb(5 7 12 / .6); --shadow: 0 16px 44px rgb(0 0 0 / .6); }
-:root[data-theme="matrix"] { --bg: #050a06; --raise: #0c170e; --fg: #b9f5c4;
-    --muted: #5f9a6a; --line: #183020; --accent: #b9f5c4; --bad: #ff6f61; --good: #3ddc6a;
-    --soft: #08110a; --link: #3cff6e;
+:root[data-theme="matrix"] { --bg: #000000; --raise: #06120a; --fg: #00ff41;
+    --muted: #1fae4c; --line: #0f3d1d; --accent: #00ff41; --bad: #ff3b3b; --good: #00ff41;
+    --soft: #030a05; --link: #d4ffdf;
     --chip-bg: 22%; --chip-ink: 44%;
-    --scrim: rgb(0 4 1 / .65); --shadow: 0 16px 44px rgb(0 0 0 / .7); }
+    --scrim: rgb(0 0 0 / .7); --shadow: 0 0 24px rgb(0 255 65 / .25); }
+/* Matrix text glows faintly, as on a phosphor screen; the leading glyph's white-green is its
+   accent, so today stands out from the code around it. */
+:root[data-theme="matrix"] body { text-shadow: 0 0 4px rgb(0 255 65 / .45); }
 
 /* An id or class rule for display beats the UA stylesheet's [hidden], so a screen and a modal
    would both render while still carrying the attribute. */
