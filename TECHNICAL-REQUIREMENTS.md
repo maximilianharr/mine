@@ -106,9 +106,9 @@ what is its own.
 
 Every token is declared three times - once for the light theme, once inside the
 `prefers-color-scheme: dark` query for the device's own choice, and once under
-`:root[data-theme="dark"]` for the setting that overrides it - and the dark pair carry the same
-values. The three chosen night palettes, `ink`, `plum` and `forest`, are declared once each under
-their own `data-theme`, after the dark pair, which they beat at equal specificity by coming
+`:root[data-theme="coffee"]` for the setting that overrides it - and that pair carry the same
+values. The two chosen night palettes, `dark` and `matrix`, are declared once each under
+their own `data-theme`, after that pair, which they beat at equal specificity by coming
 later. `applyTheme` also sets the `theme-color` metas to the pinned theme's `--bg`, and gives
 them back their own media-keyed values for `system`. Beyond the colours themselves the set holds `--raise`, the surface a popup or a card
 sits on, one shade above `--bg`; `--chip-bg` and `--chip-ink`, the two mixes an entry's own

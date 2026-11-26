@@ -17,10 +17,9 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
 }
-:root[data-theme="dark"] { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
-:root[data-theme="ink"] { --todo: #f08a7a; --doing: #eac46a; --done: #8fd0a0; }
-:root[data-theme="plum"] { --todo: #f2808a; --doing: #f0c46a; --done: #a5d08a; }
-:root[data-theme="forest"] { --todo: #ef8a6f; --doing: #e6c35c; --done: #9ad38a; }
+:root[data-theme="coffee"] { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
+:root[data-theme="dark"] { --todo: #f08a7a; --doing: #eac46a; --done: #8fd0a0; }
+:root[data-theme="matrix"] { --todo: #ff6f61; --doing: #d8f05a; --done: #3ddc6a; }
 
 body { padding-bottom: env(safe-area-inset-bottom); }
 #cal { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
