@@ -1,0 +1,5 @@
+ok, you were right, too loud. use dark Background with neon border. Use neon category for font color of tasks/events
+
+---
+
+commit and push
