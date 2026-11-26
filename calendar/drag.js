@@ -60,7 +60,7 @@ function lift() {
   st.off = [st.x0 - r.left, st.y0 - r.top];
   const g = st.el.cloneNode(true);
   g.classList.add('drag-ghost');
-  g.removeAttribute('id');
+  for (const n of [g, ...g.querySelectorAll('[id]')]) n.removeAttribute('id');   // ids stay unique
   Object.assign(g.style, { width: `${r.width}px`, height: `${r.height}px`, left: `${r.left}px` });
   document.body.append(g);
   st.ghost = g;

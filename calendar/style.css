@@ -22,6 +22,24 @@
 body { padding-bottom: env(safe-area-inset-bottom); }
 #cal { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
+/* The pane docked at the bottom: it sticks there, the sync line takes the top, and the home
+   indicator's inset is the pane's to keep clear rather than the page's. */
+body.dock-bottom { padding-bottom: 0; }
+.dock-bottom .topbar {
+  order: 2; top: auto; bottom: 0; border-bottom: 0; border-top: 1px solid var(--line);
+  padding-top: .5rem; padding-bottom: max(.5rem, env(safe-area-inset-bottom));
+}
+.dock-bottom .view { order: 1; }
+.dock-bottom .sync { order: 0; padding-top: max(.4rem, env(safe-area-inset-top)); }
+/* While the pane is held: the two places it can go, the one under it marked. */
+.dock-zone {
+  position: fixed; z-index: 19; left: .5rem; right: .5rem; height: 3.4rem;
+  border: 2px dashed var(--line); border-radius: .8rem; pointer-events: none;
+}
+.dock-zone.top { top: .5rem; }
+.dock-zone.bottom { bottom: .5rem; }
+.dock-zone.drop-on { border-color: var(--link); background: color-mix(in srgb, var(--link) 12%, transparent); }
+
 /* ---- top pane ---- */
 /* Three groups: the two view controls left, the period centred, the two ways out right. The
    centre is centred on the pane rather than on what is left over, which is what the two equal
@@ -433,6 +451,8 @@ body { padding-bottom: env(safe-area-inset-bottom); }
      in size and the label between them is larger - the label carries a date to be read and an
      arrow carries only a direction. */
   .tb-mid { flex: 0 0 100%; order: 3; gap: .15rem; }
+  /* Docked at the bottom the period row goes on top, so the six buttons are nearest the thumb. */
+  .dock-bottom .tb-mid { order: 0; }
   .tb-mid .nav { flex: 1 1 0; min-width: 0; }
   .nav { min-width: 2.2rem; }
   .nav.ic svg { width: clamp(1.3rem, 5.2vw, 1.9rem); height: clamp(1.3rem, 5.2vw, 1.9rem); }
@@ -617,6 +637,7 @@ body { padding-bottom: env(safe-area-inset-bottom); }
   /* No cap on #cal: the pane, the calendar window and the sync line are as wide as the browser.
      The cap is on the board alone, below, so the pane cannot change width when the view does. */
   .topbar { padding: .7rem .8rem; gap: .5rem; }
+  .dock-bottom .topbar { padding-top: .7rem; padding-bottom: max(.7rem, env(safe-area-inset-bottom)); }
   /* About half an arrow glyph either side of the label. Three controls crammed together read as
      one control, and this is the group the pane is used through. */
   .tb-mid { gap: 1rem; }

@@ -177,9 +177,11 @@ function wire(board, vert) {
 
 function dropStrip(board) {
   const head = board.querySelectorAll('.khead')[S.view.col].getBoundingClientRect();
-  const bar = document.querySelector('.topbar').getBoundingClientRect();
+  // Below the pane when the pane is at the top; the header may have scrolled up under it.
+  const docked = S.prefs.barPosition === 'bottom';
+  const floor = docked ? 4 : document.querySelector('.topbar').getBoundingClientRect().bottom + 4;
   const strip = el('div', 'kdrop');
-  strip.style.top = `${Math.max(head.top, bar.bottom + 4)}px`;
+  strip.style.top = `${Math.max(head.top, floor)}px`;
   strip.style.left = `${head.left}px`;
   strip.style.width = `${head.width}px`;
   for (const stage of STAGES) {

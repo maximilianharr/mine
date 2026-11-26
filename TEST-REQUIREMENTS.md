@@ -526,6 +526,14 @@ its old time. The arithmetic itself — a date moves as a date, an instant keeps
 time across a DST change, a moved occurrence is listed on its new day and not its old — is in
 `unit.mjs`.
 
+**Docking the pane.** At 900 px: that a press on the label that moves at once leaves the pane
+at the top; that the same press held for a moment and dragged into the lower half docks it at
+the bottom, with the sync line above it, the choice stored as `calendar.barPosition`, and neither
+the picker nor a leftover drop zone or lifted copy on screen; that the filter then opens
+**upwards**, its bottom edge above its button's top; and that a reload keeps it at the bottom. At
+360 px: that the period row is **above** the buttons when docked at the bottom, and that a finger
+held on the search button lifts the pane and drags it back to the top without opening the search.
+
 **What is full width and what is capped.** At 1920 px: that the month grid's right edge reaches
 the window's, within the pane's own padding, in the day, week, month and year views — a calendar
 that still stops at 78 rem leaves a margin this check measures. That the **board does not**: the

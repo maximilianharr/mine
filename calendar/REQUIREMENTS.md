@@ -127,6 +127,21 @@ or lets one wrap away.
   and opens whichever is tapped; and a home icon back to the Mine tile screen. A house rather than an arrow, because a third arrow beside the two that step through
   periods reads as another way to move inside the calendar.
 
+### Moving the pane to the bottom
+
+**The pane can be dragged to the bottom of the screen, and back.** Pressing anywhere on it for a
+moment — a button included, with a finger or a mouse — lifts the whole pane, both rows on a
+phone; two dashed places appear at the top and the bottom of the screen, the one in whose half
+the pane is held is marked, and releasing docks it there. A press that does not hold is still a
+click on whatever was pressed, and a hold opens nothing. Where it is docked is **remembered per
+device**, like the board's orientation, and holds for every view, the board included.
+
+At the bottom, **the sync line moves to the top**, so the two never stack, and **on a phone the
+two rows swap**: the period goes on the upper row and the six buttons on the lower, nearest the
+thumb. The pane keeps clear of the home indicator. The dropdowns it opens — the zoom, the
+picker, the filter, the menu — **open upwards**, as any dropdown does that has no room below its
+button. The search still hangs from the top of the screen, where the keyboard does not cover it.
+
 ### The zoom
 
 A button beside the view switch, opening a short list under itself. **It draws the view you are

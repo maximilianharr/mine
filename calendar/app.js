@@ -15,6 +15,7 @@ import { escapeEntry, openEntry } from './popup.js';
 import { openFilter, openPanel, openLogs, renderFilter, renderFilterCount } from './settings.js';
 import { loadPrefs, applyTheme, weekdayName } from '../shared/prefs.js';
 import { openSearch, refreshSearch } from '../shared/search.js';
+import { draggable } from './drag.js';
 
 let pick = { mode: 'days', y: 2026, m: 0, base: 0 };
 
@@ -317,6 +318,34 @@ addEventListener('keydown', e => {
 });
 matchMedia('(min-width: 600px)').addEventListener('change', () => { closePops(); render(); });
 
+// ---- docking the pane --------------------------------------------------------------------------
+// The pane is held - a moment's press anywhere on it, its buttons included, with a mouse as much
+// as a finger, so a click on a button stays a click - and dragged to the top or the bottom half
+// of the screen, where it stays, remembered per device like the board's orientation. At the
+// bottom the sync line goes to the top, the phone's two rows swap so the buttons are nearest the
+// thumb, and the dropdowns open upwards, which openPop already does wherever there is no room
+// below.
+
+const dock = pos => document.body.classList.toggle('dock-bottom', pos === 'bottom');
+
+draggable($('.topbar'), {
+  item: () => $('.topbar'),
+  hold: 'always', axis: 'y', scroll: false,
+  target: (x, y) => $(y < innerHeight / 2 ? '.dock-zone.top' : '.dock-zone.bottom'),
+  start: () => {
+    closePops();
+    for (const at of ['top', 'bottom']) document.body.append(el('div', `dock-zone ${at}`));
+  },
+  end: () => document.querySelectorAll('.dock-zone').forEach(z => z.remove()),
+  drop: async (_, zone) => {
+    const pos = zone.classList.contains('bottom') ? 'bottom' : 'top';
+    if (pos === S.prefs.barPosition) return;
+    S.prefs.barPosition = pos;
+    dock(pos);
+    await setKV('calendar.barPosition', pos);
+  }
+});
+
 // ---- sync ----------------------------------------------------------------------------------
 // The sequence - drain the queue, then pull, and report on one line - is in ../shared/sync.js,
 // because the queue and the mirror are shared and every screen in Mine runs it. The line here
@@ -358,8 +387,10 @@ if (!await getConfig()) {
     confirmDiscard: (await getKV('calendar.confirmDiscard')) ?? true,
     timeZone: (await getKV('calendar.timeZone')) || '',
     boardOrientation: (await getKV('calendar.boardOrientation')) || 'horz',
-    popupExpanded: !!(await getKV('calendar.popupExpanded'))
+    popupExpanded: !!(await getKV('calendar.popupExpanded')),
+    barPosition: (await getKV('calendar.barPosition')) === 'bottom' ? 'bottom' : 'top'
   };
+  dock(S.prefs.barPosition);
   setZone(S.prefs.timeZone);
   S.hidden = new Set(await getKV('calendar.hiddenGroups') || []);
   S.hiddenStages = new Set(await getKV('calendar.hiddenStages') || []);

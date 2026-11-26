@@ -308,6 +308,14 @@ too late on iOS — and the scroller under the item is scrolled by the pointer's
 click on whatever it landed on. A held element carries `user-select: none` and
 `-webkit-touch-callout: none`, or iOS raises its callout instead.
 
+**The pane is docked by a class on `body`**, `dock-bottom`, read from `calendar.barPosition` in
+the KV store at boot and set by a drop. The stylesheet does the rest by `order` inside `#cal`'s
+column — the sync line first, the view, the pane last and sticky at `bottom: 0` — and on a phone
+gives the period row `order: 0` so the buttons are the lower row. The dropdowns need nothing:
+`openPop` already flips a dropdown above its button when there is no room below. The pane is
+`draggable` with `hold: 'always'`, so a mouse must hold too: every pixel of the pane is a button,
+and a slightly sloppy click must not move it.
+
 `FIELDS` in `popup.js` is built while the module is still evaluating, so anything it calls must
 be a function *declaration* — a `const` arrow is still in its temporal dead zone at that point.
 

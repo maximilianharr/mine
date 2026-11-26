@@ -23,7 +23,8 @@ export const S = {
            settings: { anchor: DEFAULT_ANCHOR, interval: 2 } },
   view: { mode: 'M', anchor: todayKey(), sprint: 1, col: 0 },
   prefs: { weekStart: 1, showWeeks: false, confirmDiscard: true, timeZone: '',
-           theme: 'system', dateFormat: 'auto', boardOrientation: 'horz', popupExpanded: false },
+           theme: 'system', dateFormat: 'auto', boardOrientation: 'horz', popupExpanded: false,
+           barPosition: 'top' },
   hidden: new Set(),                 // group names switched off in the filter
   hiddenStages: new Set(),           // stages switched off in the filter
   kfilter: { importantOnly: false, assignee: '' },   // the assignee is the board's alone

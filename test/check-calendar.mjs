@@ -268,12 +268,13 @@ const touchDrag = async (from, to, hold = 550) => {
   await send('Emulation.setTouchEmulationEnabled', { enabled: false });
   return { lifted, ...during };
 };
-const mouseDrag = async (from, to) => {
+const mouseDrag = async (from, to, hold = 0) => {
   const [x0, y0] = await centre(from);
-  const [x1, y1] = await centre(to);
+  const [x1, y1] = typeof to === 'function' ? await to() : await centre(to);
   const m = (type, x, y) => send('Input.dispatchMouseEvent',
     { type, x, y, button: 'left', buttons: type === 'mouseReleased' ? 0 : 1, clickCount: 1 });
   await m('mousePressed', x0, y0);
+  await sleep(hold);
   for (let i = 1; i <= 6; i++) { await m('mouseMoved', x0 + (x1 - x0) * i / 6, y0 + (y1 - y0) * i / 6); await sleep(30); }
   await m('mouseReleased', x1, y1);
   await sleep(1200);
@@ -1971,6 +1972,44 @@ eq('in the week a block moves to the column it is dropped in', (await ev(`(() =>
   return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
 })()`)), block.to);
 eq('keeping its time wherever in the column it lands', await hourOf(wk1), await hourOf(wk0));
+
+// ---- 6d. docking the pane ----------------------------------------------------------------------
+// Held a moment and dragged to the bottom half, the pane stays at the bottom, the sync line goes
+// to the top, a dropdown opens upwards, and the choice survives a reload. A press that does not
+// hold is still a click.
+
+const barAt = () => ev(`(() => { const b = document.querySelector('.topbar').getBoundingClientRect();
+  const y = document.querySelector('#sync').getBoundingClientRect();
+  return { top: Math.round(b.top), bottom: Math.round(innerHeight - b.bottom), syncAbove: y.bottom <= b.top + 1 }; })()`);
+await viewport(900);
+await open('M');
+await mouseDrag(q('#period'), async () => [450, 860], 30);
+eq('a press that does not hold leaves the pane where it is', (await barAt()).top, 0);
+await ev(`document.querySelector('#scrim').click()`);
+await sleep(200);
+await mouseDrag(q('#period'), async () => [450, 860], 550);
+let at = await barAt();
+eq('held and dragged down, the pane docks at the bottom', [at.bottom, at.syncAbove], [0, true]);
+eq('and the choice is stored', await kv('calendar.barPosition'), 'bottom');
+eq('the hold opened nothing', [await ev(`document.querySelector('#picker').hidden`),
+  await ev(`document.querySelectorAll('.dock-zone, .drag-ghost').length`)], [true, 0]);
+await ev(`document.querySelector('#filter-btn').click()`);
+await sleep(350);
+ok('a dropdown opens upwards from it', await ev(`document.querySelector('#filter-pop').getBoundingClientRect().bottom
+  <= document.querySelector('#filter-btn').getBoundingClientRect().top`), 'the filter is not above its button');
+await ev(`document.querySelector('#scrim').click()`);
+await open('M');
+eq('a reload keeps it at the bottom', (await barAt()).bottom, 0);
+
+await viewport(360);
+await open('M');
+const rows = await ev(`(() => { const m = document.querySelector('.tb-mid').getBoundingClientRect();
+  const s = document.querySelector('#board').getBoundingClientRect(); return m.bottom <= s.top + 1; })()`);
+ok('on a phone at the bottom the period row is above the buttons', rows, 'the buttons are not the lower row');
+const up = await touchDrag(q('#search-btn'), async () => [180, 60]);
+ok('a finger holding a button lifts the pane', up.lifted, 'no ghost');
+eq('and drags it back to the top', [(await barAt()).top, await kv('calendar.barPosition')], [0, 'top']);
+eq('without opening the search', await ev(`document.querySelector('#search-pop')?.hidden ?? true`), true);
 
 // ---- 7. what a saved task actually writes ------------------------------------------------------
 
