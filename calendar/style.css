@@ -7,7 +7,7 @@
    logs panel and a rendered markdown body. Only what is the calendar's own is in here. */
 
 /* Today is the one accent, so it is the one the whole of Mine already names. The three stages
-   are the calendar's own and are declared here for both schemes: ui.js hands them out as
+   are the calendar's own and are declared here for every theme: ui.js hands them out as
    `var(--todo)` rather than as hexes, because a stage has to hold on paper and at night. */
 :root {
   --cell: 3.3rem; --hour: 2.4rem; --gutter: 2rem; --tcol: 3rem;
@@ -15,9 +15,12 @@
   --todo: #9c4a35; --doing: #a9792a; --done: #4f6b3f;
 }
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --todo: #ef8a6f; --doing: #e2b45c; --done: #94c27a; }
+  :root:not([data-theme="light"]) { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
 }
-:root[data-theme="dark"] { --todo: #ef8a6f; --doing: #e2b45c; --done: #94c27a; }
+:root[data-theme="dark"] { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
+:root[data-theme="ink"] { --todo: #f08a7a; --doing: #eac46a; --done: #8fd0a0; }
+:root[data-theme="plum"] { --todo: #f2808a; --doing: #f0c46a; --done: #a5d08a; }
+:root[data-theme="forest"] { --todo: #ef8a6f; --doing: #e6c35c; --done: #9ad38a; }
 
 body { padding-bottom: env(safe-area-inset-bottom); }
 #cal { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }

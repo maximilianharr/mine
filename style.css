@@ -28,22 +28,43 @@
   --sans: -apple-system, "Segoe UI", Cantarell, system-ui, "Helvetica Neue", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, "DejaVu Sans Mono", monospace;
 }
-/* Mine's theme setting is "system" by default, so the device decides; light and dark are the
-   two overrides, and the attribute is what carries them.
-   The dark Linen is the same paper at night, not a different palette: a warm near-black with
-   brown in it, paper-coloured ink, and the terracotta lifted to an amber that survives on it. */
+/* Mine's theme setting is "system" by default, so the device decides; light, dark and the three
+   other night palettes are the overrides, and the attribute is what carries them.
+   The dark Linen is the paper at night: an espresso near-black, surfaces stepped clearly above
+   it, paper-coloured ink, and the terracotta lifted to an ember that glows on it. It is what
+   "system" uses after dark. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #17130f; --raise: #211b16; --fg: #ece4d8;
-    --muted: #a39685; --line: #332a22; --accent: #ece4d8; --bad: #ef8a6f; --good: #94c27a;
-    --soft: #1f1915; --link: #e0a05c;
+  :root:not([data-theme="light"]) { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
+    --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
+    --soft: #221a15; --link: #f08a4b;
     --chip-bg: 22%; --chip-ink: 44%;
     --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
 }
-:root[data-theme="dark"] { --bg: #17130f; --raise: #211b16; --fg: #ece4d8;
-    --muted: #a39685; --line: #332a22; --accent: #ece4d8; --bad: #ef8a6f; --good: #94c27a;
-    --soft: #1f1915; --link: #e0a05c;
+:root[data-theme="dark"] { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
+    --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
+    --soft: #221a15; --link: #f08a4b;
     --chip-bg: 22%; --chip-ink: 44%;
     --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+
+/* Three more night palettes, chosen rather than followed: picking one pins it day and night.
+   Each keeps the dark Linen's paper ink, one warm accent and its chip mixes; what changes is the
+   colour the night is made of - a navy ink, an aubergine, a forest. They come after the dark
+   pair so they win over the device's own dark at the same specificity. */
+:root[data-theme="ink"] { --bg: #12161f; --raise: #1c2230; --fg: #ece4d8;
+    --muted: #8f97a8; --line: #2a3142; --accent: #ece4d8; --bad: #f08a7a; --good: #8fd0a0;
+    --soft: #171c27; --link: #f0a35c;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(5 7 12 / .6); --shadow: 0 16px 44px rgb(0 0 0 / .6); }
+:root[data-theme="plum"] { --bg: #1a1218; --raise: #271b24; --fg: #f1e4e6;
+    --muted: #b096a6; --line: #3a2a36; --accent: #f1e4e6; --bad: #f2808a; --good: #a5d08a;
+    --soft: #20161e; --link: #f2a07b;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(10 5 9 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="forest"] { --bg: #111712; --raise: #1b231c; --fg: #ece6d6;
+    --muted: #9aa592; --line: #2a352b; --accent: #ece6d6; --bad: #ef8a6f; --good: #9ad38a;
+    --soft: #161d17; --link: #e3b062;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(5 9 6 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
 
 /* An id or class rule for display beats the UA stylesheet's [hidden], so a screen and a modal
    would both render while still carrying the attribute. */

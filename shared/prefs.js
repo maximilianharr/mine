@@ -2,7 +2,7 @@
 // show the same two rows, so both read and write these keys.
 import { getKV, setKV } from './store.js';
 
-export const THEMES = ['system', 'light', 'dark'];
+export const THEMES = ['system', 'light', 'dark', 'ink', 'plum', 'forest'];
 export const DATE_FORMATS = ['auto', 'dd.mm.yyyy', 'mm/dd/yy'];
 
 export async function loadPrefs() {
@@ -16,11 +16,18 @@ export async function loadPrefs() {
 export const setPref = (key, value) => setKV(`mine.${key}`, value);
 
 // 'system' means leave it to prefers-color-scheme; the attribute is what the stylesheet
-// overrides that with.
+// overrides that with. A pinned theme also pins the phone's bar to its page colour; 'system'
+// hands the bar back to the two media-keyed tags in the page.
 export function applyTheme(theme) {
   const root = document.documentElement;
-  if (theme === 'light' || theme === 'dark') root.dataset.theme = theme;
+  const pinned = theme !== 'system' && THEMES.includes(theme);
+  if (pinned) root.dataset.theme = theme;
   else delete root.dataset.theme;
+  const bg = getComputedStyle(root).getPropertyValue('--bg').trim();
+  for (const m of document.querySelectorAll('meta[name="theme-color"]')) {
+    m.dataset.own ??= m.content;
+    m.content = pinned ? bg : m.dataset.own;
+  }
 }
 
 // A bare 'YYYY-MM-DD' in the chosen format. 'auto' follows the device's locale. Parsed at

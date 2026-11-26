@@ -141,7 +141,7 @@ ok('and never shows the token itself',
 eq('the two Mine-wide settings are theme and date format',
   settings.prefs.map(p => p.label), ['Theme', 'Date format']);
 eq('with the same options every app offers', settings.prefs.map(p => p.options),
-  [['system', 'light', 'dark'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
+  [['system', 'light', 'dark', 'ink', 'plum', 'forest'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
 eq('the screen fits a 390px phone', settings.over, 0);
 await shoot('mine-settings');
 
@@ -157,5 +157,18 @@ eq('and applies at once', await ev(`document.documentElement.dataset.theme`), 'd
 await goto('/calendar/');
 eq('including in an app opened afterwards',
   await ev(`document.documentElement.dataset.theme`), 'dark');
+
+// A palette chosen rather than followed pins the phone's bar to its page as well.
+await ev(`(async () => {
+  const { applyTheme } = await import('/shared/prefs.js');
+  applyTheme('plum');
+})()`);
+eq('a pinned palette pins the bar to its page colour',
+  await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
+  ['#1a1218', '#1a1218']);
+await ev(`(async () => (await import('/shared/prefs.js')).applyTheme('system'))()`);
+eq('and system hands the bar back to the device',
+  await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
+  ['#faf7f2', '#1a1410']);
 
 report('mine');

@@ -797,7 +797,7 @@ Each column header shows its state and a `+` that creates a task in that stage, 
 of the selected sprint. **The state's name carries the colour** — `todo` red, `doing` yellow,
 `done` green, the board's own three colours exactly. They are declared as `--todo`, `--doing`
 and `--done` in the stylesheet rather than written as hexes in the code, and each has a value
-for the light theme and one for the dark: a yellow that is readable on paper is not the yellow
+for the light theme and one for each night palette: a yellow that is readable on paper is not the yellow
 that is readable at night. There is no colour dot and no
 card count: the dot said what the coloured name now says, and a count is a number nobody acts
 on. The name is **centred and drawn at twice the size**; the `+` stays at the right of the

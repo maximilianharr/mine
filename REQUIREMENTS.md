@@ -40,7 +40,7 @@ Settings are stored on the device only. The token is never displayed again after
 app warns 14 days before it expires.
 
 Two settings belong to Mine rather than to any one app, and the same two rows appear in the main
-settings and in each app's: **theme** (system, light or dark) and **date format** (auto, which
+settings and in each app's: **theme** (system, light, dark, ink, plum or forest) and **date format** (auto, which
 follows the device's locale, or `dd.mm.yyyy`, or `mm/dd/yy`). Both default to following the
 device, so Mine looks like the rest of the phone until you say otherwise.
 
@@ -51,7 +51,12 @@ above it — a popup, a panel, a card, a tile — are a shade lighter than the p
 hairline. That is what makes an overlay read as lifted, so none of them needs a heavy border or
 a dark drop shadow. There is no neutral grey anywhere in the palette: every colour in it, down
 to the rules and the muted text, has warmth in it. The dark theme is the same paper at night —
-a warm near-black with brown in it, paper-coloured ink — and not a second palette.
+an espresso near-black, surfaces stepped clearly above it, paper-coloured ink and an ember
+accent — and it is what "system" uses after dark. Three more night palettes can be chosen
+instead: **ink** (a deep navy), **plum** (an aubergine) and **forest** (a green-black). They
+keep the paper ink and one warm accent and change only the colour the night is made of; that
+colour may be cool, which is the one place the no-grey, all-warm rule gives. Choosing one pins
+it day and night, and the phone's bar follows the page.
 
 **One accent**, a terracotta, and an app highlights its own thing with it rather than naming a
 colour of its own: the calendar's today is that accent. **Serif for what is read, sans for what
