@@ -45,11 +45,6 @@ dd { margin: 0; word-break: break-word; }
 }
 .banner.update button { width: auto; padding: .45rem .9rem; }
 
-.steps { padding-left: 1.2rem; font-size: .85rem; color: var(--muted); }
-.steps li { margin: .35rem 0; }
-.steps li.done { color: var(--good); }
-.steps li.bad { color: var(--bad); }
-
 /* The two settings that belong to Mine rather than to one app. */
 .prefs { margin: 1rem 0; }
 .prefrow { display: flex; align-items: center; gap: .6rem; padding: .55rem 0; border-top: 1px solid var(--line); }

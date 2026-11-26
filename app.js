@@ -1,9 +1,8 @@
 import { APPS } from './shared/apps.js';
 import { getConfig, setConfig, persist } from './shared/store.js';
 import { THEMES, DATE_FORMATS, loadPrefs, setPref, applyTheme } from './shared/prefs.js';
-import { testConnection, pull, write, drain } from './shared/github.js';
+import { testConnection } from './shared/github.js';
 import { createSync } from './shared/sync.js';
-import { serialize } from './shared/md.js';
 
 const $ = s => document.querySelector(s);
 const show = id => document.querySelectorAll('section').forEach(s => s.hidden = s.id !== id);
@@ -85,7 +84,6 @@ $('#to-settings').addEventListener('click', async () => {
     dd.textContent = v;
     return [dt, dd];
   }));
-  $('#steps').replaceChildren();
   await minePrefs();
   show('settings');
 });
@@ -132,46 +130,6 @@ $('#forget').addEventListener('click', () => {
   if (!confirm('Remove the repo settings and token from this device? Your data in GitHub is untouched.')) return;
   indexedDB.deleteDatabase('mine');
   location.reload();
-});
-
-// Proves the architecture against the real repo: GraphQL read, atomic write, pull back.
-$('#verify').addEventListener('click', async () => {
-  const list = $('#steps');
-  list.replaceChildren();
-  const add = text => {
-    const li = document.createElement('li');
-    li.textContent = text;
-    list.append(li);
-    return li;
-  };
-  const run = async (text, fn) => {
-    const li = add(`${text} …`);
-    try {
-      li.textContent = `${text} — ${await fn()}`;
-      li.className = 'done';
-    } catch (err) {
-      li.textContent = `${text} — failed: ${err.message}`;
-      li.className = 'bad';
-      throw err;
-    }
-  };
-
-  try {
-    await run('Read repo', async () => {
-      const i = await testConnection(await getConfig());
-      return `${i.name}, ${i.private ? 'private' : 'PUBLIC'}`;
-    });
-    await run('Write README.md, one commit', async () => {
-      await write('README.md', serialize(
-        { title: 'Mine data', verified: new Date().toISOString() },
-        'Markdown written by Mine. Safe to edit by hand.'));
-      return `commit ${(await drain('Verify round-trip from Mine')).commit.slice(0, 7)}`;
-    });
-    await run('Pull it back', async () => `${(await pull()).changed} file(s) reconciled`);
-    add('Round-trip complete').className = 'done';
-  } catch {
-    /* the failing step already says why */
-  }
 });
 
 // ---- service worker ----
