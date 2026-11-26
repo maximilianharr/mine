@@ -135,7 +135,7 @@ $('#next').addEventListener('click', () => step(1));
 
 for (const [id, name] of [['#home', 'house'], ['#zoom-btn', 'zoom'], ['#menu-btn', 'menu'],
   ['#day-add', 'plus'], ['#day-close', 'x'], ['#sub-close', 'x'], ['#settings-close', 'x'],
-  ['#filter-close', 'x'], ['#fpop-close', 'x'], ['#logs-close', 'x']])
+  ['#filter-close', 'x'], ['#filter-sub-close', 'x'], ['#fpop-close', 'x'], ['#logs-close', 'x']])
   $(id).append(icon(name));
 
 // ---- the hamburger's menu ------------------------------------------------------------------
@@ -164,6 +164,8 @@ function openMenu() {
 
 $('#menu-btn').addEventListener('click', openMenu);
 $('#filter-close').addEventListener('click', closePops);
+// The one `x` that leaves what is under it open.
+$('#filter-sub-close').addEventListener('click', () => { $('#filter-sub').hidden = true; });
 $('#settings-close').addEventListener('click', closePops);
 $('#logs-close').addEventListener('click', closePops);
 
@@ -303,7 +305,8 @@ wireView();
 
 // The overlays this app closes together. closePops() takes them from here rather than from a
 // list of its own, so it can live in ../shared/ui.js without knowing what the calendar has.
-registerPops(['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#settings-panel',
+registerPops(['#picker', '#zoom-pop', '#day-pop', '#menu-pop', '#filter-pop', '#filter-sub',
+  '#settings-panel',
   '#logs-panel']);
 
 const minePrefs = await loadPrefs();

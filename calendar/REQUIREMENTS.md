@@ -871,13 +871,12 @@ there.
 
 | overlay | holds |
 | --- | --- |
-| Filter (a dropdown) | a checkbox per group, one per stage, and **important only**; on the board also an **assignee** |
+| Filter (a dropdown) | a **category** icon, a **stage** icon and **important only**; on the board also an **assignee** |
 | Settings (a centred panel) | the nine rows below |
 | Logs (a centred panel) | the last sync attempt, the changes still queued, `push now`, `discard all` |
 
-**The stages and importance narrow every view, not only the board.** Under the groups, a line,
-then a checkbox per stage — `Todo`, `Doing`, `Done`, each with its colour — and `important only`.
-A month with the done ones out of it is as much a thing to want as a board of them.
+**The stages and importance narrow every view, not only the board.** The stage list holds a
+checkbox per stage — `Todo`, `Doing`, `Done`, each with its colour. A month with the done ones out of it is as much a thing to want as a board of them.
 
 A stage switched off hides **tasks** and nothing else: an event has no stage to be judged by.
 `important only` hides whatever is not marked, **events included**, because that is what the
@@ -891,12 +890,12 @@ it never passes four. One per switched-off thing would read `16` in a repo with 
 and fifteen hidden, which is a true number nobody can act on; `3` says there are three things to
 look at in the one place that lists them.
 
-**The groups are listed, not folded behind a dropdown.** One checkbox per group, each showing its
-colour, straight away — one tap to hide a group instead of two. The fold existed for one reason,
-that an open list pushed the nine settings rows below the fold, and that reason went with the
-settings. A repo with twenty groups scrolls inside the dropdown rather than growing it past the
-screen. This is a view filter and is remembered per device; groups are *named and coloured* in the
-settings panel's **edit groups**, not here.
+**The categories and stages are each behind an icon**, so the filter stays short however many
+there are. A tap opens that list as a popup over the filter, one checkbox per item, each showing
+its colour; only one of the two is open at a time. Its `x` or a second tap on the icon shuts it
+and leaves the filter; a tap outside shuts both. **An icon is lit while its list has something
+switched off.** A long list scrolls inside its popup. This is a view filter and is remembered per
+device; groups are *named and coloured* in the settings panel's **edit groups**, not here.
 
 **Times read 24-hour everywhere, and are typed that way.** The hour gutter in the week and day
 grids, a time on a card, a time in a row — all `HH:MM`, with no setting to change it and no

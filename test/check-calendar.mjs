@@ -965,25 +965,44 @@ ok('and hangs off the hamburger rather than being centred', await ev(
   `(() => { const b = document.querySelector('#menu-btn').getBoundingClientRect();
     const p = document.querySelector('#filter-pop').getBoundingClientRect();
     return p.top > b.bottom && p.top < b.bottom + 20; })()`), 'the filter is not under the button');
-// The groups are no longer folded away: that fold existed only because an open list pushed the
-// nine settings rows below the fold, and the settings are not in here any more.
+// The two lists are behind an icon each, so the dropdown stays short however many groups there are.
+eq('the filter itself holds two icons and important only, no list', await ev(
+  `[[...document.querySelectorAll('#filter-body .ib')].map(b => b.dataset.list),
+    document.querySelectorAll('#filter-body .glab.grp, #filter-body .glab.stg').length]`),
+  [['group', 'stage'], 0]);
+const listIcon = key => ev(`document.querySelector('#filter-body [data-list="${key}"]').click()`);
+await listIcon('group');
+await sleep(250);
 const groups = await ev(`({
-  drop: document.querySelectorAll('#filter-body .gdrop').length,
-  shown: document.querySelectorAll('#filter-body .glab.grp').length,
-  swatches: document.querySelectorAll('#filter-body .glab.grp .swatch').length
+  shown: document.querySelectorAll('#filter-sub .glab.grp').length,
+  swatches: document.querySelectorAll('#filter-sub .glab.grp .swatch').length
 })`);
-eq('the groups are listed, not folded behind a dropdown', groups.drop, 0);
-ok('a checkbox per group, straight away', groups.shown >= 3, `${groups.shown} checkboxes`);
+ok('the category icon opens a checkbox per group', groups.shown >= 3, `${groups.shown} checkboxes`);
 eq('each showing its colour', groups.swatches, groups.shown);
-await ev(`document.querySelectorAll('#filter-body .glab.grp input')[0].click()`);
+await ev(`document.querySelectorAll('#filter-sub .glab.grp input')[0].click()`);
 await sleep(500);
 const ticks = await ev(
-  `[...document.querySelectorAll('#filter-body .glab.grp input')].map(i => i.checked)`);
+  `[...document.querySelectorAll('#filter-sub .glab.grp input')].map(i => i.checked)`);
 eq('unticking one leaves the rest on', [ticks[0], ticks.slice(1).every(Boolean)], [false, true]);
-await ev(`document.querySelectorAll('#filter-body .glab.grp input')[0].click()`);
+eq('and lights its icon', await ev(
+  `[...document.querySelectorAll('#filter-body .ib')].map(b => b.classList.contains('on'))`),
+  [true, false]);
+await ev(`document.querySelectorAll('#filter-sub .glab.grp input')[0].click()`);
 await sleep(500);
+await ev(`document.querySelector('#filter-sub-close').click()`);
+eq('the list\'s x leaves the filter open', await ev(
+  `[document.querySelector('#filter-sub').hidden, document.querySelector('#filter-pop').hidden]`),
+  [true, false]);
+await listIcon('stage');
+await listIcon('stage');
+eq('and a second tap on an icon shuts its list', await ev(
+  `document.querySelector('#filter-sub').hidden`), true);
+await listIcon('stage');
 await ev(`document.querySelector('#scrim').click()`);
 await sleep(250);
+eq('a tap outside shuts both', await ev(
+  `[document.querySelector('#filter-sub').hidden, document.querySelector('#filter-pop').hidden]`),
+  [true, true]);
 // The settings panel holds the nine rows and nothing else: no filter section above them, so the
 // last of them is above the fold at 320px with nothing to push it down.
 await viewport(320);
@@ -1272,17 +1291,17 @@ await open();
 await viewport(900);
 await open('M');
 await menu('filter');
-const rows = await ev(`[...document.querySelectorAll('#filter-body .glab')]
-  .map(l => l.textContent.trim())`);
-eq('the filter lists the groups, then the three stages and important only',
-  rows.slice(-4), ['Todo', 'Doing', 'Done', '!important only']);
+await ev(`document.querySelector('#filter-body [data-list="stage"]').click()`);
+eq('the stage icon opens the three stages', await ev(
+  `[...document.querySelectorAll('#filter-sub .glab')].map(l => l.textContent.trim())`),
+  ['Todo', 'Doing', 'Done']);
 
 const countOn = () => ev(`(() => { const b = document.querySelector('#menu-btn .fcount');
   return b ? b.textContent : ''; })()`);
 eq('and nothing is on it while nothing is filtered', await countOn(), '');
 
 const tick = async text => {
-  await ev(`[...document.querySelectorAll('#filter-body .glab')]
+  await ev(`[...document.querySelectorAll('#filter-pop .glab, #filter-sub .glab')]
     .find(l => l.textContent.trim().endsWith(${JSON.stringify(text)}))
     .querySelector('input').click()`);
   await sleep(450);
@@ -1314,6 +1333,7 @@ eq('the filter survives a reload', await countOn(), '2');
 eq('and the month is still narrowed', (await titles()).includes('Dentist'), false);
 
 await menu('filter');
+await ev(`document.querySelector('#filter-body [data-list="stage"]').click()`);
 await tick('important only');
 await tick('Done');
 eq('switching them back off clears the count', await countOn(), '');

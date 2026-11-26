@@ -21,7 +21,7 @@ import { STAGES, saveSettings, setZone, getZone } from './data.js';
 import { THEMES, DATE_FORMATS, applyTheme, setPref } from '../shared/prefs.js';
 import { openGroups } from './popup.js';
 import {
-  S, $, el, closePops, openPop, openCentred, colorOf, labelOf, STAGE_COLOR, STAGE_LABEL,
+  S, $, el, iconBtn, closePops, openPop, openRowPop, openCentred, colorOf, labelOf, STAGE_COLOR, STAGE_LABEL,
   row, choose, toggle, numberField, dateField
 } from './ui.js';
 
@@ -58,16 +58,12 @@ function groupNames() {
   return out;
 }
 
-// The groups are a plain list of checkboxes. They were folded behind a `groups · 3 of 4` row for
-// one reason - an open list pushed the nine settings rows below the fold - and that reason went
-// when the settings moved into a panel of their own. One tap hides a group now instead of two,
-// and a repo with twenty groups scrolls inside the dropdown rather than growing it.
+// The categories and the stages each open a list of their own off an icon, so that a repo with
+// twenty groups does not make a twenty-row dropdown of the filter. An icon is lit while its list
+// has something switched off, which is all that says so with the list shut.
 
-export function renderFilter() {
-  const names = groupNames();
-  const kids = [];
-
-  for (const [name, label] of names) {
+function groupRows() {
+  return groupNames().map(([name, label]) => {
     const lab = el('label', 'glab grp');
     const box = el('input');
     box.type = 'checkbox';
@@ -80,15 +76,12 @@ export function renderFilter() {
     const sw = el('span', 'swatch');
     sw.style.background = colorOf(name);
     lab.append(box, sw, el('span', '', label || name));
-    kids.push(lab);
-  }
+    return lab;
+  });
+}
 
-  // The stages and importance narrow **every** view, not only the board: a month with the done
-  // ones out of it is as much a thing to want as a board of them, and importance is on an event
-  // now. Both are remembered per device, like the groups - a filter that empties a month is one
-  // you want to find still on after a reload, and the hamburger's count says it is.
-  kids.push(el('div', 'fsep'));
-  for (const stage of STAGES) {
+function stageRows() {
+  return STAGES.map(stage => {
     const lab = el('label', 'glab stg');
     const box = el('input');
     box.type = 'checkbox';
@@ -101,8 +94,48 @@ export function renderFilter() {
     const sw = el('span', 'swatch');
     sw.style.background = STAGE_COLOR[stage];
     lab.append(box, sw, el('span', '', STAGE_LABEL[stage]));
-    kids.push(lab);
-  }
+    return lab;
+  });
+}
+
+const LISTS = {
+  group: { ic: 'ball', title: 'Category', rows: groupRows, hidden: () => S.hidden },
+  stage: { ic: 'tick', title: 'Stage', rows: stageRows, hidden: () => S.hiddenStages }
+};
+let shown = 'group';   // which of the two #filter-sub holds
+
+function renderList() {
+  $('#filter-sub-title').textContent = LISTS[shown].title;
+  $('#filter-sub-body').replaceChildren(...LISTS[shown].rows());
+}
+
+// No scrim of its own: the filter's is already up, and a tap on it closes both.
+function toggleList(key) {
+  const pop = $('#filter-sub');
+  const shut = !pop.hidden && shown === key;
+  pop.hidden = true;
+  if (shut) return;
+  shown = key;
+  renderList();
+  openRowPop(pop, $(`#filter-body [data-list="${key}"]`));
+}
+
+function listBtn(key) {
+  const { ic, title, hidden } = LISTS[key];
+  const b = iconBtn(ic, title, hidden().size ? 'on' : '');
+  b.dataset.list = key;
+  b.addEventListener('click', () => toggleList(key));
+  return b;
+}
+
+export function renderFilter() {
+  const icons = el('div', 'ficons');
+  icons.append(...Object.keys(LISTS).map(listBtn));
+  // The stages and importance narrow **every** view, not only the board: a month with the done
+  // ones out of it is as much a thing to want as a board of them, and importance is on an event
+  // now. All of it is remembered per device - a filter that empties a month is one you want to
+  // find still on after a reload, and the hamburger's count says it is.
+  const kids = [icons, el('div', 'fsep')];
 
   const imp = el('label', 'glab imp');
   const impBox = el('input');
@@ -125,6 +158,7 @@ export function renderFilter() {
   }
 
   $('#filter-body').replaceChildren(...kids);
+  renderList();
   renderFilterCount();
 }
 

@@ -290,7 +290,8 @@ manager. `openRowPop` is the third, and the one thing that distinguishes it is w
 do: it raises **no scrim**. That is deliberate and it is the reason it cannot be one of the other
 two. A field's popup is dismissed by a tap that must still reach whatever it landed on, so that
 moving from one field to the next is one tap; a scrim would stop that tap, and two taps to change
-field is the friction this whole shape exists to remove. `justClosed` in `popup.js` is the other
+field is the friction this whole shape exists to remove. The filter's category and stage lists
+open the same way, over the filter, whose scrim already covers them. `justClosed` in `popup.js` is the other
 half of it: the capture-phase click listener closes the popup *before* the row's own handler runs,
 so without it the tap that closed a popup would immediately reopen it.
 
