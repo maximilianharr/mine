@@ -1,0 +1,43 @@
+/grill-me This repo currently only contains the calendar PWA. I want to add the next PWA, which is similar to google keep or evernote. A simple and quick note taking PWA using the search, themes/design, git functionality,  etc as well. Before we do this, your task is to check the repo for legacy code and remove it and refactor the codebase for the next PWA if necessary. The mine-data repo is pure development repo, you may remove/update any tasks/events as well. Do not overcomplicate or template too much in according to KISS (keep it simple stupid).
+
+---
+
+<task-notification>
+<task-id>bqddqp42o</task-id>
+<tool-use-id>toolu_0153dmgbJAbtyuwjf2SPzerL</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/1b38c925-6b95-4b81-95b0-35be199d5563/tasks/bqddqp42o.output</output-file>
+<status>completed</status>
+<summary>Background command "Run test suite baseline; check sample folder usage" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+ok delete it.
+
+---
+
+yes, remove it
+
+---
+
+light cleanup is good
+
+---
+
+completely ignore the new app. This will be implemented separately. I just mentioned it for context in priorising/designing the refactoring. Note that future apps like notes or zettelkasten would also want to use the shared markdown renderer.
+
+---
+
+yes, move the
+
+---
+
+agreed
+
+---
+
+drop the summary above the tiles. I cannot recall this requirement and the calender app is currently fine and fulfills everything that I wanted.
+
+---
+
+yes
