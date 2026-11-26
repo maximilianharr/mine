@@ -46,22 +46,66 @@
     --chip-bg: 22%; --chip-ink: 44%;
     --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
 
-/* Two more night palettes, chosen rather than followed: picking one pins it day and night.
-   Dark is a deep navy with paper ink and an amber accent; matrix is phosphor green on near-black.
-   They come after the system pair so they win over it at the same specificity. */
+/* Chosen rather than followed: picking one pins it day and night. Dark is a deep navy with paper
+   ink and an amber accent. The ten after it are each the most popular palette of one of Adobe
+   Color's explore tags, with whatever the palette lacked - a readable ink, a today, a red,
+   yellow and green - derived from its own hues. They come after the system pair so they win
+   over it at the same specificity. */
 :root[data-theme="dark"] { --bg: #12161f; --raise: #1c2230; --fg: #ece4d8;
     --muted: #8f97a8; --line: #2a3142; --accent: #ece4d8; --bad: #f08a7a; --good: #8fd0a0;
     --soft: #171c27; --link: #f0a35c;
     --chip-bg: 22%; --chip-ink: 44%;
     --scrim: rgb(5 7 12 / .6); --shadow: 0 16px 44px rgb(0 0 0 / .6); }
-:root[data-theme="matrix"] { --bg: #000000; --raise: #06120a; --fg: #00ff41;
-    --muted: #1fae4c; --line: #0f3d1d; --accent: #00ff41; --bad: #ff3b3b; --good: #00ff41;
-    --soft: #030a05; --link: #d4ffdf;
+:root[data-theme="sunflowers"] { --bg: #15170a; --raise: #222601; --fg: #f7e7b0;
+    --muted: #b9a46a; --line: #3a3d14; --accent: #f7e7b0; --bad: #ef7a4a; --good: #a9c25a;
+    --soft: #1b1d05; --link: #F2B705;
     --chip-bg: 22%; --chip-ink: 44%;
-    --scrim: rgb(0 0 0 / .7); --shadow: 0 0 24px rgb(0 255 65 / .25); }
-/* Matrix text glows faintly, as on a phosphor screen; the leading glyph's white-green is its
-   accent, so today stands out from the code around it. */
-:root[data-theme="matrix"] body { text-shadow: 0 0 4px rgb(0 255 65 / .45); }
+    --scrim: rgb(0 0 0 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="neutral"] { --bg: #EBE6D2; --raise: #f6f2e4; --fg: #1a1712;
+    --muted: #6e6556; --line: #D0C0A7; --accent: #1a1712; --bad: #a63f2e; --good: #4f6b3f;
+    --soft: #DBD3C6; --link: #8a6a2e;
+    --chip-bg: 14%; --chip-ink: 72%;
+    --scrim: rgb(0 0 0 / .28); --shadow: 0 12px 34px rgb(0 0 0 / .14); }
+:root[data-theme="primary"] { --bg: #05060f; --raise: #0d1030; --fg: #f2f2f7;
+    --muted: #9a9cc0; --line: #1e2350; --accent: #f2f2f7; --bad: #ff4d4d; --good: #3fe63a;
+    --soft: #090b1f; --link: #F2E205;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(0 0 0 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="vaporwave"] { --bg: #140728; --raise: #22104a; --fg: #f7d9f4;
+    --muted: #A3CFD9; --line: #3a1f6e; --accent: #F2B3EE; --bad: #ff5c9a; --good: #7cf2c4;
+    --soft: #1a0b36; --link: #05F2DB;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(0 0 0 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="spring"] { --bg: #fbeef2; --raise: #fff7f9; --fg: #3a0510;
+    --muted: #8a4a5a; --line: #F2B3C4; --accent: #730217; --bad: #b0102e; --good: #02733E;
+    --soft: #f6dbe3; --link: #D9183B;
+    --chip-bg: 14%; --chip-ink: 72%;
+    --scrim: rgb(0 0 0 / .28); --shadow: 0 12px 34px rgb(0 0 0 / .14); }
+:root[data-theme="vinyl"] { --bg: #f6ecdc; --raise: #fdf7ee; --fg: #40322A;
+    --muted: #8a6d52; --line: #e0c49c; --accent: #40322A; --bad: #a63f2e; --good: #5f6b3a;
+    --soft: #f0dcc0; --link: #8a6238;
+    --chip-bg: 14%; --chip-ink: 72%;
+    --scrim: rgb(0 0 0 / .28); --shadow: 0 12px 34px rgb(0 0 0 / .14); }
+:root[data-theme="synthwave"] { --bg: #120f26; --raise: #221d45; --fg: #f2e6ff;
+    --muted: #9a92c8; --line: #3A336A; --accent: #f2e6ff; --bad: #ff3fa8; --good: #5fe0c9;
+    --soft: #191536; --link: #12CAB5;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(0 0 0 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="happy"] { --bg: #f7f3f8; --raise: #ffffff; --fg: #0A2B5A;
+    --muted: #5c6a85; --line: #e6cfe6; --accent: #0A2B5A; --bad: #c8283a; --good: #6f8a10;
+    --soft: #f0e3f0; --link: #d02a7c;
+    --chip-bg: 14%; --chip-ink: 72%;
+    --scrim: rgb(0 0 0 / .28); --shadow: 0 12px 34px rgb(0 0 0 / .14); }
+:root[data-theme="luxury"] { --bg: #0E0D0A; --raise: #1a1914; --fg: #F2F2F2;
+    --muted: #ADADAD; --line: #2e2b22; --accent: #F2F2F2; --bad: #e0705a; --good: #48BFBF;
+    --soft: #14130f; --link: #D1B678;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(0 0 0 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="travel"] { --bg: #06262a; --raise: #0E3a40; --fg: #f3ebe4;
+    --muted: #9cc4c4; --line: #165a61; --accent: #f3ebe4; --bad: #ff8a5c; --good: #5fd3c3;
+    --soft: #0a3035; --link: #F25E7A;
+    --chip-bg: 22%; --chip-ink: 44%;
+    --scrim: rgb(0 0 0 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
 
 /* An id or class rule for display beats the UA stylesheet's [hidden], so a screen and a modal
    would both render while still carrying the attribute. */

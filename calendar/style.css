@@ -19,16 +19,16 @@
 }
 :root[data-theme="coffee"] { --todo: #f27a6a; --doing: #f0c05a; --done: #9fd07f; }
 :root[data-theme="dark"] { --todo: #f08a7a; --doing: #eac46a; --done: #8fd0a0; }
-:root[data-theme="matrix"] { --todo: #ff3b3b; --doing: #e8ff3a; --done: #00ff41; }
-/* In matrix an entry is not a tint: it is a dark block ringed in glowing code-green, its text in
-   its category's colour lifted towards white so it reads as neon. --fg is redefined on the block
-   so whatever inside it reads --fg glows in that colour too. */
-:root[data-theme="matrix"] :is(.eline, .tev, .dentry, .kcard) {
-  --fg: color-mix(in srgb, var(--c, #00ff41) 70%, #fff);
-  background: #031007; color: var(--fg); border-color: transparent;
-  text-shadow: 0 0 4px color-mix(in srgb, var(--c, #00ff41) 60%, transparent);
-  box-shadow: 0 0 0 1px #00ff41, 0 0 6px rgb(0 255 65 / .55);
-}
+:root[data-theme="sunflowers"] { --todo: #ef7a4a; --doing: #F2B705; --done: #a9c25a; }
+:root[data-theme="neutral"] { --todo: #9c4a35; --doing: #a9792a; --done: #4f6b3f; }
+:root[data-theme="primary"] { --todo: #ff4d4d; --doing: #F2E205; --done: #3fe63a; }
+:root[data-theme="vaporwave"] { --todo: #ff5c9a; --doing: #f2d36b; --done: #05F2DB; }
+:root[data-theme="spring"] { --todo: #D9183B; --doing: #b07a10; --done: #02733E; }
+:root[data-theme="vinyl"] { --todo: #a63f2e; --doing: #b8812f; --done: #5f6b3a; }
+:root[data-theme="synthwave"] { --todo: #ff3fa8; --doing: #f2c84b; --done: #12CAB5; }
+:root[data-theme="happy"] { --todo: #c8283a; --doing: #b8860b; --done: #6f8a10; }
+:root[data-theme="luxury"] { --todo: #e0705a; --doing: #D1B678; --done: #48BFBF; }
+:root[data-theme="travel"] { --todo: #ff7a8f; --doing: #f2c46b; --done: #5fd3c3; }
 
 body { padding-bottom: env(safe-area-inset-bottom); }
 #cal { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }

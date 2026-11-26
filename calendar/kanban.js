@@ -93,7 +93,6 @@ function card(o) {
 
   const bar = el('span', 'kbar');
   bar.style.background = colorOf(o.group);
-  c.style.setProperty('--c', colorOf(o.group));
 
   // A `!` in front of the title when the task is important, and the title. No pen - the card
   // opens on a click already - and no trashcan, which put the one irreversible action a thumb's

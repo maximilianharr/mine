@@ -141,7 +141,7 @@ ok('and never shows the token itself',
 eq('the two Mine-wide settings are theme and date format',
   settings.prefs.map(p => p.label), ['Theme', 'Date format']);
 eq('with the same options every app offers', settings.prefs.map(p => p.options),
-  [['system', 'light', 'coffee', 'dark', 'matrix'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
+  [['system', 'light', 'coffee', 'dark', 'sunflowers', 'neutral', 'primary', 'vaporwave', 'spring', 'vinyl', 'synthwave', 'happy', 'luxury', 'travel'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
 eq('the screen fits a 390px phone', settings.over, 0);
 await shoot('mine-settings');
 
@@ -161,11 +161,11 @@ eq('including in an app opened afterwards',
 // A palette chosen rather than followed pins the phone's bar to its page as well.
 await ev(`(async () => {
   const { applyTheme } = await import('/shared/prefs.js');
-  applyTheme('matrix');
+  applyTheme('luxury');
 })()`);
 eq('a pinned palette pins the bar to its page colour',
   await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
-  ['#050a06', '#050a06']);
+  ['#0E0D0A', '#0E0D0A']);
 await ev(`(async () => (await import('/shared/prefs.js')).applyTheme('system'))()`);
 eq('and system hands the bar back to the device',
   await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
