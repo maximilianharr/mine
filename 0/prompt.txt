@@ -1,0 +1,55 @@
+/grill-me Implement these features:
+
+
+```
+I want the user to be able to drag-n-drop items between stages in the Kanban board in mobile view as well
+I want the user to be able to drag-n-drop calendar entries between dates. If a date moves adjust the day and keep the time. For multiday-events move both time (e.g. both 2 days earlier). In multiday the start-day is where the user releases the drag-n-drop.
+
+Implement a markdown-optimized search. This search shall be installed globally so that it can be used by all sites/PWAs. For the calendar app it shall only search calendar folder in mine-data. And for other apps respectively.
+
+In the calendar/Kanban view top row (desktop) / two rows (mobile)
+- make these rows drag-n-dropable to eiter the top or the bottom of the page/pwa
+- Add a filter icon which directly opens the filter menu and remove it from the hamburger icon
+- Use the 'magnifier' icon to launch the previously implemented search, then open the search popup and let the user type. Show him the events/tasks live if possible
+- Use another icon for the vertical/horizontal or d/w/m/y view. I don't know what a good icon is. Your choice
+```
+
+---
+
+A
+
+---
+
+Sounds good. Keep in mind: The search shall be generic. New app might not have the same frontmatter or not frontmatter at all (e.g. zettels in a Zettelkasten). This search shall work for all tools. We can add global requirement that all markdown have at least a title and date though.
+
+---
+
+when the apps call the search they could provide their frontmatter fields. The search would have to take these as parameters. This way we have a generic search while still being able to support specific apps like calendar
+
+---
+
+title key rule sounds good
+
+---
+
+it sound great
+
+---
+
+do it like  you recommended
+
+---
+
+sounds good. do drag n drop
+
+---
+
+keep the arrows  on phone cards. Its ok if two ways exists tondo one thing. rest is fine
+
+---
+
+sounds good
+
+---
+
+sounds good. Implement it. At the end you can push and I will check the app on my phone/desktop
