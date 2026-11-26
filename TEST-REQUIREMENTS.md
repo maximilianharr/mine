@@ -252,8 +252,7 @@ nodes with a textarea holding the raw markdown, with its `x` at the foot.
 **The quick row.** That a new entry is an event whose row holds `24h`, `!`, and the three field
 icons, and that choosing a task adds the stage between them — the stage alone, since important is
 on every entry now. That stage cycles through three stages in three colours and back, the colour
-being the icon's own: a **ticked square with the tick knocked out of it**, drawn in the stage's
-colour, which is what the badge on its corner used to carry. That the category's **ball is drawn
+being the button's background, behind a checkmark. That the category's **ball is drawn
 in its category's colour** on the detail line when one is picked and in the row's ink when none
 is. That
 **important is a toggle and not a cycle** — two taps return it to where it started and there is

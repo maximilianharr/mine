@@ -58,9 +58,7 @@ colour of its own: the calendar's today is that accent. **Serif for what is read
 is operated** — a heading, a period label, an entry's title and a rendered body's headings are
 set in Charter; every control, label and value is set in the system sans.
 
-**Icons are outlines**, drawn on one 16×16 box at a 1.2–1.4 stroke. The single deliberate solid
-is the calendar's stage square, which is its task marker filled in and would otherwise be the
-same drawing as it.
+**Icons are outlines**, drawn on one 16×16 box at a 1.2–1.4 stroke.
 
 One convention is the same in every app: **a save icon is green and a trashcan is red**, wherever
 either appears — a trashcan is red even where it only clears one field of one entry, because the

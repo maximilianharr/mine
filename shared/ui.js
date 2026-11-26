@@ -24,8 +24,7 @@ export const phone = () => !matchMedia('(min-width: 600px)').matches;
 // by that app with addIcons().
 
 // Drawn as outlines rather than solids: a stroked glyph is what carries Mine's paper look, and
-// at 1.2-1.4 it stays legible at 16px. The one deliberate solid is the calendar's `ticked`, which
-// is `check` filled in and would otherwise be the same drawing as it.
+// at 1.2-1.4 it stays legible at 16px.
 const NS = 'http://www.w3.org/2000/svg';
 const ICON = {
   trash:  { d: 'M3 5.2h10M6.4 5.2V3.4h3.2v1.8M4.7 5.2l.5 8.4h5.6l.5-8.4M6.8 7.6v3.4M9.2 7.6v3.4', stroke: 1.3 },
@@ -65,10 +64,6 @@ export function icon(name) {
     p.setAttribute('stroke-linejoin', 'round');
   } else {
     p.setAttribute('fill', 'currentColor');
-    // A second subpath drawn inside the first is a hole rather than an overlap: the one way an
-    // icon can be a filled shape with a figure knocked out of it, which is what a stage reading
-    // its colour as a fill needs.
-    if (spec.rule) p.setAttribute('fill-rule', spec.rule);
   }
   svg.append(p);
   return svg;

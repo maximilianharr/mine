@@ -135,14 +135,11 @@ addIcons({
   filter: { d: 'M2.5 3.3h11l-4.2 5.2v5.1L6.7 12.3V8.5z', stroke: 1.4 },
   // A ticked square for task, a calendar page for event: the icon row carries no letters.
   check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
-  // The stage: a filled square with a tick knocked out of it, carried in the stage's own colour
-  // - red, yellow, green. It is `check` filled in: the two are told apart by colour and by fill,
-  // which is how the category's ball tells one group from another, rather than by a badge on a
-  // 16px corner. All-day and important are the words `24h` and `!`, which iconBtn renders as
+  // The stage: a bare tick, which the popup sets on a rectangle of the stage's own colour - red,
+  // yellow, green. All-day and important are the words `24h` and `!`, which iconBtn renders as
   // glyphs - there is no icon for either, deliberately: the sun was taken for weather and a flag
   // needed a digit.
-  ticked: { d: 'M2.6 3.4h10.8v9.2H2.6zM6.9 11.6 3.6 8.3 5 6.9 6.9 8.8 11 4.7 12.4 6.1Z',
-            rule: 'evenodd' },
+  tick:   { d: 'M3.2 8.4 6.5 11.7 12.8 4.6', stroke: 2 },
   // The two ways out of a view: the board, and the zoom that picks a period by name.
   board:  { d: 'M2.6 3.6h10.8v8.8H2.6zM6.2 3.6v8.8M9.8 3.6v8.8', stroke: 1.4 },
   zoom:   { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 }

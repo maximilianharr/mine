@@ -516,12 +516,11 @@ open. The disk appears on the first tap, as it does for any other change.
   changes its name: the strip in the week and day grids still reads `all-day`, and so does this
   document, because the word is the clearer one in prose and the button is the one place with no
   room for it.
-- a **ticked square with the tick knocked out** for **stage** — cycles `todo` → `doing` → `done`
-  on each tap, drawn in that stage's kanban colour: red, yellow, green. It is the type marker's
-  ticked square *filled in*, so colour and fill tell the two apart rather than a second drawing;
-  the badge it replaces was a 9px dot on a 16px corner carrying the one thing the icon can carry
-  itself. There is no stage popup — a list of three would be a second way to set one value — and
-  its line under the chevron reads the word and cycles too.
+- a **checkmark on a filled rectangle** for **stage** — cycles `todo` → `doing` → `done` on each
+  tap, the rectangle in that stage's kanban colour: red, yellow, green. It is the size of every
+  other lit icon in the row. There is no stage popup — a list of three would be a second way to
+  set one value — and its line under the chevron carries the same mark, reads the word and cycles
+  too.
 - a `!` for **important** — a straight toggle, lit when the task is important and plain when it
   is not. It carries no badge: a yes or no has nothing a badge could add that the lit state has
   not already said, which is what made the old flag need a digit and this one not.

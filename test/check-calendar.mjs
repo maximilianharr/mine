@@ -682,7 +682,8 @@ eq('a task row gains the stage, and only the stage', asTask.map(label),
 eq('and reads 24h and !', await ev(words('#f-rows .quick')), ['24h', '!']);
 eq('the field rows do not reshuffle', (await ev(FIELD_ROWS)).map(r => r.field),
   ['group', 'recurrence', 'alerts', 'location', 'participants']);
-ok('a new task starts at todo', !!badge(asTask[1]), 'the stage icon carries its colour');
+const fillOf = g => g.split('@')[1] || '';
+ok('a new task starts at todo', !!fillOf(asTask[1]), 'the stage icon sits on its colour');
 // Nothing on the row opens an editor: there is no estimate to type any more, so a tap on any of
 // the three is the whole edit and the popup grows no field popup of its own.
 eq('and the three flags on it open nothing', await ev(
@@ -690,14 +691,9 @@ eq('and the three flags on it open nothing', await ev(
     .some(b => b.dataset.field)`), false);
 
 const stages = [];
-for (let i = 0; i < 3; i++) { await flag(1); await sleep(220); stages.push(badge((await ev(FLAGS))[1])); }
+for (let i = 0; i < 3; i++) { await flag(1); await sleep(220); stages.push(fillOf((await ev(FLAGS))[1])); }
 ok('stage cycles through three colours', new Set(stages).size === 3, stages.join(' '));
-// A ticked square filled with the stage's colour, not three columns with a dot on the corner.
-eq('and is drawn as a ticked square with the tick knocked out', await ev(
-  `(() => { const p = document.querySelector('#f-rows .quick .ib:nth-child(2) svg path');
-    return [p.getAttribute('fill'), p.getAttribute('fill-rule')]; })()`),
-  ['currentColor', 'evenodd']);
-ok('and returns to where it started', stages[2] === badge(asTask[1]), `${stages[2]} vs ${badge(asTask[1])}`);
+ok('and returns to where it started', stages[2] === fillOf(asTask[1]), `${stages[2]} vs ${fillOf(asTask[1])}`);
 
 const bangs = [];
 for (let i = 0; i < 2; i++) { await flag(2); await sleep(220); bangs.push((await ev(FLAGS))[2]); }

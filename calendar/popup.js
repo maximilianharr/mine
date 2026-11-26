@@ -625,8 +625,9 @@ function chip(glyph, text, on, onClick, colour) {
 function stageRow() {
   const row = el('div', 'frow');
   row.dataset.field = 'stage';
-  const ic = icon('ticked');
-  ic.style.color = STAGE_COLOR[D.stage];
+  const ic = icon('tick');
+  ic.classList.add('stagemark');
+  ic.style.background = STAGE_COLOR[D.stage];
   row.append(ic, tap(STAGE_LABEL[D.stage], false, '', cycleStage,
     `Stage: ${STAGE_LABEL[D.stage]}`));
   return row;
@@ -654,12 +655,11 @@ function toggleAllDay() {
 }
 
 // Stage and important are two small values rather than fields with a form each, so they are
-// edited in the row itself. Stage is a ticked square carrying its own colour - the badge on its
-// corner was a 16px icon with a 9px dot on it, and the colour it carried is the whole of what
-// the badge was for. Important has nothing to colour and lights instead.
+// edited in the row itself. Stage is always lit, in its own colour: it always has a value, and
+// the colour is what says which.
 function stageBtn() {
-  const b = iconBtn('ticked', `Stage: ${D.stage}`);
-  b.querySelector('svg').style.color = STAGE_COLOR[D.stage];
+  const b = iconBtn('tick', `Stage: ${D.stage}`, 'on');
+  b.style.setProperty('--on', STAGE_COLOR[D.stage]);
   b.addEventListener('click', cycleStage);
   return b;
 }
