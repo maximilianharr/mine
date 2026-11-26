@@ -1,0 +1,17 @@
+I really like the calendar app and how it behaves and the general styling and format. However, I feel like this does not yet look 'professional' and very nice yet. Come up with 8 different styling types incl. colors, icons, css styles, fonts etc and create 3 Screenshots of them (calender month view, event popup and kanban). Name them and present them to me. Feel free to also adapt sizes of icons, buttons, Containers etc if you think it helps the layout. I will then provide feedback. Do not run any tests etc and do not commit changes.
+
+---
+
+I like the 2) Linen. Implement it. Globally. But for task/event popup use a more intense background color for category/important/repeat/... icon when active. Also derive a nice color for the respective dark mode linen. Do run the excessive test. Once finished commit and push. I will review then on my phone/desktop.
+
+---
+
+this used a lot of tokens. And has been in the last view feature request chats. How can we improve this? Why is it consuming so much. Is the codebase or the tests bloated?
+
+---
+
+yes, do 1, 2 and 5
+
+---
+
+what is claude docs?
