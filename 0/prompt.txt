@@ -1,0 +1,5 @@
+ok, adapt the colors of the matrix theme. The text shall be a strong neon green and event/task items shall be more theme-like. Furthermore make sure colors and background differ a lot for readability. Come up with something cool for the category without the background color. e.g. make glowing border in the category color and make background green with black text
+
+---
+
+yes
