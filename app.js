@@ -74,10 +74,13 @@ addEventListener('focus', () => { if (!$('#home').hidden) sync.refresh(); });
 
 $('#to-settings').addEventListener('click', async () => {
   const cfg = await getConfig();
+  const version = await versionOf(navigator.serviceWorker?.controller);
+  $('#pull-msg').textContent = '';
   $('#settings-info').replaceChildren(...Object.entries({
     Repo: `${cfg.owner}/${cfg.repo}`,
     Branch: cfg.branch,
-    Token: `on this device only${cfg.expiresAt ? `, expires ${cfg.expiresAt}` : ''}`
+    Token: `on this device only${cfg.expiresAt ? `, expires ${cfg.expiresAt}` : ''}`,
+    Version: version ?? 'unknown'
   }).flatMap(([k, v]) => {
     const dt = document.createElement('dt');
     const dd = document.createElement('dd');
@@ -90,6 +93,16 @@ $('#to-settings').addEventListener('click', async () => {
 });
 
 $('#to-home').addEventListener('click', home);
+
+// The same push-then-pull as opening the tile screen, without leaving settings; its outcome is
+// the home line's, repeated under the button.
+$('#pull').addEventListener('click', async e => {
+  e.target.disabled = true;
+  await sync.refresh();
+  $('#pull-msg').textContent = $('#status').textContent;
+  $('#pull-msg').classList.toggle('bad', $('#status').classList.contains('bad'));
+  e.target.disabled = false;
+});
 
 // Theme and date format belong to Mine rather than to any one app, so the same two rows appear
 // here and in every app's settings.

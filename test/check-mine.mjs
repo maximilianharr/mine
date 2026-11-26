@@ -127,6 +127,7 @@ await sleep(400);
 const settings = await ev(`(() => ({
   screen: [...document.querySelectorAll('section')].filter(s => !s.hidden).map(s => s.id),
   info: [...document.querySelectorAll('#settings-info dt')].map(d => d.textContent),
+  version: document.querySelector('#settings-info dd:last-of-type').textContent,
   token: document.querySelector('#settings-info').textContent,
   prefs: [...document.querySelectorAll('#mine-prefs .srow')].map(r => ({
     label: r.querySelector('.slab').textContent,
@@ -135,7 +136,11 @@ const settings = await ev(`(() => ({
   over: document.documentElement.scrollWidth - document.documentElement.clientWidth
 }))()`);
 eq('the settings screen opens', settings.screen, ['settings']);
-eq('it names the repo, the branch and the token', settings.info, ['Repo', 'Branch', 'Token']);
+eq('it names the repo, the branch, the token and the version', settings.info,
+  ['Repo', 'Branch', 'Token', 'Version']);
+eq('the version is the running worker\'s', settings.version,
+  (await import('node:fs')).readFileSync(new URL('../sw.js', import.meta.url), 'utf8')
+    .match(/VERSION = '(.+?)'/)[1]);
 ok('and never shows the token itself',
   !settings.token.includes('not-a-real-token'), settings.token);
 eq('the two Mine-wide settings are theme and date format',
@@ -144,6 +149,17 @@ eq('with the same options every app offers', settings.prefs.map(p => p.options),
   [['system', 'light', 'dark', 'coffee', 'neutral'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
 eq('the screen fits a 390px phone', settings.over, 0);
 await shoot('mine-settings');
+
+// Pull runs the home screen's push-then-pull without leaving settings, and says how it went
+// under the button. The queue from section 5 is still there and the token is fake, so it fails.
+await ev(`document.querySelector('#pull').click()`);
+await sleep(3500);
+const pulled = await ev(`(() => { const m = document.querySelector('#pull-msg');
+  return { text: m.textContent, bad: m.classList.contains('bad'),
+    screen: [...document.querySelectorAll('section')].filter(s => !s.hidden).map(s => s.id) }; })()`);
+ok('Pull reports its outcome under the button', /not pushed/.test(pulled.text), pulled.text);
+ok('and a failure reads as one', pulled.bad);
+eq('without leaving settings', pulled.screen, ['settings']);
 
 // A theme chosen here applies to every app, because it is written to a key they all read.
 await ev(`(() => {

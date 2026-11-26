@@ -104,7 +104,8 @@ so what catches a regression to that is a third app's suite asserting its own na
 assertion when you write the app.
 
 **The two Mine-wide settings are theme and date format**, with the same options every app
-offers, the repo and branch named, the token never shown, and a theme chosen here applying at
+offers, the repo and branch named, the token never shown, the version shown being the running
+worker's `VERSION`, **Pull** reporting its outcome under the button without leaving settings, and a theme chosen here applying at
 once and still applying in an app opened afterwards, and a pinned palette pinning the phone's
 bar to its page colour until system hands it back. That last one is the whole of what "one
 setup, every app" means, in one check.

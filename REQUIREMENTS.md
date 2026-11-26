@@ -178,6 +178,12 @@ Mine's own settings carry a **Reload app** button, the way to a new version when
 there: it looks for one, lets it take over, and reloads. With nothing new, or offline, it just
 reloads.
 
+Below it, **Pull** pushes anything queued and pulls, as opening the tile screen does, and says
+how it went under the button without leaving settings. Under the repo, branch and token, the
+settings name the **Version** this device is running — the service worker's `VERSION`, a date
+and a counter bumped on every deploy, or `unknown` with no worker. There is no git commit to
+show: with no build step, nothing can write a commit's hash into that same commit.
+
 ## Privacy
 
 Your data lives in a **private** repo. The app itself is public, but it contains no data, and the
