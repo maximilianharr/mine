@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bri53b4dj</task-id>
+<tool-use-id>toolu_01UqCMAqcEV3qBkpHKocf2Wm</tool-use-id>
+<output-file>/tmp/claude-1000/-home-max-ws-mine/1b38c925-6b95-4b81-95b0-35be199d5563/tasks/bri53b4dj.output</output-file>
+<status>completed</status>
+<summary>Background command "Run full test suite, show non-pass lines" completed (exit code 0)</summary>
+</task-notification>
