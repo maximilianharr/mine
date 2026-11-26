@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; connect-src 'self' https://api.github.com">
+<title>Notes</title>
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#EBE6D2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#12161f" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="../style.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<section id="needs-setup" hidden>
+  <header><h1>Notes</h1><a class="icon-btn" href="../">✕</a></header>
+  <p class="lede">Mine is not set up on this device yet.</p>
+  <p><a href="../">Open Mine</a> and enter the repo and token once; notes then uses them.</p>
+</section>
+
+<main id="notes" hidden>
+  <div class="topbar">
+    <div class="tb-side">
+      <button id="new-btn" class="nav ic" aria-label="New note"></button>
+      <button id="search-btn" class="nav ic" aria-label="Search"></button>
+    </div>
+    <div class="tb-side end">
+      <button id="filter-btn" class="nav ic" aria-label="Filter"
+              aria-haspopup="true" aria-expanded="false"></button>
+      <button id="menu-btn" class="nav ic" aria-label="Settings and logs"
+              aria-haspopup="true" aria-expanded="false"></button>
+      <a class="nav ic" id="home" href="../" aria-label="Back to Mine"></a>
+    </div>
+  </div>
+  <div class="view" id="view"></div>
+  <button class="sync" id="sync" type="button" title="Open the logs"></button>
+</main>
+
+<!-- Leaving a popup that holds unsaved changes asks first, once, unless told not to. -->
+<div class="modal ask" id="ask" hidden>
+  <div class="card">
+    <p class="ask-q">Discard the changes?</p>
+    <label class="ask-never"><input type="checkbox" id="ask-never"> don't ask again</label>
+    <div class="askrow">
+      <button type="button" class="ghost" id="ask-keep">keep editing</button>
+      <button type="button" class="danger" id="ask-discard">discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- One popup for a note, read and written in the same rows; the disk is the one thing that writes. -->
+<div class="modal" id="popup" hidden>
+  <div class="card" id="note-card">
+    <div class="iconbar" id="n-icons"></div>
+    <div id="n-rows"></div>
+  </div>
+</div>
+
+<!-- The tags row's own popup, anchored to the row, with no scrim. -->
+<div class="pop fpop" id="fpop" hidden>
+  <div class="pop-head">
+    <strong>Tags</strong><span class="spacer"></span>
+    <button class="ib" id="fpop-close" type="button" title="Close tags" aria-label="Close tags"></button>
+  </div>
+  <div id="fpop-body"></div>
+</div>
+
+<div class="pop" id="menu-pop" hidden>
+  <div id="menu-body"></div>
+</div>
+
+<div class="pop" id="filter-pop" hidden>
+  <div class="pop-head">
+    <h2>Filter</h2><span class="spacer"></span>
+    <button class="ib" id="filter-close" type="button" title="Close" aria-label="Close"></button>
+  </div>
+  <div id="filter-body"></div>
+</div>
+
+<div class="centred panel" id="settings-panel" hidden>
+  <div class="pop-head">
+    <h2>Settings</h2><span class="spacer"></span>
+    <button class="ib" id="settings-close" type="button" title="Close" aria-label="Close"></button>
+  </div>
+  <div id="settings-body"></div>
+</div>
+
+<div class="centred panel" id="logs-panel" hidden>
+  <div class="pop-head">
+    <h2>Logs</h2><span class="spacer"></span>
+    <button class="ib" id="logs-close" type="button" title="Close" aria-label="Close"></button>
+  </div>
+  <div id="logs-body"></div>
+</div>
+
+<div class="scrim" id="scrim" hidden></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

@@ -1,15 +1,19 @@
 // Theme and date format belong to Mine, not to any one app: the main settings and each app's
-// show the same two rows, so both read and write these keys.
+// show the same two rows, so both read and write these keys. Where an app's header is docked and
+// whether leaving an edited popup asks first are Mine-wide too, set from inside the apps.
 import { getKV, setKV } from './store.js';
 
 export const THEMES = ['system', 'light', 'dark', 'coffee', 'neutral'];
 export const DATE_FORMATS = ['auto', 'dd.mm.yyyy', 'mm/dd/yy'];
 
 export async function loadPrefs() {
-  const [theme, dateFormat] = await Promise.all([getKV('mine.theme'), getKV('mine.dateFormat')]);
+  const [theme, dateFormat, barPosition, confirmDiscard] = await Promise.all(
+    ['theme', 'dateFormat', 'barPosition', 'confirmDiscard'].map(k => getKV(`mine.${k}`)));
   return {
     theme: THEMES.includes(theme) ? theme : 'system',
-    dateFormat: DATE_FORMATS.includes(dateFormat) ? dateFormat : 'auto'
+    dateFormat: DATE_FORMATS.includes(dateFormat) ? dateFormat : 'auto',
+    barPosition: barPosition === 'bottom' ? 'bottom' : 'top',
+    confirmDiscard: confirmDiscard ?? true
   };
 }
 

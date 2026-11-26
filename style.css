@@ -258,12 +258,137 @@ button.danger { color: var(--bad); background: none; border: 1px solid var(--lin
 .md-list li { margin: .15rem 0; }
 /* Rendered, not operated: ticking a box is an edit of the text like any other. */
 .md-task { list-style: none; margin-left: -1.3rem; }
-.md-task input { width: auto; margin: 0 .45rem 0 0; vertical-align: -.1em; }
+.md-task input { display: inline-block; width: auto; margin: 0 .45rem 0 0; vertical-align: -.1em; }
 .md-code {
   padding: .05rem .25rem; font: .85em var(--mono);
   background: var(--soft); border-radius: .25rem;
 }
 .md-a { color: var(--link); }
+
+/* ---- an app's header ---- */
+/* The row of buttons every app opens on, and the sync line under its view. The calendar adds its
+   period in the middle; the rest is the same in every app. Nothing in it is filled: the buttons
+   are outlined, so the row is hairlines. */
+.topbar {
+  position: sticky; top: 0; z-index: 5;
+  display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: .3rem;
+  padding: max(.5rem, env(safe-area-inset-top)) .5rem .5rem;
+  background: var(--bg); border-bottom: 1px solid var(--line);
+  -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+}
+.topbar .nav.ic { background: none; border: 1px solid var(--line); }
+.topbar .nav.ic:hover { background: var(--soft); }
+.tb-side { display: flex; align-items: center; gap: .3rem; min-width: 0; }
+.tb-side.end { justify-content: flex-end; }
+.nav {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: auto; min-width: 2.6rem; min-height: 2.6rem; margin: 0; padding: .3rem .45rem;
+  font-size: 2rem; line-height: 1; font-weight: 500; text-decoration: none;
+  color: var(--fg); background: var(--soft); border: 0; border-radius: .55rem;
+}
+.nav.ic svg { width: 1.8rem; height: 1.8rem; display: block; }
+.tb-side .nav.ic { position: relative; }
+.fcount {
+  position: absolute; top: 0; right: 0; min-width: .95rem; height: .95rem; padding: 0 .1rem;
+  font-size: .6rem; font-weight: 700; line-height: .95rem; text-align: center;
+  color: var(--raise); background: var(--today); border-radius: 999px;
+}
+.glab { display: flex; align-items: center; gap: .55rem; padding: .45rem .3rem; font-size: .9rem; color: var(--fg); cursor: pointer; }
+.glab input { width: 1.1rem; height: 1.1rem; margin: 0; flex: none; }
+
+/* The line reports and is pressed. Nothing is drawn on it, so hover and press are what say it
+   is a button - the same affordance the period label uses. `.bad` needs the second class to beat
+   this rule's own colour, which the plain `.bad` in the Mine stylesheet is now behind. */
+.sync {
+  width: 100%; padding: .4rem .7rem; margin: 0; font: inherit; font-size: .75rem;
+  text-align: left; color: inherit; background: none; border: 0; border-radius: .4rem;
+  cursor: pointer;
+}
+.sync:hover { background: var(--soft); }
+.sync:active { background: var(--line); }
+.sync.bad { color: var(--bad); }
+
+/* The header docked at the bottom (shared/drag.js's dockable): it sticks there, the sync line
+   takes the top, and the home indicator's inset is the header's to keep clear rather than the
+   page's. */
+body.dock-bottom { padding-bottom: 0; }
+.dock-bottom .topbar {
+  order: 2; top: auto; bottom: 0; border-bottom: 0; border-top: 1px solid var(--line);
+  padding-top: .5rem; padding-bottom: max(.5rem, env(safe-area-inset-bottom));
+}
+.dock-bottom .view { order: 1; }
+.dock-bottom .sync { order: 0; padding-top: max(.4rem, env(safe-area-inset-top)); }
+/* While the pane is held: the two places it can go, the one under it marked. */
+.dock-zone {
+  position: fixed; z-index: 19; left: .5rem; right: .5rem; height: 3.4rem;
+  border: 2px dashed var(--line); border-radius: .8rem; pointer-events: none;
+}
+.dock-zone.top { top: .5rem; }
+.dock-zone.bottom { bottom: .5rem; }
+.dock-zone.drop-on { border-color: var(--link); background: color-mix(in srgb, var(--link) 12%, transparent); }
+
+@media (max-width: 599px) {
+  .nav { min-width: 2.2rem; }
+  .nav.ic svg { width: clamp(1.3rem, 5.2vw, 1.9rem); height: clamp(1.3rem, 5.2vw, 1.9rem); }
+}
+@media (min-width: 600px) {
+  .topbar { padding: .7rem .8rem; gap: .5rem; }
+  .dock-bottom .topbar { padding-top: .7rem; padding-bottom: max(.7rem, env(safe-area-inset-bottom)); }
+  .nav.ic svg { width: 2.1rem; height: 2.1rem; }
+  .nav { min-width: 3rem; min-height: 3rem; }
+}
+
+/* ---- an item's popup ---- */
+/* The rows a calendar entry and a note are read and edited in: a top row of icons, then one
+   row per field, each text until it is tapped. */
+.iconbar {
+  display: flex; align-items: center; flex-wrap: wrap; gap: .15rem;
+  padding-bottom: .5rem; margin-bottom: .5rem; border-bottom: 1px solid var(--line);
+}
+.iconbar .spacer { flex: 1; }
+.body-in {
+  display: block; width: 100%; margin-top: .3rem; padding: .7rem;
+  font: .85rem/1.5 var(--mono);
+  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .45rem;
+  resize: vertical;
+}
+/* A row is the icon, then the value - no field name beside it, because the name said what the
+   icon already says in the one column where the value has to fit. An unset row shows the name in
+   the value's place, muted, which is what an empty input does everywhere else in Mine. */
+.frow {
+  display: flex; align-items: center; gap: .6rem; width: 100%; margin: 0;
+  min-height: 3.25rem; padding: .55rem .3rem; border-top: 1px solid var(--line);
+}
+.frow > svg { flex: none; width: 1.15rem; height: 1.15rem; }
+/* The whole row left of its trashcan is the way in, so it is the button. */
+.ftap {
+  flex: 1; min-width: 0; margin: 0; padding: .1rem .2rem; font: inherit; font-size: .9rem;
+  text-align: left; color: var(--fg); background: none; border: 0; border-radius: .4rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
+}
+.ftap:hover { background: var(--soft); }
+.ftap.unset { color: var(--muted); }
+/* An inline row: the input takes the line the value was on, with the trashcan and the x where the
+   closed row's trashcan already is. The row's min-height above is what holds its height still, and
+   it is set by the tallest thing a row can hold - its trashcan and its x, which a set row already
+   carries shut. Both the text a row shows shut and the input it holds open are shorter than that,
+   so neither decides how tall the row is and opening one cannot change it. */
+.frow.in > input {
+  flex: 1; min-width: 0; height: 1.7rem; margin: 0; padding: 0 .4rem; font-size: .9rem;
+}
+.frow.in > input.title-in { height: 1.75rem; font-size: 1.15rem; font-weight: 600; }
+/* A field's own popup, above the entry popup and carrying no scrim of its own. It holds the four
+   controls that cannot be a line, so the rows that own them need not grow into one. */
+.fpop { z-index: 14; max-height: 70dvh; overflow-y: auto; }
+.fpop .glist { max-height: 50dvh; overflow-y: auto; }
+.fpop label { margin: 0 0 .2rem; }
+
+.frow.open { display: block; padding: .3rem .2rem .6rem; }
+.frow.first { border-top: 0; }
+.ttap {
+  font-family: var(--serif); font-size: 1.35rem; font-weight: 600; letter-spacing: -.008em;
+  line-height: 1.25; white-space: normal;
+}
 
 /* ---- the discard prompt ---- */
 /* Above the popup it is asking about, because it is asking about the popup. */

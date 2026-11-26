@@ -94,8 +94,40 @@ def calendar():
     return files
 
 
+# Notes with different `updated` times, two tags shared between them, one untagged, one with a
+# long body and one carrying a key the app does not own, which a save must keep.
+NOTES = [
+    ("2026-11-20T08:00:00Z", "2026-11-25T09:00:00Z", "Groceries", ["home", "shopping"],
+     "- [x] milk\n- [ ] eggs\n- [ ] **good** coffee", []),
+    ("2026-11-18T10:00:00Z", "2026-11-24T19:40:00Z", "Trip ideas", ["travel"],
+     "## Portugal\n\nLisbon, then the train to *Porto*. " + "A long paragraph about it. " * 40,
+     ["source: phone"]),
+    ("2026-11-10T12:00:00Z", "2026-11-22T07:00:00Z", "Quarterly report", ["work"],
+     "Outline the `numbers` first.", []),
+    ("2026-11-05T09:00:00Z", "2026-11-21T09:00:00Z", "Loose thought", [],
+     "Nothing tagged here.", []),
+    ("2026-11-01T09:00:00Z", "2026-11-20T09:00:00Z", "Paint the hallway", ["home"], "", []),
+]
+
+
+def notes():
+    files = []
+    for i, (created, updated, title, tags, body, extra) in enumerate(NOTES):
+        fm = ['title: "%s"' % title, "created: " + created, "updated: " + updated]
+        if tags:
+            fm.append("tags:")
+            fm.extend("  - " + t for t in tags)
+        fm.extend(extra)
+        day, time = created.split("T")
+        files.append({
+            "path": "notes/%s/%s/%s-%s-n%03d.md" % (day[:4], day[5:7], day, time[:5].replace(":", ""), i),
+            "oid": "n%d" % i,
+            "text": "---\n" + "\n".join(fm) + "\n---\n\n" + body + "\n"})
+    return files
+
+
 # The tile screen reads no files of its own: what it needs is the config the seed writes anyway.
-FIXTURES = {"calendar": calendar, "mine": lambda: []}
+FIXTURES = {"calendar": calendar, "notes": notes, "mine": lambda: []}
 
 PREFIX = "/__fixture/"
 

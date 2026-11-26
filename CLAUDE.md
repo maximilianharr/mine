@@ -12,7 +12,7 @@ sees tracked files only and is the right default here.
 
 ## What is big, and what to do about it
 
-Reading the whole project costs ~160k tokens. Four files are half of that, so read none of them
+Reading the whole project costs ~170k tokens. Four files are half of that, so read none of them
 whole — `git grep -n` for the symbol or the rule, then `sed -n 'A,Bp'` the range you need.
 
 | | lines | ~tokens | |
@@ -22,7 +22,7 @@ whole — `git grep -n` for the symbol or the rule, then `sed -n 'A,Bp'` the ran
 | `calendar/REQUIREMENTS.md` | 1077 | 18k | |
 | `TEST-REQUIREMENTS.md` | 628 | 12k | |
 
-The rest of the source is 350 lines or under and is fine to read whole.
+The rest of the source is about 400 lines or under and is fine to read whole.
 
 ## The docs are reference, not reading
 

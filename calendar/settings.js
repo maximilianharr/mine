@@ -194,7 +194,7 @@ function build() {
     row('Calendar weeks', toggle(S.prefs.showWeeks, v => local('showWeeks', v))),
     // The way back on. A prompt silenced from inside itself needs a row that can restore it,
     // because nothing in Mine may be switched off from a place that cannot switch it back on.
-    row('Confirm discard', toggle(S.prefs.confirmDiscard, v => local('confirmDiscard', v))),
+    row('Confirm discard', toggle(S.prefs.confirmDiscard, v => mine('confirmDiscard', v))),
     row('Sprint length', numberField(S.model.settings.interval, 1,
       v => sprints({ interval: v })), 'weeks'),
     row('First sprint', dateField(S.model.settings.anchor, v => sprints({ anchor: v }))),

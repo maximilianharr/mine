@@ -43,6 +43,8 @@ const ICON = {
   logs:   { d: 'M8 2.6a5.4 5.4 0 1 0 0 10.8A5.4 5.4 0 0 0 8 2.6zM8 5.1V8.3l2.5 1.6', stroke: 1.5 },
   // A magnifier for search, which every app opens over its own folder (./search.js).
   search: { d: 'M7.1 2.4a4.7 4.7 0 1 0 0 9.4 4.7 4.7 0 0 0 0-9.4zM10.6 10.6 14 14', stroke: 1.5 },
+  // A funnel for the filter, which every app with a grid to narrow has.
+  filter: { d: 'M2.5 3.3h11l-4.2 5.2v5.1L6.7 12.3V8.5z', stroke: 1.4 },
   house:  { d: 'M2.5 7.3 8 2.5l5.5 4.8V13.5H9.6V9.7H6.4v3.8H2.5z', stroke: 1.4 },
   gear:   { d: 'M8 5.6a2.4 2.4 0 1 0 0 4.8 2.4 2.4 0 0 0 0-4.8zM7.1 1.4h1.8l.3 1.7 1.2.5 1.4-1 1.3 1.3-1 1.4.5 1.2 1.7.3v1.8l-1.7.3-.5 1.2 1 1.4-1.3 1.3-1.4-1-1.2.5-.3 1.7H7.1l-.3-1.7-1.2-.5-1.4 1-1.3-1.3 1-1.4-.5-1.2-1.7-.3V7.1l1.7-.3.5-1.2-1-1.4 1.3-1.3 1.4 1 1.2-.5z', stroke: 1.2 }
 };

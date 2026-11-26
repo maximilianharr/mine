@@ -1,5 +1,5 @@
-// One press-and-drag for the calendar: a card between stages, an entry between days, and the top
-// pane between the top and the bottom of the screen all go through here.
+// One press-and-drag for every app: a card between stages, an entry between days, and an app's
+// header between the top and the bottom of the screen all go through here.
 //
 // Pointer events rather than HTML5 drag and drop, which never fires for a finger. A finger picks
 // up by **holding still** for HOLD ms - moving before then is a scroll and is left to the browser,
@@ -11,6 +11,9 @@
 // `drop-on`, the page does not scroll under the finger, and holding near the top or bottom edge of
 // whatever scrolls scrolls it. Releasing drops; a cancelled gesture drops nothing. The click a
 // release would otherwise send is swallowed, so dropping a card does not also open it.
+import { el, closePops } from './ui.js';
+import { setPref } from './prefs.js';
+
 const HOLD = 400, SLOP = 8, MOUSE_SLOP = 5, EDGE = 48;
 
 let st = null;
@@ -130,4 +133,33 @@ function finish(dropping) {
   addEventListener('click', swallow, true);
   setTimeout(off, 400);
   if (dropping && s.over) s.opts.drop(s.el, s.over);
+}
+
+// ---- the header, docked at the top or the bottom ------------------------------------------
+// An app's header is held - a moment's press anywhere on it, its buttons included, with a mouse
+// as much as a finger, so a click on a button stays a click - and dragged to the top or the
+// bottom half of the screen. The choice is Mine-wide, `mine.barPosition`: docking it in one app
+// docks it in all. `dock-bottom` on body is the whole of it; the stylesheet does the rest, and
+// openPop already opens a dropdown upwards where there is no room below.
+export function dockable(bar, pos, onDock = () => {}) {
+  const dock = p => document.body.classList.toggle('dock-bottom', p === 'bottom');
+  dock(pos);
+  draggable(bar, {
+    item: () => bar,
+    hold: 'always', axis: 'y', scroll: false,
+    target: (x, y) => document.querySelector(y < innerHeight / 2 ? '.dock-zone.top' : '.dock-zone.bottom'),
+    start: () => {
+      closePops();
+      for (const at of ['top', 'bottom']) document.body.append(el('div', `dock-zone ${at}`));
+    },
+    end: () => document.querySelectorAll('.dock-zone').forEach(z => z.remove()),
+    drop: async (_, zone) => {
+      const next = zone.classList.contains('bottom') ? 'bottom' : 'top';
+      if (next === pos) return;
+      pos = next;
+      dock(pos);
+      await setPref('barPosition', pos);
+      onDock(pos);
+    }
+  });
 }

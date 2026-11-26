@@ -24,56 +24,24 @@
 body { padding-bottom: env(safe-area-inset-bottom); }
 #cal { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
 
-/* The pane docked at the bottom: it sticks there, the sync line takes the top, and the home
-   indicator's inset is the pane's to keep clear rather than the page's. */
-body.dock-bottom { padding-bottom: 0; }
-.dock-bottom .topbar {
-  order: 2; top: auto; bottom: 0; border-bottom: 0; border-top: 1px solid var(--line);
-  padding-top: .5rem; padding-bottom: max(.5rem, env(safe-area-inset-bottom));
-}
-.dock-bottom .view { order: 1; }
-.dock-bottom .sync { order: 0; padding-top: max(.4rem, env(safe-area-inset-top)); }
-/* While the pane is held: the two places it can go, the one under it marked. */
-.dock-zone {
-  position: fixed; z-index: 19; left: .5rem; right: .5rem; height: 3.4rem;
-  border: 2px dashed var(--line); border-radius: .8rem; pointer-events: none;
-}
-.dock-zone.top { top: .5rem; }
-.dock-zone.bottom { bottom: .5rem; }
-.dock-zone.drop-on { border-color: var(--link); background: color-mix(in srgb, var(--link) 12%, transparent); }
 
 /* ---- top pane ---- */
 /* Three groups: the two view controls left, the period centred, the two ways out right. The
    centre is centred on the pane rather than on what is left over, which is what the two equal
    side tracks buy. Everything in it is drawn at twice the size it was - this is the row reached
    for on every visit, and it was the smallest thing on the screen. */
-.topbar {
-  position: sticky; top: 0; z-index: 5;
-  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .3rem;
-  padding: max(.5rem, env(safe-area-inset-top)) .5rem .5rem;
-  background: var(--bg); border-bottom: 1px solid var(--line);
-}
+.topbar { grid-template-columns: 1fr auto 1fr; }
 /* Nothing in the pane is filled: the four errand buttons are outlined and the two that step the
    period carry nothing at all, so the row is hairlines and the label, and the label is the
    heaviest thing in it. A filled block either side of it was the loudest thing on the page. */
-.topbar .nav.ic { background: none; border: 1px solid var(--line); }
-.topbar .nav.ic:hover, .tb-mid .nav:hover { background: var(--soft); }
 .tb-mid .nav { background: none; }
+.tb-mid .nav:hover { background: var(--soft); }
 .tb-mid .nav:active { background: var(--line); }
-.tb-side { display: flex; align-items: center; gap: .3rem; min-width: 0; }
-.tb-side.end { justify-content: flex-end; }
 .tb-mid { display: flex; align-items: center; gap: .1rem; min-width: 0; }
 /* The period label is a button with nothing drawn on it, so hover and press are what say it is
    one - the same affordance the year view's month caption uses. */
 .period:hover { background: var(--soft); }
 .period:active { background: var(--line); }
-.nav {
-  display: inline-flex; align-items: center; justify-content: center;
-  width: auto; min-width: 2.6rem; min-height: 2.6rem; margin: 0; padding: .3rem .45rem;
-  font-size: 2rem; line-height: 1; font-weight: 500; text-decoration: none;
-  color: var(--fg); background: var(--soft); border: 0; border-radius: .55rem;
-}
-.nav.ic svg { width: 1.8rem; height: 1.8rem; display: block; }
 /* The zoom in a calendar view reads the period it is in rather than drawing an icon. */
 .nav.ic .glyph { font-size: 1.5rem; font-weight: 700; line-height: 1; min-width: 1.8rem; }
 
@@ -90,18 +58,6 @@ body.dock-bottom { padding-bottom: 0; }
 #period-label { overflow: hidden; text-overflow: ellipsis; }
 
 .view { flex: 1; min-height: 0; }
-/* The line reports and is pressed. Nothing is drawn on it, so hover and press are what say it
-   is a button - the same affordance the period label uses. `.bad` needs the second class to beat
-   this rule's own colour, which the plain `.bad` in the Mine stylesheet is now behind. */
-.sync {
-  width: 100%; padding: .4rem .7rem; margin: 0; font: inherit; font-size: .75rem;
-  text-align: left; color: inherit; background: none; border: 0; border-radius: .4rem;
-  cursor: pointer;
-}
-.sync:hover { background: var(--soft); }
-.sync:active { background: var(--line); }
-.sync.bad { color: var(--bad); }
-
 /* ---- month ---- */
 .weekhead {
   display: grid; grid-template-columns: repeat(7, 1fr);
@@ -312,7 +268,7 @@ body.dock-bottom { padding-bottom: 0; }
 /* ---- dragging ---- */
 /* What can be held is not text to select and has no long-press menu, or a held finger would
    select a word or raise the system's callout instead of picking it up. */
-.kcard, .eline, .tev, .topbar { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
+.kcard, .eline, .tev { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
 .kcard, .eline, .tev { cursor: grab; }
 /* The copy that follows the pointer, and the original it was lifted from. */
 .drag-ghost {
@@ -390,17 +346,9 @@ body.dock-bottom { padding-bottom: 0; }
 
 /* A filter that is on says so on the hamburger: a small count at its top right, one per kind
    of narrowing. */
-.tb-side .nav.ic { position: relative; }
-.fcount {
-  position: absolute; top: 0; right: 0; min-width: .95rem; height: .95rem; padding: 0 .1rem;
-  font-size: .6rem; font-weight: 700; line-height: .95rem; text-align: center;
-  color: var(--raise); background: var(--today); border-radius: 999px;
-}
 /* The two lists' rows above, what is set in the dropdown itself below. */
 .fsep { height: 1px; margin: .4rem .2rem; background: var(--line); }
 .glab .glyph { width: .85rem; font-size: .8rem; font-weight: 700; text-align: center; }
-.glab { display: flex; align-items: center; gap: .55rem; padding: .45rem .3rem; font-size: .9rem; color: var(--fg); cursor: pointer; }
-.glab input { width: 1.1rem; height: 1.1rem; margin: 0; flex: none; }
 
 /* The zoom's list: the four periods, or the board's two orientations, the current one marked. */
 .zrow {
@@ -456,8 +404,6 @@ body.dock-bottom { padding-bottom: 0; }
   /* Docked at the bottom the period row goes on top, so the six buttons are nearest the thumb. */
   .dock-bottom .tb-mid { order: 0; }
   .tb-mid .nav { flex: 1 1 0; min-width: 0; }
-  .nav { min-width: 2.2rem; }
-  .nav.ic svg { width: clamp(1.3rem, 5.2vw, 1.9rem); height: clamp(1.3rem, 5.2vw, 1.9rem); }
   .nav.ic .glyph { font-size: clamp(1.1rem, 4.6vw, 1.6rem); min-width: 0; }
   /* The second row's arrows are drawn at the size of the icons on the row above: they were
      larger than everything over them, which made the row that steps the period the loudest
@@ -483,11 +429,6 @@ body.dock-bottom { padding-bottom: 0; }
 }
 
 /* ---- the entry popup ---- */
-.iconbar {
-  display: flex; align-items: center; flex-wrap: wrap; gap: .15rem;
-  padding-bottom: .5rem; margin-bottom: .5rem; border-bottom: 1px solid var(--line);
-}
-.iconbar .spacer { flex: 1; }
 /* The quick row, under the when: every small value as an icon and no names, with a chevron at
    its end that shows the names as lines beneath it. It does not wrap - six icons and the
    chevron are one line at 320px - and it carries no border of its own, the rows below having
@@ -526,51 +467,11 @@ body.dock-bottom { padding-bottom: 0; }
    stretching pair would push the trashcan, the disk and the x onto a second line. */
 .iconbar .btngroup { margin: 0 .2rem; }
 .iconbar .seg { flex: none; padding: .35rem .55rem; }
-.body-in {
-  display: block; width: 100%; margin-top: .3rem; padding: .7rem;
-  font: .85rem/1.5 var(--mono);
-  color: var(--fg); background: var(--bg); border: 1px solid var(--line); border-radius: .45rem;
-  resize: vertical;
-}
-/* A row is the icon, then the value - no field name beside it, because the name said what the
-   icon already says in the one column where the value has to fit. An unset row shows the name in
-   the value's place, muted, which is what an empty input does everywhere else in Mine. */
-.frow {
-  display: flex; align-items: center; gap: .6rem; width: 100%; margin: 0;
-  min-height: 3.25rem; padding: .55rem .3rem; border-top: 1px solid var(--line);
-}
-.frow > svg { flex: none; width: 1.15rem; height: 1.15rem; }
 /* The stage's tick, on a rectangle of its colour as on the icon row. */
 .frow > .stagemark { color: var(--raise); border-radius: .25rem; }
-/* The whole row left of its trashcan is the way in, so it is the button. */
-.ftap {
-  flex: 1; min-width: 0; margin: 0; padding: .1rem .2rem; font: inherit; font-size: .9rem;
-  text-align: left; color: var(--fg); background: none; border: 0; border-radius: .4rem;
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer;
-}
-.ftap:hover { background: var(--soft); }
-.ftap.unset { color: var(--muted); }
-/* An inline row: the input takes the line the value was on, with the trashcan and the x where the
-   closed row's trashcan already is. The row's min-height above is what holds its height still, and
-   it is set by the tallest thing a row can hold - its trashcan and its x, which a set row already
-   carries shut. Both the text a row shows shut and the input it holds open are shorter than that,
-   so neither decides how tall the row is and opening one cannot change it. */
-.frow.in > input {
-  flex: 1; min-width: 0; height: 1.7rem; margin: 0; padding: 0 .4rem; font-size: .9rem;
-}
-.frow.in > input.title-in { height: 1.75rem; font-size: 1.15rem; font-weight: 600; }
-/* The title row is the one with neither a trashcan nor an x: the popup's own x, which discards
-   the whole edit, is a thumb's width above this line. */
-
-/* A field's own popup, above the entry popup and carrying no scrim of its own. It holds the four
-   controls that cannot be a line, so the rows that own them need not grow into one. */
-.fpop { z-index: 14; max-height: 70dvh; overflow-y: auto; }
-.fpop .glist { max-height: 50dvh; overflow-y: auto; }
-.fpop label { margin: 0 0 .2rem; }
 
 /* The body is the one field whose open shape still carries a line of its own, because a textarea
    cannot have its name and its buttons beside it. */
-.frow.open { display: block; padding: .3rem .2rem .6rem; }
 .fedit { display: block; }
 /* The name on the first line, the trashcan and the x at the right of it: the way out of a row
    is in the same corner as the way out of the popup. */
@@ -580,11 +481,6 @@ body.dock-bottom { padding-bottom: 0; }
 .ftitle svg { flex: none; width: 1rem; height: 1rem; }
 .ftitle .spacer { flex: 1; }
 /* The title row carries no icon, so it reads as the entry's name rather than as a field. */
-.frow.first { border-top: 0; }
-.ttap {
-  font-family: var(--serif); font-size: 1.35rem; font-weight: 600; letter-spacing: -.008em;
-  line-height: 1.25; white-space: normal;
-}
 /* The when: two halves, each the way into the flow that sets it. They wrap rather than shrink,
    so a span whose two datings do not fit one line drops the end to a second, still at the right
    - the row is the one in the popup that may be two lines tall, and it is also the only one
@@ -638,15 +534,11 @@ body.dock-bottom { padding-bottom: 0; }
   :root { --cell: 6.4rem; --gutter: 2.4rem; --tcol: 3.4rem; --hour: 2.8rem; }
   /* No cap on #cal: the pane, the calendar window and the sync line are as wide as the browser.
      The cap is on the board alone, below, so the pane cannot change width when the view does. */
-  .topbar { padding: .7rem .8rem; gap: .5rem; }
-  .dock-bottom .topbar { padding-top: .7rem; padding-bottom: max(.7rem, env(safe-area-inset-bottom)); }
   /* About half an arrow glyph either side of the label. Three controls crammed together read as
      one control, and this is the group the pane is used through. */
   .tb-mid { gap: 1rem; }
   .period { font-size: 1.9rem; }
-  .nav.ic svg { width: 2.1rem; height: 2.1rem; }
   .nav.ic .glyph { font-size: 1.7rem; min-width: 2.1rem; }
-  .nav { min-width: 3rem; min-height: 3rem; }
   .weekhead { font-size: .75rem; padding: .5rem .3rem .2rem; }
   .day { padding: .22rem; }
   .num { align-self: flex-end; margin-right: .1rem; }

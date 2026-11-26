@@ -11,7 +11,7 @@ import {
 } from './ui.js';
 import { openEntry, openNew } from './popup.js';
 import { weekdayName } from '../shared/prefs.js';
-import { draggable } from './drag.js';
+import { draggable } from '../shared/drag.js';
 
 // What the range holds, narrowed by the filter, recorded for click handling. The three
 // narrowings are applied here rather than per view, so the month, the week, the day, the year
@@ -339,7 +339,7 @@ function onClick(e) {
 }
 
 // ---- dragging an entry to another day, or to another time ---------------------------------
-// In the month, the week and the day, by the same press-and-drag the board uses (./drag.js).
+// In the month, the week and the day, by the same press-and-drag the board uses (../shared/drag.js).
 // Whichever day of a span was picked up, the day it is dropped on is its new start, and the end
 // moves by as many days. A timed block dropped in the hour grid also takes the time its top edge
 // lands on, in quarters, keeping its length and ending by midnight; the copy shows that time as it

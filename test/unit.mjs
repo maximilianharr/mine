@@ -13,6 +13,10 @@ import {
   timeLabel, DEFAULT_ANCHOR, shiftDays
 } from '../calendar/data.js';
 import { plain, fold, index, find, snippet } from '../shared/search.js';
+import {
+  buildNotes, noteOf, allTags, shows, tagOf, pathFor as notePath, noteFile, nowStamp
+} from '../notes/data.js';
+import { parse } from '../shared/md.js';
 
 let failed = 0;
 const ok = (name, pass, detail = '') => {
@@ -361,6 +365,49 @@ eq('with no keys named, the title is the first heading, else the file name',
 eq('and the date comes from the path', zettel.map(d => d.date), ['', '2026-01-03']);
 eq('a snippet marks the matched word in the original spelling',
   snippet('About Éclairs.', 'eclair'), [['About ', false], ['Éclair', true], ['s.', false]]);
+
+// ---- notes -----------------------------------------------------------------------------------
+
+const nf = (path, text) => ({ path, text });
+const notes = buildNotes([
+  nf('notes/2026/11/2026-11-20-0800-aaaa.md', '---\ntitle: Old\ncreated: 2026-11-20T08:00:00Z\nupdated: 2026-11-20T08:00:00Z\ntags:\n  - home\n---\n\nbody'),
+  nf('notes/2026/11/2026-11-21-0800-bbbb.md', '---\ntitle: New\ncreated: 2026-11-21T08:00:00Z\nupdated: 2026-11-25T09:00:00Z\ntags:\n  - Work\n  - home\n---\n'),
+  nf('notes/2026/11/2026-11-22-0800-cccc.md', '# Hand written\n\nno frontmatter at all'),
+  nf('calendar/2026/11/2026-11-22-0800-dddd.md', '---\ntitle: Not a note\n---\n')
+]);
+eq('notes are only the notes folder, newest update first', notes.map(n => n.title),
+  ['New', 'Hand written', 'Old']);
+eq('a file with no frontmatter takes its heading and the date in its path',
+  [notes[1].title, notes[1].updated], ['Hand written', '2026-11-22']);
+eq('tags are read in lower case', notes[0].tags, ['work', 'home']);
+eq('a single string is one tag', noteOf(nf('notes/x.md', '---\ntags: Ideas\n---\n')).tags, ['ideas']);
+eq('the tag list is every tag any note carries, sorted', allTags(notes), ['home', 'work']);
+eq('a typed tag loses its # and its spaces', tagOf('#Road Trip '), 'road-trip');
+eq('nothing ticked shows every note', notes.filter(n => shows(n, new Set())).length, 3);
+eq('a ticked tag shows the notes carrying it', notes.filter(n => shows(n, new Set(['work'])))
+  .map(n => n.title), ['New']);
+eq('two ticked tags show either', notes.filter(n => shows(n, new Set(['work', 'home'])))
+  .map(n => n.title), ['New', 'Old']);
+eq('untagged shows the notes with none', notes.filter(n => shows(n, new Set([''])))
+  .map(n => n.title), ['Hand written']);
+eq('a new note is filed under the month it was created in, in UTC',
+  notePath('2026-11-26T14:30:05Z', 'k3f9'), 'notes/2026/11/2026-11-26-1430-k3f9.md');
+eq('a stamp is a UTC instant to the second', nowStamp(new Date(Date.UTC(2026, 10, 26, 14, 30, 5, 123))),
+  '2026-11-26T14:30:05Z');
+
+const fresh = noteFile(null, { title: 'Groceries', tags: ['home'], body: '- milk\n' }, '2026-11-26T14:30:05Z');
+ok('a new note is written under its creation month', /^notes\/2026\/11\/2026-11-26-1430-[a-z0-9]{4}\.md$/.test(fresh.path), fresh.path);
+eq('and carries title, created, updated and tags in that order', parse(fresh.text).data,
+  { title: 'Groceries', created: '2026-11-26T14:30:05Z', updated: '2026-11-26T14:30:05Z', tags: ['home'] });
+
+const kept = noteOf(nf('notes/2026/11/2026-11-20-0800-aaaa.md',
+  '---\ntitle: Old\ncreated: 2026-11-20T08:00:00Z\nupdated: 2026-11-20T08:00:00Z\nsource: phone\n---\n\nbody\n'));
+const saved = noteFile(kept, { title: 'Renamed', tags: [], body: kept.body }, '2026-11-26T10:00:00Z');
+eq('a save keeps the path', saved.path, kept.path);
+eq('keeps created, sets updated, drops empty tags and keeps a key it does not own',
+  parse(saved.text).data,
+  { title: 'Renamed', created: '2026-11-20T08:00:00Z', updated: '2026-11-26T10:00:00Z', source: 'phone' });
+eq('and leaves the body as it was', parse(saved.text).body, kept.body);
 
 console.log(failed ? `\n${failed} check(s) failed` : '\nall unit checks passed');
 process.exit(failed ? 1 : 0);

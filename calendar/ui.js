@@ -133,7 +133,6 @@ addIcons({
   pin:    { d: 'M8 1.9a4.2 4.2 0 0 0-4.2 4.2c0 3.2 4.2 8.1 4.2 8.1s4.2-4.9 4.2-8.1A4.2 4.2 0 0 0 8 1.9zM8 7.7a1.7 1.7 0 1 0 0-3.4 1.7 1.7 0 0 0 0 3.4z', stroke: 1.3 },
   bell:   { d: 'M8 2.1a3.4 3.4 0 0 0-3.4 3.4v2.3L3.3 10.2h9.4l-1.3-2.4V5.5A3.4 3.4 0 0 0 8 2.1zM6.4 11.6a1.6 1.6 0 0 0 3.2 0', stroke: 1.4 },
   person: { d: 'M8 2.7a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM3.1 13.7c0-2.8 2.4-4.5 4.9-4.5s4.9 1.7 4.9 4.5', stroke: 1.4 },
-  filter: { d: 'M2.5 3.3h11l-4.2 5.2v5.1L6.7 12.3V8.5z', stroke: 1.4 },
   // A ticked square for task, a calendar page for event: the icon row carries no letters.
   check:  { d: 'M13.4 3.4v9.2H2.6V3.4h10.8M5.3 8.1l2.1 2.2 4.2-4.5', stroke: 1.5 },
   // The stage: a bare tick, which the popup sets on a rectangle of the stage's own colour - red,

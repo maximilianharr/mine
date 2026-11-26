@@ -8,7 +8,7 @@ import { STAGES, sprintRange, byImportance, patchOccurrence } from './data.js';
 import { S, el, phone, colorOf, iconBtn, dayLabel, STAGE_COLOR } from './ui.js';
 import { collect } from './views.js';
 import { openNew } from './popup.js';
-import { draggable } from './drag.js';
+import { draggable } from '../shared/drag.js';
 
 // Stacked, the three stages sit one under the other, each full width, and the board is read by
 // scrolling down - which is the right way round for a stage holding fifteen cards beside one

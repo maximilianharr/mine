@@ -25,7 +25,7 @@ import {
   S, $, el, icon, iconBtn, colorOf, inkOn, labelOf, dayLabel, shortDayLabel, openRowPop, monthDays,
   STAGE_COLOR, STAGE_LABEL
 } from './ui.js';
-import { parseDateText, dateTextOf, datePlaceholder } from '../shared/prefs.js';
+import { parseDateText, dateTextOf, datePlaceholder, setPref } from '../shared/prefs.js';
 
 const splitList = v => String(v).split(/[,;\s]+/).map(s => s.trim()).filter(Boolean);
 
@@ -189,7 +189,7 @@ $('#ask-discard').addEventListener('click', async () => {
   // it back on.
   if ($('#ask-never').checked) {
     S.prefs.confirmDiscard = false;
-    await setKV('calendar.confirmDiscard', false);
+    await setPref('confirmDiscard', false);
   }
   discard();
 });

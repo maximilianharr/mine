@@ -2,5 +2,6 @@
 // `files` are the app's own files beyond its folder index and icon, for the worker to precache.
 export const APPS = [
   { slug: 'calendar', label: 'calendar', files: ['index.html', 'app.js', 'data.js', 'ui.js',
-      'views.js', 'kanban.js', 'drag.js', 'popup.js', 'settings.js', 'style.css'] }
+      'views.js', 'kanban.js', 'popup.js', 'settings.js', 'style.css'] },
+  { slug: 'notes', label: 'notes', files: ['index.html', 'app.js', 'data.js', 'style.css'] }
 ];

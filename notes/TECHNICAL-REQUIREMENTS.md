@@ -47,17 +47,18 @@ the tie-break.
 ## Modules
 
 ```
-notes/app.js     the whole app: the model, the grid, the popup, the filter, the settings, boot
-notes/style.css  the grid, the cards and the popup's rows
+notes/data.js    the model, the file format and the two writes; pure, so test/unit.mjs runs it
+notes/app.js     everything on screen: the grid, the popup, the filter, the settings, boot
+notes/style.css  the grid, the cards, and what differs in the popup
 ```
 
-One module: the app is a fraction of the calendar, and a split into model and views would be
-files that import only each other. The model is `buildNotes(files)` — the mirror's `notes/`
-files parsed and sorted — and is exported for `test/unit.mjs`.
+Two modules, split where the calendar's is: the model has to load in node without a DOM.
+`buildNotes(files)` is the mirror's `notes/` files parsed and sorted; `noteFile(note, draft)` is
+what a save would write.
 
 Everything else is shared: the store and the sync (`shared/store.js`, `github.js`, `sync.js`),
 the renderer, the search, the prefs, the icon set and overlays (`shared/ui.js`), and the header
-drag (`shared/drag.js`, `dockable()` in `shared/ui.js`). The discard prompt reads and writes
+drag (`shared/drag.js` and its `dockable()`). The discard prompt reads and writes
 `mine.confirmDiscard`; the dock position is `mine.barPosition`. The filter is `notes.tags` in
 `kv`, the ticked tags as a list, `''` standing for `untagged`.
 
