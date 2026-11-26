@@ -9,57 +9,56 @@
  * choice the tile screen makes, and every app page had to undo it.
  */
 
-/* Linen: warm paper rather than white. The page is off-white and the raised surfaces - a popup,
-   a panel, a card - are a shade lighter than it, which is what gives an overlay its edge without
-   a heavy border. Every colour is warm: there is no neutral grey anywhere in the set.
-   `--link` is the one accent, a terracotta, and it is what an app highlights its own thing with
-   (the calendar's today) rather than naming a second. */
+/* Light: cream paper and black ink, from Adobe Color's most popular "Neutral Palette". The page
+   is a warm cream and the raised surfaces - a popup, a panel, a card - are a shade lighter than
+   it, which is what gives an overlay its edge without a heavy border. `--link` is the one
+   accent, a bronze, and it is what an app highlights its own thing with (the calendar's today)
+   rather than naming a second. */
 :root {
-  --bg: #faf7f2; --raise: #fffdfa; --fg: #2a2521; --muted: #8a7f72; --line: #e7dfd3;
-  --accent: #2a2521; --bad: #a63f2e; --good: #4f6b3f; --soft: #f2ece2;
-  --link: #9c5a2d;
+  --bg: #EBE6D2; --raise: #f6f2e4; --fg: #1a1712; --muted: #6e6556; --line: #D0C0A7;
+  --accent: #1a1712; --bad: #a63f2e; --good: #4f6b3f; --soft: #DBD3C6;
+  --link: #8a6a2e;
   /* How much of an entry's own colour goes into the tint behind it. A dark page needs more tint,
      so it is a token rather than a number. */
   --chip-bg: 14%;
-  --scrim: rgb(42 37 33 / .32);
-  --shadow: 0 12px 34px rgb(70 48 24 / .16);
+  --scrim: rgb(0 0 0 / .28);
+  --shadow: 0 12px 34px rgb(0 0 0 / .14);
   /* Charter for the things that are read as a title, a humanist sans for everything operated. */
   --serif: Charter, "Bitstream Charter", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
   --sans: -apple-system, "Segoe UI", Cantarell, system-ui, "Helvetica Neue", sans-serif;
   --mono: ui-monospace, SFMono-Regular, Menlo, "DejaVu Sans Mono", monospace;
 }
-/* Mine's theme setting is "system" by default, so the device decides; light and the three night
-   palettes are the overrides, and the attribute is what carries them.
-   Coffee is the paper at night: an espresso near-black, surfaces stepped clearly above
-   it, paper-coloured ink, and the terracotta lifted to an ember that glows on it. It is what
-   "system" uses after dark. */
+/* Mine's theme setting is "system" by default, so the device decides between light and dark;
+   every other value is an override, and the attribute is what carries it.
+   Dark is a deep navy with paper ink and an amber accent. */
 @media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
-    --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
-    --soft: #221a15; --link: #f08a4b;
+  :root:not([data-theme="light"]) { --bg: #12161f; --raise: #1c2230; --fg: #ece4d8;
+    --muted: #8f97a8; --line: #2a3142; --accent: #ece4d8; --bad: #f08a7a; --good: #8fd0a0;
+    --soft: #171c27; --link: #f0a35c;
     --chip-bg: 22%;
-    --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+    --scrim: rgb(5 7 12 / .6); --shadow: 0 16px 44px rgb(0 0 0 / .6); }
 }
-:root[data-theme="coffee"] { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
-    --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
-    --soft: #221a15; --link: #f08a4b;
-    --chip-bg: 22%;
-    --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
-
-/* Chosen rather than followed: picking one pins it day and night. Dark is a deep navy with paper
-   ink and an amber accent. Neutral is the most popular palette of Adobe Color's "Neutral
-   Palette" tag, with a readable ink, a today and the stage colours derived from its own hues. They come after the system pair so they win
-   over it at the same specificity. */
 :root[data-theme="dark"] { --bg: #12161f; --raise: #1c2230; --fg: #ece4d8;
     --muted: #8f97a8; --line: #2a3142; --accent: #ece4d8; --bad: #f08a7a; --good: #8fd0a0;
     --soft: #171c27; --link: #f0a35c;
     --chip-bg: 22%;
     --scrim: rgb(5 7 12 / .6); --shadow: 0 16px 44px rgb(0 0 0 / .6); }
-:root[data-theme="neutral"] { --bg: #EBE6D2; --raise: #f6f2e4; --fg: #1a1712;
-    --muted: #6e6556; --line: #D0C0A7; --accent: #1a1712; --bad: #a63f2e; --good: #4f6b3f;
-    --soft: #DBD3C6; --link: #8a6a2e;
+
+/* Chosen rather than followed: picking one pins it day and night. They come after the system
+   pair so they win over it at the same specificity.
+   Coffee is the paper at night: an espresso near-black, surfaces stepped clearly above it,
+   paper-coloured ink and an ember accent. Neutral is Linen, warm off-white paper with a
+   terracotta accent and no neutral grey anywhere in it. */
+:root[data-theme="coffee"] { --bg: #1a1410; --raise: #2a201a; --fg: #f0e6d6;
+    --muted: #b09c86; --line: #3d3027; --accent: #f0e6d6; --bad: #f27a6a; --good: #9fd07f;
+    --soft: #221a15; --link: #f08a4b;
+    --chip-bg: 22%;
+    --scrim: rgb(10 7 5 / .55); --shadow: 0 16px 44px rgb(0 0 0 / .55); }
+:root[data-theme="neutral"] { --bg: #faf7f2; --raise: #fffdfa; --fg: #2a2521;
+    --muted: #8a7f72; --line: #e7dfd3; --accent: #2a2521; --bad: #a63f2e; --good: #4f6b3f;
+    --soft: #f2ece2; --link: #9c5a2d;
     --chip-bg: 14%;
-    --scrim: rgb(0 0 0 / .28); --shadow: 0 12px 34px rgb(0 0 0 / .14); }
+    --scrim: rgb(42 37 33 / .32); --shadow: 0 12px 34px rgb(70 48 24 / .16); }
 
 /* An id or class rule for display beats the UA stylesheet's [hidden], so a screen and a modal
    would both render while still carrying the attribute. */

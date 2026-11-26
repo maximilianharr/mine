@@ -40,24 +40,25 @@ Settings are stored on the device only. The token is never displayed again after
 app warns 14 days before it expires.
 
 Two settings belong to Mine rather than to any one app, and the same two rows appear in the main
-settings and in each app's: **theme** (system, light, coffee, dark or neutral) and **date format** (auto, which
+settings and in each app's: **theme** (system, light, dark, coffee or neutral) and **date format** (auto, which
 follows the device's locale, or `dd.mm.yyyy`, or `mm/dd/yy`). Both default to following the
 device, so Mine looks like the rest of the phone until you say otherwise.
 
 ## How Mine looks
 
-**Paper, not screen.** The page is a warm off-white rather than white, and the surfaces that sit
-above it — a popup, a panel, a card, a tile — are a shade lighter than the page and edged with a
-hairline. That is what makes an overlay read as lifted, so none of them needs a heavy border or
-a dark drop shadow. There is no neutral grey anywhere in the palette: every colour in it, down
-to the rules and the muted text, has warmth in it. The night the device asks for is **coffee**, the same paper at night —
-an espresso near-black, surfaces stepped clearly above it, paper-coloured ink and an ember
-accent. **Dark** (a deep navy with paper ink) can be chosen instead, and so can **neutral**, a
-cream and black palette taken from Adobe Color's most popular "Neutral Palette". Dark's navy is
-the one place the no-grey, all-warm rule gives. Choosing one pins it day and night, and the phone's bar
-follows the page.
+**Paper, not screen.** **Light** is cream paper and black ink, taken from Adobe Color's most
+popular "Neutral Palette", and the surfaces that sit above it — a popup, a panel, a card, a
+tile — are a shade lighter than the page and edged with a hairline. That is what makes an
+overlay read as lifted, so none of them needs a heavy border or a dark drop shadow. **Dark**
+is a deep navy with paper-coloured ink and an amber accent. "System" follows the device
+between these two.
 
-**One accent**, a terracotta, and an app highlights its own thing with it rather than naming a
+Two more can be chosen, and choosing one pins it day and night: **coffee**, an espresso
+near-black with surfaces stepped clearly above it, paper-coloured ink and an ember accent, and
+**neutral**, the warm off-white Linen with a terracotta accent and no grey anywhere in it. The
+phone's bar always follows the page.
+
+**One accent**, a bronze on light, and an app highlights its own thing with it rather than naming a
 colour of its own: the calendar's today is that accent. **Serif for what is read, sans for what
 is operated** — a heading, a period label, an entry's title and a rendered body's headings are
 set in Charter; every control, label and value is set in the system sans.

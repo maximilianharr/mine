@@ -141,7 +141,7 @@ ok('and never shows the token itself',
 eq('the two Mine-wide settings are theme and date format',
   settings.prefs.map(p => p.label), ['Theme', 'Date format']);
 eq('with the same options every app offers', settings.prefs.map(p => p.options),
-  [['system', 'light', 'coffee', 'dark', 'neutral'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
+  [['system', 'light', 'dark', 'coffee', 'neutral'], ['auto', 'dd.mm.yyyy', 'mm/dd/yy']]);
 eq('the screen fits a 390px phone', settings.over, 0);
 await shoot('mine-settings');
 
@@ -165,10 +165,10 @@ await ev(`(async () => {
 })()`);
 eq('a pinned palette pins the bar to its page colour',
   await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
-  ['#EBE6D2', '#EBE6D2']);
+  ['#faf7f2', '#faf7f2']);
 await ev(`(async () => (await import('/shared/prefs.js')).applyTheme('system'))()`);
 eq('and system hands the bar back to the device',
   await ev(`[...document.querySelectorAll('meta[name="theme-color"]')].map(m => m.content)`),
-  ['#faf7f2', '#1a1410']);
+  ['#EBE6D2', '#12161f']);
 
 report('mine');

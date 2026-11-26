@@ -2,7 +2,7 @@
 // show the same two rows, so both read and write these keys.
 import { getKV, setKV } from './store.js';
 
-export const THEMES = ['system', 'light', 'coffee', 'dark', 'neutral'];
+export const THEMES = ['system', 'light', 'dark', 'coffee', 'neutral'];
 export const DATE_FORMATS = ['auto', 'dd.mm.yyyy', 'mm/dd/yy'];
 
 export async function loadPrefs() {
